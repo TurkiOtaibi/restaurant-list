@@ -1,0 +1,1 @@
+"""Auth foundation module."""
