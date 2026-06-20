@@ -34,7 +34,7 @@ type: web
 name: restaurant-list-api
 runtime: python
 rootDir: backend
-plan: starter
+plan: free
 region: oregon
 buildCommand: python -m pip install --upgrade pip && pip install -e .
 preDeployCommand: alembic upgrade head
@@ -62,7 +62,7 @@ type: web
 name: restaurant-list-web
 runtime: node
 rootDir: frontend
-plan: starter
+plan: free
 region: oregon
 buildCommand: npm ci && npm run build
 startCommand: npm run start -- -H 0.0.0.0 -p $PORT
