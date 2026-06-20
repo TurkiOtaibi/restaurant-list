@@ -126,8 +126,8 @@ async function installApiMock(page: Page, initialState?: Partial<MockState>) {
           userId: list.userId,
           name: list.name,
           visibility: list.visibility,
-            placeCount: list.items.length,
-            createdAt: list.createdAt,
+          placeCount: list.items.length,
+          createdAt: list.createdAt,
           updatedAt: list.updatedAt
         }))
       );
@@ -201,6 +201,30 @@ async function installApiMock(page: Page, initialState?: Partial<MockState>) {
     }
 
     const listMatch = path.match(/^\/lists\/([^/]+)$/);
+    if (listMatch && method === "PATCH") {
+      const payload = request.postDataJSON() as { name: string };
+      const found = state.lists.find((list) => list.id === listMatch[1]);
+      if (!found) {
+        return fulfillJson(route, 404, { detail: "List not found." });
+      }
+      found.name = payload.name;
+      found.updatedAt = timestamp;
+      return fulfillJson(route, 200, {
+        id: found.id,
+        userId: found.userId,
+        name: found.name,
+        visibility: found.visibility,
+        placeCount: found.items.length,
+        createdAt: found.createdAt,
+        updatedAt: found.updatedAt
+      });
+    }
+
+    if (listMatch && method === "DELETE") {
+      state.lists = state.lists.filter((list) => list.id !== listMatch[1]);
+      return fulfillJson(route, 200, { deleted: true });
+    }
+
     if (listMatch && method === "GET") {
       const found = state.lists.find((list) => list.id === listMatch[1]);
       return fulfillJson(route, found ? 200 : 404, found ?? { detail: "List not found." });
@@ -296,9 +320,10 @@ test("my lists renders empty and populated personal taste library states", async
 
   await page.goto("/lists");
   await expect(page.getByRole("heading", { name: "قوائمي" })).toBeVisible();
-  await expect(page.getByText("مكتبة ذوقك", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "أضف قائمة" })).toBeVisible();
-  await expect(page.getByText("مكتبتك جاهزة لأول رف")).toBeVisible();
+  await expect(page.getByText("لا توجد قوائم")).toBeVisible();
+  await expect(page.getByRole("link", { name: "أنشئ أول قائمة" })).toBeVisible();
+  await expect(page.getByText("استكشف القوائم العامة")).toBeVisible();
   await expectNoLegacyPanel(page);
   await expectNoEscapedUnicode(page);
   await expectArabicFirst(page);
@@ -313,9 +338,10 @@ test("my lists renders empty and populated personal taste library states", async
 
   await page.goto("/lists");
   await expect(page.getByRole("link", { name: /Weekend picks/ })).toBeVisible();
-  await expect(page.getByText("مكان واحد")).toBeVisible();
-  await expect(page.getByText("خاص", { exact: true })).toBeVisible();
-  await expect(page.getByText("أماكن محفوظة")).toBeVisible();
+  await expect(page.getByText("1 مكان")).toBeVisible();
+  await expect(page.getByText("خاصة", { exact: true })).toBeVisible();
+  await expect(page.getByText("مكتبة ذوقك")).toHaveCount(0);
+  await expect(page.getByText("رف")).toHaveCount(0);
   await expectNoEscapedUnicode(page);
   await expectArabicFirst(page);
 });
@@ -328,7 +354,7 @@ test("create list uses accessible modal or sheet with focus safety and unsaved p
   await installApiMock(page);
 
   await page.goto("/lists");
-  await expect(page.getByText("مكتبتك جاهزة لأول رف")).toBeVisible();
+  await expect(page.getByText("لا توجد قوائم")).toBeVisible();
   const createListLink = page.getByRole("link", { name: "أضف قائمة" });
   await expect(createListLink).toHaveAttribute("href", "/lists/new");
   await page.goto("/lists/new", { waitUntil: "domcontentloaded" });
@@ -336,8 +362,9 @@ test("create list uses accessible modal or sheet with focus safety and unsaved p
   const dialog = page.getByRole("dialog", { name: "أضف قائمة" });
   await expect(dialog).toBeVisible();
   await expect(page.getByLabel("اسم القائمة")).toBeFocused();
-  await expect(page.getByLabel("خاص")).toBeChecked();
-  await expect(page.getByText("لا تظهر إلا لك.")).toBeVisible();
+  await expect(page.getByLabel("خاصة")).toBeChecked();
+  await expect(page.getByText("لا تظهر إلا لك.")).toHaveCount(0);
+  await expect(page.getByText("يمكن للمستخدمين رؤيتها")).toHaveCount(0);
   await expectNoHorizontalOverflow(page);
   await expectNoEscapedUnicode(page);
   await expectArabicFirst(page);
@@ -347,7 +374,7 @@ test("create list uses accessible modal or sheet with focus safety and unsaved p
   await page.keyboard.press("Tab");
   await expect(page.getByLabel("اسم القائمة")).toBeFocused();
 
-  await page.getByRole("button", { name: "حفظ القائمة" }).click();
+  await page.getByRole("button", { name: "حفظ" }).click();
   await expect(page.getByText("الاسم مطلوب.")).toBeVisible();
   await expect(page.getByLabel("اسم القائمة")).toBeFocused();
 
@@ -366,10 +393,10 @@ test("create list uses accessible modal or sheet with focus safety and unsaved p
   await page.goto("/lists/new");
   await expect(page.getByRole("dialog", { name: "أضف قائمة" })).toBeVisible();
   await page.getByLabel("اسم القائمة").fill("Late night");
-  await page.getByRole("radio", { name: /عام/ }).check();
-  await expect(page.getByRole("radio", { name: /عام/ })).toBeChecked();
-  await page.getByRole("button", { name: "حفظ القائمة" }).scrollIntoViewIfNeeded();
-  await page.getByRole("button", { name: "حفظ القائمة" }).click();
+  await page.getByRole("radio", { name: /عامة/ }).check();
+  await expect(page.getByRole("radio", { name: /عامة/ })).toBeChecked();
+  await page.getByRole("button", { name: "حفظ" }).scrollIntoViewIfNeeded();
+  await page.getByRole("button", { name: "حفظ" }).click();
   await expect(page).toHaveURL(/\/lists\/list-1$/, { timeout: 15_000 });
   await expect(page.getByRole("heading", { name: "Late night" })).toBeVisible();
 });
@@ -387,7 +414,7 @@ test("list detail prioritizes collection content and uses add-place dialog", asy
   await expect(page.locator("html")).toHaveAttribute("lang", "ar");
   await expect(page.getByRole("heading", { name: "Weekend picks" })).toBeVisible();
   await expect(page.getByText("لا توجد أماكن")).toBeVisible();
-  await expect(page.getByText("هذه القائمة تنتظر أول مكان")).toBeVisible();
+  await expect(page.getByText("أضف مكانًا للبدء.")).toBeVisible();
   await expect(page.locator("select")).toHaveCount(0);
   await expectNoLegacyPanel(page);
   await expectNoHorizontalOverflow(page);
@@ -398,9 +425,9 @@ test("list detail prioritizes collection content and uses add-place dialog", asy
   expect(addButtonBox?.height).toBeGreaterThanOrEqual(44);
 
   await page.getByRole("button", { name: "أضف أول مكان" }).click();
-  await expect(page.getByRole("dialog", { name: "أضف مكان" })).toBeVisible();
-  await expect(page.getByLabel("ابحث باسم المكان")).toBeFocused();
-  await page.getByLabel("ابحث باسم المكان").fill("Nara");
+  await expect(page.getByRole("dialog", { name: /أضف مكان/ })).toBeVisible();
+  await expect(page.getByLabel("بحث")).toBeFocused();
+  await page.getByLabel("بحث").fill("Nara");
   await expect(page.getByRole("heading", { name: "Nara Cafe" })).toBeVisible();
   await page.getByRole("button", { name: "أضف" }).click();
   await expect(page.getByText("تمت إضافة المكان إلى القائمة.")).toBeVisible();
@@ -408,7 +435,42 @@ test("list detail prioritizes collection content and uses add-place dialog", asy
   await expect(page.getByRole("button", { name: "موجود" })).toBeDisabled();
 
   await page.getByRole("button", { name: "إغلاق" }).click();
-  await page.getByLabel("عام").click();
-  await expect(page.getByText("تم تحديث ظهور القائمة إلى عام.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "تعديل القائمة" })).toBeVisible();
+  await expectNoEscapedUnicode(page);
+});
+
+test("list detail supports compact edit and delete actions", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await setAuthenticated(page);
+  const place = makePlace("place-1", "Nara Cafe", "cafe");
+  await installApiMock(page, {
+    places: [place],
+    lists: [makeList("list-1", "Weekend picks", [{ id: "item-1", place, createdAt: timestamp }])]
+  });
+
+  await page.goto("/lists/list-1");
+  await expect(page.getByRole("heading", { name: "Weekend picks" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "أضف مكان" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "تعديل القائمة" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "حذف القائمة" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /إخراج/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /إزالة Nara Cafe من القائمة/ })).toBeVisible();
+
+  await page.getByRole("button", { name: "تعديل القائمة" }).click();
+  await expect(page.getByRole("dialog", { name: "تعديل القائمة" })).toBeVisible();
+  await page.getByLabel("اسم القائمة").fill("قائمة سريعة");
+  await page.getByRole("radio", { name: "عامة" }).check();
+  await page.getByRole("button", { name: "حفظ" }).click();
+  await expect(page.getByRole("heading", { name: "قائمة سريعة" })).toBeVisible();
+  await expect(page.getByText("عامة", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "حذف القائمة" }).click();
+  await expect(page.getByRole("alertdialog", { name: "حذف القائمة" })).toBeVisible();
+  await page.getByRole("button", { name: "إلغاء" }).click();
+  await expect(page.getByRole("alertdialog", { name: "حذف القائمة" })).toHaveCount(0);
+  await page.getByRole("button", { name: "حذف القائمة" }).click();
+  await page.getByRole("button", { name: "حذف" }).click();
+  await expect(page).toHaveURL(/\/lists$/);
+  await expectNoHorizontalOverflow(page);
   await expectNoEscapedUnicode(page);
 });

@@ -33,9 +33,7 @@ export function ListCard({
 
   const content = (
     <>
-      <span className="ds-list-card__spine" aria-hidden="true" />
       <div className="ds-list-card__identity">
-        <p className="ds-list-card__kicker">قائمة</p>
         <h2 className="ds-list-card__title">
           {href && actions ? (
             <Link aria-label={accessibleName} className="ds-list-card__link" href={href}>
@@ -45,9 +43,6 @@ export function ListCard({
             <BidiText>{list.name}</BidiText>
           )}
         </h2>
-        <p className="ds-list-card__hint">
-          {placeCount === 0 ? "لا توجد أماكن" : "أماكن محفوظة"}
-        </p>
       </div>
 
       <div className="ds-list-card__meta" aria-hidden="true">
@@ -84,21 +79,9 @@ export function ListCard({
 }
 
 function visibilityLabel(visibility: UserList["visibility"]): string {
-  return visibility === "public" ? "عام" : "خاص";
+  return visibility === "public" ? "عامة" : "خاصة";
 }
 
 function placeCountLabel(count: number): string {
-  if (count === 0) {
-    return "لا توجد أماكن";
-  }
-
-  if (count === 1) {
-    return "مكان واحد";
-  }
-
-  if (count === 2) {
-    return "مكانان";
-  }
-
-  return `${count} أماكن`;
+  return `${count} مكان`;
 }

@@ -7,10 +7,13 @@ export { Chip } from "./Chip";
 export { EmptyState } from "./EmptyState";
 export { Field, TextArea, TextInput } from "./Input";
 export {
+  AddIcon,
   ArchiveIcon,
   CafeIcon,
   ClearIcon,
   CloseIcon,
+  DeleteIcon,
+  EditIcon,
   RestaurantIcon,
   ShelfIcon,
   TasteMarkIcon

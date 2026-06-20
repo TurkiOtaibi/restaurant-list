@@ -11,6 +11,7 @@ type DialogProps = {
   children: ReactNode;
   closeLabel?: string;
   confirmCloseMessage?: string;
+  dialogRole?: "dialog" | "alertdialog";
   hasUnsavedChanges?: boolean;
   initialFocusSelector?: string;
   labelledBy: string;
@@ -39,7 +40,7 @@ export function Modal(props: DialogProps) {
         className="ds-modal"
         onKeyDown={(event) => handleDialogKeyDown(event, close)}
         ref={ref}
-        role="dialog"
+        role={props.dialogRole ?? "dialog"}
         tabIndex={-1}
       >
         <DialogHeader {...props} onRequestClose={close} />
@@ -76,7 +77,7 @@ export function BottomSheet(props: DialogProps) {
         className="ds-bottom-sheet"
         onKeyDown={(event) => handleDialogKeyDown(event, close)}
         ref={ref}
-        role="dialog"
+        role={props.dialogRole ?? "dialog"}
         tabIndex={-1}
       >
         <DialogHeader {...props} onRequestClose={close} />
@@ -106,6 +107,7 @@ function DialogHeader({
       <h2 id={labelledBy}>{title}</h2>
       <Button
         aria-label={closeLabel}
+        className="ds-dialog__close"
         onClick={onRequestClose ?? onClose}
         type="button"
         variant="icon"

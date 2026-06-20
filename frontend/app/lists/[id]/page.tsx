@@ -5,16 +5,20 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import {
+  AddIcon,
   Badge,
   BidiText,
   Button,
+  DeleteIcon,
+  EditIcon,
   EmptyState,
   PlaceCard,
   StatusMessage
 } from "@/components/ui";
 import { AddPlaceDialog } from "@/features/lists/AddPlaceDialog";
+import { DeleteListDialog } from "@/features/lists/DeleteListDialog";
+import { EditListDialog } from "@/features/lists/EditListDialog";
 import { ListLoadingState } from "@/features/lists/ListLoadingState";
-import { VisibilitySelector } from "@/features/lists/VisibilitySelector";
 import {
   ApiError,
   ListDetail,
@@ -32,9 +36,10 @@ export default function ListDetailPage() {
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [visibilityMessage, setVisibilityMessage] = useState("");
   const [needsAuth, setNeedsAuth] = useState(false);
   const [addPlaceOpen, setAddPlaceOpen] = useState(false);
+  const [editListOpen, setEditListOpen] = useState(false);
+  const [deleteListOpen, setDeleteListOpen] = useState(false);
 
   const loadDetail = useCallback(async () => {
     setError("");
@@ -79,33 +84,13 @@ export default function ListDetailPage() {
 
   async function handleRemovePlace(placeId: string) {
     setError("");
-    setVisibilityMessage("");
     try {
       await apiRequest(`/lists/${listId}/items/${placeId}`, {
         method: "DELETE"
       });
       await refreshList();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "تعذر إخراج المكان.");
-    }
-  }
-
-  async function handleVisibilityChange(visibility: "public" | "private") {
-    if (!list || visibility === list.visibility) {
-      return;
-    }
-
-    setError("");
-    setVisibilityMessage("");
-    try {
-      const updated = await apiRequest<ListDetail>(`/lists/${listId}/visibility`, {
-        method: "PATCH",
-        body: JSON.stringify({ visibility })
-      });
-      setList({ ...list, visibility: updated.visibility });
-      setVisibilityMessage(`تم تحديث ظهور القائمة إلى ${visibilityLabel(updated.visibility)}.`);
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "تعذر تحديث ظهور القائمة.");
+      setError(caught instanceof ApiError ? caught.message : "تعذر إزالة المكان.");
     }
   }
 
@@ -113,29 +98,70 @@ export default function ListDetailPage() {
 
   return (
     <main className="content list-detail-page">
-      <section className="collection-hero" aria-labelledby="list-detail-title">
-        <div className="collection-hero__copy">
-          <p className="eyebrow">قائمة</p>
+      <section className="collection-topbar" aria-labelledby="list-detail-title">
+        <div className="collection-topbar__copy">
           <h1 id="list-detail-title">
             {list ? <BidiText>{list.name}</BidiText> : "القائمة"}
           </h1>
           {list ? (
-            <div className="collection-hero__meta">
+            <div className="collection-topbar__meta">
               <Badge variant={list.visibility}>{visibilityLabel(list.visibility)}</Badge>
               <span>{placeCountLabel(placeCount)}</span>
             </div>
           ) : null}
-          <p className="muted">أماكن محفوظة في هذه القائمة.</p>
         </div>
-        <div className="list-detail-header__actions">
-          <Button onClick={() => setAddPlaceOpen(true)} type="button">
-            أضف مكان
-          </Button>
-          <Link className="ds-button ds-button--secondary" href="/lists">
-            العودة لقوائمي
+        {list ? (
+          <div className="list-detail-header__actions" aria-label="إجراءات القائمة">
+            <Button
+              aria-label="أضف مكان"
+              className="list-action list-action--primary"
+              onClick={() => setAddPlaceOpen(true)}
+              type="button"
+              variant="icon"
+            >
+              <AddIcon />
+            </Button>
+            <Button
+              aria-label="تعديل القائمة"
+              className="list-action"
+              onClick={() => setEditListOpen(true)}
+              type="button"
+              variant="icon"
+            >
+              <EditIcon />
+            </Button>
+            <Button
+              aria-label="حذف القائمة"
+              className="list-action list-action--danger"
+              onClick={() => setDeleteListOpen(true)}
+              type="button"
+              variant="icon"
+            >
+              <DeleteIcon />
+            </Button>
+          </div>
+        ) : (
+          <Link className="text-link" href="/lists">
+            قوائمي
           </Link>
-        </div>
+        )}
       </section>
+
+      {list ? (
+        <>
+          <EditListDialog
+            list={list}
+            onClose={() => setEditListOpen(false)}
+            onUpdated={setList}
+            open={editListOpen}
+          />
+          <DeleteListDialog
+            list={list}
+            onClose={() => setDeleteListOpen(false)}
+            open={deleteListOpen}
+          />
+        </>
+      ) : null}
 
       {needsAuth ? (
         <StatusMessage tone="notice">
@@ -158,16 +184,8 @@ export default function ListDetailPage() {
 
       {!loading && list ? (
         <>
-          <section className="collection-places" aria-labelledby="list-places-title">
-            <div className="library-section__header library-section__header--inline">
-              <div>
-                <p className="eyebrow">الأماكن</p>
-                <h2 id="list-places-title">أماكن القائمة</h2>
-              </div>
-              <Button onClick={() => setAddPlaceOpen(true)} type="button" variant="secondary">
-                أضف مكان
-              </Button>
-            </div>
+          <section className="collection-places collection-places--compact" aria-labelledby="list-places-title">
+            <h2 className="sr-only" id="list-places-title">الأماكن</h2>
 
             {list.items.length === 0 ? (
               <EmptyState
@@ -180,37 +198,23 @@ export default function ListDetailPage() {
                 title="لا توجد أماكن"
               />
             ) : (
-              <div className="collection-artifacts" aria-label="أماكن القائمة">
+              <div className="collection-list" aria-label="أماكن القائمة">
                 {list.items.map((item) => (
-                  <div className="stack" key={item.id}>
-                    <PlaceCard href={`/places/${item.place.id}`} place={item.place} />
-                    <div className="actions">
-                      <Button
-                        aria-label={`إخراج ${item.place.name} من القائمة`}
-                        onClick={() => void handleRemovePlace(item.place.id)}
-                        type="button"
-                        variant="secondary"
-                      >
-                        إخراج
-                      </Button>
-                    </div>
-                  </div>
+                  <article className="collection-list__row" key={item.id}>
+                    <PlaceCard compact href={`/places/${item.place.id}`} place={item.place} />
+                    <Button
+                      aria-label={`إزالة ${item.place.name} من القائمة`}
+                      className="collection-list__remove list-action list-action--danger"
+                      onClick={() => void handleRemovePlace(item.place.id)}
+                      type="button"
+                      variant="icon"
+                    >
+                      <DeleteIcon />
+                    </Button>
+                  </article>
                 ))}
               </div>
             )}
-          </section>
-
-          <section className="list-settings" aria-labelledby="list-settings-title">
-            <div className="library-section__header">
-              <p className="eyebrow">الخصوصية</p>
-              <h2 id="list-settings-title">ظهور القائمة</h2>
-            </div>
-            <VisibilitySelector
-              name="detail-visibility"
-              onChange={(value) => void handleVisibilityChange(value)}
-              value={list.visibility}
-            />
-            {visibilityMessage ? <StatusMessage tone="success">{visibilityMessage}</StatusMessage> : null}
           </section>
 
           <AddPlaceDialog
@@ -228,21 +232,9 @@ export default function ListDetailPage() {
 }
 
 function visibilityLabel(visibility: "public" | "private"): string {
-  return visibility === "public" ? "عام" : "خاص";
+  return visibility === "public" ? "عامة" : "خاصة";
 }
 
 function placeCountLabel(count: number): string {
-  if (count === 0) {
-    return "لا توجد أماكن";
-  }
-
-  if (count === 1) {
-    return "مكان واحد";
-  }
-
-  if (count === 2) {
-    return "مكانان";
-  }
-
-  return `${count} أماكن`;
+  return `${count} مكان`;
 }

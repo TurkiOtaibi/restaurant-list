@@ -1,30 +1,42 @@
 "use client";
 
-import { FormEvent, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 import { BottomSheet, Button, Modal, StatusMessage, TextInput } from "@/components/ui";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { ApiError, UserList, apiRequest } from "@/lib/api";
+import { ApiError, ListDetail, UserList, apiRequest } from "@/lib/api";
 
 import { VisibilitySelector } from "./VisibilitySelector";
 
-type CreateListDialogProps = {
+type EditListDialogProps = {
+  list: ListDetail;
   onClose: () => void;
+  onUpdated: (list: ListDetail) => void;
   open: boolean;
 };
 
-export function CreateListDialog({ onClose, open }: CreateListDialogProps) {
-  const router = useRouter();
+export function EditListDialog({ list, onClose, onUpdated, open }: EditListDialogProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const Dialog = isDesktop ? Modal : BottomSheet;
   const nameRef = useRef<HTMLInputElement>(null);
-  const [name, setName] = useState("");
-  const [visibility, setVisibility] = useState<UserList["visibility"]>("private");
+  const [name, setName] = useState(list.name);
+  const [visibility, setVisibility] = useState<UserList["visibility"]>(list.visibility);
   const [nameError, setNameError] = useState("");
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const hasUnsavedChanges = Boolean(name.trim()) || visibility !== "private";
+  const trimmedName = name.trim();
+  const hasUnsavedChanges = trimmedName !== list.name || visibility !== list.visibility;
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    setName(list.name);
+    setVisibility(list.visibility);
+    setNameError("");
+    setFormError("");
+  }, [list.name, list.visibility, open]);
 
   function showNameRequired(shouldFocus = true) {
     setNameError("الاسم مطلوب.");
@@ -37,32 +49,39 @@ export function CreateListDialog({ onClose, open }: CreateListDialogProps) {
     setNameError("");
     setFormError("");
 
-    if (!name.trim()) {
+    if (!trimmedName) {
       showNameRequired();
       return;
     }
 
     setSubmitting(true);
     try {
-      const response = await apiRequest<UserList>("/lists", {
-        method: "POST",
-        body: JSON.stringify({ name: name.trim() })
-      });
+      let nextList = list;
 
-      if (visibility === "public") {
-        await apiRequest<UserList>(`/lists/${response.id}/visibility`, {
+      if (trimmedName !== list.name) {
+        const renamed = await apiRequest<UserList>(`/lists/${list.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ name: trimmedName })
+        });
+        nextList = { ...nextList, name: renamed.name, updatedAt: renamed.updatedAt };
+      }
+
+      if (visibility !== list.visibility) {
+        const updatedVisibility = await apiRequest<UserList>(`/lists/${list.id}/visibility`, {
           method: "PATCH",
           body: JSON.stringify({ visibility })
         });
+        nextList = {
+          ...nextList,
+          updatedAt: updatedVisibility.updatedAt,
+          visibility: updatedVisibility.visibility
+        };
       }
 
-      router.replace(`/lists/${response.id}`);
+      onUpdated(nextList);
+      onClose();
     } catch (caught) {
-      setFormError(
-        caught instanceof ApiError
-          ? caught.message
-          : "تعذر الحفظ."
-      );
+      setFormError(caught instanceof ApiError ? caught.message : "تعذر الحفظ.");
     } finally {
       setSubmitting(false);
     }
@@ -77,20 +96,20 @@ export function CreateListDialog({ onClose, open }: CreateListDialogProps) {
     <Dialog
       confirmCloseMessage="هناك تغييرات غير محفوظة. إغلاق؟"
       hasUnsavedChanges={hasUnsavedChanges && !submitting}
-      initialFocusSelector="#list-name"
-      labelledBy="create-list-title"
+      initialFocusSelector="#edit-list-name"
+      labelledBy="edit-list-title"
       onClose={onClose}
       open={open}
-      title="أضف قائمة"
+      title="تعديل القائمة"
     >
       <form className="form-surface__form" noValidate onSubmit={handleSubmit}>
         <TextInput
           error={nameError}
-          id="list-name"
+          id="edit-list-name"
           label="اسم القائمة"
           name="name"
           onBlur={() => {
-            if (!name.trim()) {
+            if (!trimmedName) {
               showNameRequired(false);
             }
           }}
@@ -102,28 +121,10 @@ export function CreateListDialog({ onClose, open }: CreateListDialogProps) {
           ref={nameRef}
           value={name}
         />
-        <VisibilitySelector name="list-visibility" onChange={setVisibility} value={visibility} />
+        <VisibilitySelector name="edit-list-visibility" onChange={setVisibility} value={visibility} />
         {formError ? <StatusMessage tone="error">{formError}</StatusMessage> : null}
         <div className="form-surface__footer">
-          <Button
-            className="ds-button--full"
-            isLoading={submitting}
-            onPointerDown={(event) => {
-              if (!name.trim()) {
-                event.preventDefault();
-                showNameRequired();
-              }
-            }}
-            onClick={() => {
-              if (!name.trim()) {
-                showNameRequired();
-                return;
-              }
-
-              void submitList();
-            }}
-            type="button"
-          >
+          <Button className="ds-button--full" isLoading={submitting} type="submit">
             حفظ
           </Button>
           <Button onClick={onClose} type="button" variant="secondary">

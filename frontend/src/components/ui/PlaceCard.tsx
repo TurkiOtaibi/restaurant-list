@@ -1,29 +1,32 @@
 import type { Place } from "@/lib/api";
 import { formatAverageRating } from "@/lib/format";
 import { placeSubtypeLabel, placeTypeLabel } from "@/features/places/taxonomy";
+import { cx } from "@/lib/ui";
 
 import { Badge } from "./Badge";
 import { BidiText } from "./BidiText";
 import { Card, CardLink } from "./Card";
 
 type PlaceCardProps = {
+  compact?: boolean;
   href?: string;
   place: Place;
 };
 
-export function PlaceCard({ href, place }: PlaceCardProps) {
+export function PlaceCard({ compact = false, href, place }: PlaceCardProps) {
   const content = <PlaceCardContent place={place} />;
+  const className = cx("ds-place-card", compact && "ds-place-card--compact");
 
   if (href) {
     return (
-      <CardLink className="ds-place-card" href={href}>
+      <CardLink className={className} href={href}>
         {content}
       </CardLink>
     );
   }
 
   return (
-    <Card className="ds-place-card">
+    <Card className={className}>
       {content}
     </Card>
   );

@@ -11,25 +11,22 @@ type VisibilitySelectorProps = {
 };
 
 const options: Array<{
-  helper: string;
   label: string;
   value: VisibilityValue;
 }> = [
   {
-    helper: "لا تظهر إلا لك.",
-    label: "خاص",
+    label: "خاصة",
     value: "private"
   },
   {
-    helper: "يمكن للمستخدمين المسجلين رؤيتها.",
-    label: "عام",
+    label: "عامة",
     value: "public"
   }
 ];
 
 export function VisibilitySelector({
   disabled = false,
-  legend = "ظهور القائمة",
+  legend = "الخصوصية",
   name,
   onChange,
   value
@@ -49,7 +46,6 @@ export function VisibilitySelector({
               value={option.value}
             />
             <span className="ds-visibility__label">{option.label}</span>
-            <span className="muted">{option.helper}</span>
           </label>
         ))}
       </div>

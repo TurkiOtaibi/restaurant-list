@@ -91,3 +91,34 @@ export function CloseIcon(props: IconProps) {
 export function ClearIcon(props: IconProps) {
   return <CloseIcon {...props} />;
 }
+
+export function AddIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </BaseIcon>
+  );
+}
+
+export function EditIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M4 20h4" />
+      <path d="M14.5 5.5l4 4" />
+      <path d="M17 3l4 4L8 20H4v-4L17 3Z" />
+    </BaseIcon>
+  );
+}
+
+export function DeleteIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M5 7h14" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M7 7l1 13h8l1-13" />
+      <path d="M9 7V4h6v3" />
+    </BaseIcon>
+  );
+}
