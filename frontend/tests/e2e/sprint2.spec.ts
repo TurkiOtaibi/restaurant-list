@@ -1,12 +1,13 @@
 import { expect, Page, Route, test } from "@playwright/test";
 
-const apiPattern = "http://localhost:8000/**";
+const apiPattern = "**/api/v1/**";
 const timestamp = "2026-06-19T00:00:00.000Z";
 
 type Place = {
   id: string;
   name: string;
-  type: "restaurant" | "cafe";
+  type: "restaurant" | "cafe" | "ice_cream";
+  subtype: string | null;
   description: string | null;
   createdByUserId: string;
   createdAt: string;
@@ -49,13 +50,14 @@ type MockState = {
 function makePlace(
   id: string,
   name: string,
-  type: "restaurant" | "cafe" = "restaurant",
+  type: Place["type"] = "restaurant",
   currentUserRating: number | null = null
 ): Place {
   return {
     id,
     name,
     type,
+    subtype: type === "restaurant" ? "burger" : type === "cafe" ? "coffee" : null,
     description: null,
     createdByUserId: "user-1",
     createdAt: timestamp,

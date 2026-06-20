@@ -1,4 +1,5 @@
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
+from typing import Any
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException
@@ -14,6 +15,17 @@ from app.api.places import router as places_router
 from app.api.profile import router as profile_router
 from app.api.ratings import router as ratings_router
 from app.core.config import get_settings
+
+
+def serializable_validation_errors(errors: Sequence[Any]) -> list[dict[str, Any]]:
+    normalized_errors: list[dict[str, Any]] = []
+    for error in errors:
+        normalized_error = dict(error) if isinstance(error, dict) else {"error": str(error)}
+        ctx = normalized_error.get("ctx")
+        if isinstance(ctx, dict):
+            normalized_error["ctx"] = {key: str(value) for key, value in ctx.items()}
+        normalized_errors.append(normalized_error)
+    return normalized_errors
 
 
 def create_app() -> FastAPI:
@@ -72,7 +84,7 @@ def create_app() -> FastAPI:
                 "detail": {
                     "code": "VALIDATION_ERROR",
                     "message": "Request validation failed.",
-                    "errors": exc.errors(),
+                    "errors": serializable_validation_errors(exc.errors()),
                 }
             },
         )

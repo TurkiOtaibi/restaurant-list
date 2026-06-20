@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import conflict
 from app.modules.lists.models import ListItem, UserList
 from app.modules.places.models import Place
-from app.modules.places.schemas import PlaceCreateRequest, PlaceResponse, PlaceType
+from app.modules.places.schemas import PlaceCreateRequest, PlaceResponse, PlaceSubtype, PlaceType
 from app.modules.ratings.models import Rating
 
 
@@ -45,6 +45,7 @@ def _place_response(
         id=place.id,
         name=place.name,
         type=cast(PlaceType, place.type),
+        subtype=cast(PlaceSubtype | None, place.subtype),
         description=place.description,
         created_by_user_id=place.created_by_user_id,
         created_at=place.created_at,
@@ -95,11 +96,16 @@ async def list_place_summaries(
     db: AsyncSession,
     current_user_id: str,
     query: str | None = None,
+    place_type: PlaceType | None = None,
     limit: int = 100,
     offset: int = 0,
 ) -> PlaceListResult:
     statement = _place_summary_statement(current_user_id)
     count_statement = select(func.count(Place.id))
+    if place_type is not None:
+        statement = statement.where(Place.type == place_type)
+        count_statement = count_statement.where(Place.type == place_type)
+
     normalized_query = _normalize_search_query(query)
     if normalized_query is not None:
         search_filter = Place.normalized_name.like(
@@ -216,6 +222,7 @@ async def create_place_for_user(
         name=name,
         normalized_name=normalized_name,
         type=payload.type,
+        subtype=payload.subtype,
         description=payload.description.strip() if payload.description else None,
         created_by_user_id=user_id,
     )

@@ -3,13 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { ArchiveIcon, CafeIcon, RestaurantIcon, ShelfIcon, TasteMarkIcon } from "./ui/Icon";
+import { ArchiveIcon, RestaurantIcon, ShelfIcon, TasteMarkIcon } from "./ui/Icon";
 
 const links = [
   { href: "/lists", icon: ShelfIcon, label: "قوائمي" },
-  { href: "/restaurants", icon: RestaurantIcon, label: "المطاعم" },
-  { href: "/cafes", icon: CafeIcon, label: "المقاهي" },
-  { href: "/profile", icon: ArchiveIcon, label: "ملفي" }
+  { href: "/places", icon: RestaurantIcon, label: "الأماكن" },
+  { href: "/profile", icon: ArchiveIcon, label: "صفحتي" }
 ];
 
 export function AppNav() {
@@ -25,9 +24,9 @@ export function AppNav() {
       <div className="app-nav__brand">
         <Link className="app-nav__brand-link" href="/">
           <TasteMarkIcon className="app-nav__brand-mark" />
-          <span>ذوق</span>
+          <span>سجل</span>
         </Link>
-        <span className="app-nav__tagline">مكتبة ذوقك الشخصية</span>
+        <span className="app-nav__tagline">سجل الأماكن</span>
       </div>
       <div className="app-nav__links">
         {links.map((link) => {
@@ -54,12 +53,8 @@ function isActive(pathname: string, href: string): boolean {
     return pathname === "/lists" || pathname.startsWith("/lists/");
   }
 
-  if (href === "/restaurants") {
-    return pathname === "/restaurants";
-  }
-
-  if (href === "/cafes") {
-    return pathname === "/cafes";
+  if (href === "/places") {
+    return pathname === "/places" || pathname.startsWith("/places/");
   }
 
   return pathname === href;

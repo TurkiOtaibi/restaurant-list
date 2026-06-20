@@ -1,5 +1,5 @@
-import { PlaceLibraryPage } from "@/features/places/PlaceLibraryPage";
+import { redirect } from "next/navigation";
 
 export default function RestaurantsPage() {
-  return <PlaceLibraryPage placeType="restaurant" />;
+  redirect("/places?type=restaurant");
 }

@@ -65,12 +65,10 @@ export default function RegisterPage() {
         <div className="auth-card__header">
           <div className="auth-brand" aria-hidden="true">
             <TasteMarkIcon />
-            <span>ذوق</span>
+            <span>سجل</span>
           </div>
           <h1 id="register-title">إنشاء حساب</h1>
-          <p className="muted">
-            ابدأ مكتبة شخصية للأماكن التي تريد تجربتها وتذكرها بهدوء.
-          </p>
+          <p className="muted">أنشئ حسابًا لحفظ قوائمك وأماكنك.</p>
         </div>
 
         <form className="auth-form" noValidate onSubmit={handleSubmit}>

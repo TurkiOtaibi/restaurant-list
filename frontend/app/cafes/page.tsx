@@ -1,5 +1,5 @@
-import { PlaceLibraryPage } from "@/features/places/PlaceLibraryPage";
+import { redirect } from "next/navigation";
 
 export default function CafesPage() {
-  return <PlaceLibraryPage placeType="cafe" />;
+  redirect("/places?type=cafe");
 }

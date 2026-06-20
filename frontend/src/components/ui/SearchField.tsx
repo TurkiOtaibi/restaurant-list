@@ -20,7 +20,7 @@ export function SearchField({
   label,
   onClear,
   resultCount,
-  scopeLabel = "البحث باسم المكان فقط.",
+  scopeLabel = "بحث باسم المكان فقط.",
   value,
   ...props
 }: SearchFieldProps) {

@@ -2,8 +2,8 @@
 
 test("renders the product entry shell", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "مكتبة ذوقك الشخصية" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "ذوق" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "سجل الأماكن" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "سجل" })).toBeVisible();
 });
 
 test("frontend health endpoint returns ok", async ({ request }) => {

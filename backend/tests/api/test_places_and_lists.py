@@ -21,10 +21,20 @@ async def _create_place(
     *,
     name: str = "Nara Cafe",
     place_type: str = "cafe",
+    subtype: str | None = None,
 ) -> dict[str, Any]:
+    if subtype is None and place_type == "cafe":
+        subtype = "coffee"
+    elif subtype is None and place_type == "restaurant":
+        subtype = "other"
+
+    payload: dict[str, Any] = {"name": name, "type": place_type}
+    if subtype is not None:
+        payload["subtype"] = subtype
+
     response = await client.post(
         "/api/v1/places",
-        json={"name": name, "type": place_type},
+        json=payload,
         headers=auth_header(token),
     )
     assert response.status_code == 201
@@ -60,10 +70,11 @@ async def test_create_place_and_reject_duplicate_name(client: AsyncClient) -> No
 
     assert place["name"] == "Nara Cafe"
     assert place["type"] == "cafe"
+    assert place["subtype"] == "coffee"
 
     duplicate = await client.post(
         "/api/v1/places",
-        json={"name": "nara cafe", "type": "restaurant"},
+        json={"name": "nara cafe", "type": "restaurant", "subtype": "burger"},
         headers=auth_header(token),
     )
 
@@ -77,12 +88,12 @@ async def test_concurrent_normalized_duplicate_place_creation(client: AsyncClien
     first, second = await asyncio.gather(
         client.post(
             "/api/v1/places",
-            json={"name": "Nara Cafe", "type": "cafe"},
+            json={"name": "Nara Cafe", "type": "cafe", "subtype": "coffee"},
             headers=auth_header(token),
         ),
         client.post(
             "/api/v1/places",
-            json={"name": "  nara   cafe  ", "type": "restaurant"},
+            json={"name": "  nara   cafe  ", "type": "restaurant", "subtype": "burger"},
             headers=auth_header(token),
         ),
     )
@@ -250,3 +261,55 @@ async def test_delete_place_from_list(client: AsyncClient) -> None:
     assert add_response.status_code == 201
     assert delete_response.status_code == 200
     assert delete_response.json() == {"deleted": True}
+
+
+async def test_place_taxonomy_validation_and_filtering(client: AsyncClient) -> None:
+    token = await _token(client)
+    restaurant = await _create_place(
+        client,
+        token,
+        name="Burger House",
+        place_type="restaurant",
+        subtype="burger",
+    )
+    cafe = await _create_place(client, token, name="Tea Room", place_type="cafe", subtype="tea")
+    ice_cream = await _create_place(
+        client,
+        token,
+        name="Cold Scoop",
+        place_type="ice_cream",
+        subtype=None,
+    )
+
+    missing_restaurant_subtype = await client.post(
+        "/api/v1/places",
+        json={"name": "No Subtype Grill", "type": "restaurant"},
+        headers=auth_header(token),
+    )
+    missing_cafe_subtype = await client.post(
+        "/api/v1/places",
+        json={"name": "No Subtype Cafe", "type": "cafe"},
+        headers=auth_header(token),
+    )
+    invalid_ice_cream_subtype = await client.post(
+        "/api/v1/places",
+        json={"name": "Subtype Ice Cream", "type": "ice_cream", "subtype": "coffee"},
+        headers=auth_header(token),
+    )
+    restaurant_filter = await client.get(
+        "/api/v1/places?type=restaurant",
+        headers=auth_header(token),
+    )
+    ice_cream_filter = await client.get(
+        "/api/v1/places?type=ice_cream",
+        headers=auth_header(token),
+    )
+
+    assert restaurant["subtype"] == "burger"
+    assert cafe["subtype"] == "tea"
+    assert ice_cream["subtype"] is None
+    assert missing_restaurant_subtype.status_code == 422
+    assert missing_cafe_subtype.status_code == 422
+    assert invalid_ice_cream_subtype.status_code == 422
+    assert {place["id"] for place in collection_data(restaurant_filter)} == {restaurant["id"]}
+    assert {place["id"] for place in collection_data(ice_cream_filter)} == {ice_cream["id"]}

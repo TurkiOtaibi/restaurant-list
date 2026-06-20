@@ -66,13 +66,11 @@ export default function ListsPage() {
     <main className="content library-page">
       <section className="library-hero" aria-labelledby="my-lists-title">
         <div className="library-header__copy">
-          <p className="eyebrow">مكتبة ذوقك</p>
+          <p className="eyebrow">سجل</p>
           <h1 id="my-lists-title">قوائمي</h1>
-          <p className="muted">
-            رفوف شخصية للأماكن التي بقيت في بالك، مرتبة كاختيارات صغيرة لا كمهام.
-          </p>
+          <p className="muted">قوائم الأماكن المحفوظة.</p>
           {!loading && !needsAuth && !error && lists.length > 0 ? (
-            <div className="library-summary-strip" aria-label="ملخص مكتبة الذوق">
+            <div className="library-summary-strip" aria-label="ملخص القوائم">
               <span>{lists.length} قوائم</span>
               <span>{totalPlaces} أماكن محفوظة</span>
               <span>{privateCount} خاصة</span>
@@ -111,16 +109,16 @@ export default function ListsPage() {
               أضف أول قائمة
             </Link>
           }
-          body="ابدأ برف واحد يحمل مزاجًا واضحًا: قهوة هادئة، عشاء قريب، أو أماكن لوقت لاحق."
-          title="مكتبتك جاهزة لأول رف"
+          body="أنشئ قائمة وأضف الأماكن."
+          title="لا توجد قوائم"
         />
       ) : null}
 
       {!loading && !needsAuth && !error && lists.length > 0 ? (
-        <section className="library-section library-section--quiet" aria-labelledby="library-shelves-title">
+        <section className="library-section library-section--quiet" aria-labelledby="library-lists-title">
           <div className="library-section__header">
-            <p className="eyebrow">رفوف محفوظة</p>
-            <h2 id="library-shelves-title">اختياراتك التي تنتظر لحظتها</h2>
+            <p className="eyebrow">قوائم</p>
+            <h2 id="library-lists-title">قوائمك</h2>
           </div>
           <div aria-label="قوائمي" className="library-grid">
             {lists.map((list) => (
@@ -139,11 +137,9 @@ export default function ListsPage() {
       {!loading && !needsAuth && !error ? (
         <section className="public-lists-entry" aria-labelledby="public-lists-entry-title">
           <div>
-            <p className="eyebrow">سطح ثانوي</p>
+            <p className="eyebrow">عام</p>
             <h2 id="public-lists-entry-title">القوائم العامة</h2>
-            <p className="muted">
-              افتح رفوفًا عامة متاحة للمستخدمين المسجلين فقط، كمسار قراءة ثانوي داخل مكتبتك.
-            </p>
+            <p className="muted">قوائم عامة للمستخدمين المسجلين.</p>
           </div>
           <Link className="ds-button ds-button--secondary" href="/lists/public">
             افتح القوائم العامة

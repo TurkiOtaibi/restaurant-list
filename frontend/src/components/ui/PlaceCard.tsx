@@ -1,47 +1,53 @@
-import type { ReactNode } from "react";
-
 import type { Place } from "@/lib/api";
 import { formatAverageRating } from "@/lib/format";
+import { placeSubtypeLabel, placeTypeLabel } from "@/features/places/taxonomy";
 
 import { Badge } from "./Badge";
 import { BidiText } from "./BidiText";
-import { Card } from "./Card";
+import { Card, CardLink } from "./Card";
 
 type PlaceCardProps = {
-  actions?: ReactNode;
+  href?: string;
   place: Place;
 };
 
-export function PlaceCard({ actions, place }: PlaceCardProps) {
-  const ratingText = `${formatAverageRating(place.averageRating)} (${place.ratingCount})`;
-  const typeLabel = place.type === "restaurant" ? "مطعم" : "مقهى";
-  const triedLabel = "جربته";
-  const accessibleName = `${place.name}، ${typeLabel}، متوسط التقييم ${ratingText}${
-    place.currentUserTried ? `، ${triedLabel}` : ""
-  }`;
+export function PlaceCard({ href, place }: PlaceCardProps) {
+  const content = <PlaceCardContent place={place} />;
+
+  if (href) {
+    return (
+      <CardLink className="ds-place-card" href={href}>
+        {content}
+      </CardLink>
+    );
+  }
 
   return (
-    <Card aria-label={accessibleName} className="ds-place-card">
-      <span className="ds-place-card__pin" aria-hidden="true" />
+    <Card className="ds-place-card">
+      {content}
+    </Card>
+  );
+}
+
+function PlaceCardContent({ place }: { place: Place }) {
+  const subtype = placeSubtypeLabel(place.subtype);
+
+  return (
+    <>
       <div className="ds-place-card__main">
         <h2 className="ds-place-card__title">
-          <BidiText>{place.name}</BidiText>{" "}
-          {place.currentUserTried ? <Badge>{triedLabel}</Badge> : null}
+          <BidiText>{place.name}</BidiText>
         </h2>
         <p className="ds-place-card__meta">
-          <span className="ds-place-card__type">{typeLabel}</span>
-          <Badge variant="rating">{ratingText}</Badge>
-          {place.currentUserRating ? (
-            <Badge variant="rating">تقييمك {place.currentUserRating}/10</Badge>
-          ) : null}
+          <span>{placeTypeLabel(place.type)}</span>
+          {subtype ? <span>{subtype}</span> : null}
         </p>
       </div>
-      {place.description ? (
-        <p className="ds-place-card__note">
-          <BidiText>{place.description}</BidiText>
-        </p>
+      {place.averageRating !== null && place.ratingCount > 0 ? (
+        <Badge variant="rating">
+          {formatAverageRating(place.averageRating)} · {place.ratingCount} تقييم
+        </Badge>
       ) : null}
-      {actions ? <div className="actions">{actions}</div> : null}
-    </Card>
+    </>
   );
 }

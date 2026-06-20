@@ -4,9 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { CreatePlaceDialog } from "@/features/places/CreatePlaceDialog";
+import type { PlaceType } from "@/features/places/taxonomy";
 import { getAccessToken } from "@/lib/api";
-
-type PlaceType = "restaurant" | "cafe";
 
 export default function CreatePlacePage() {
   const router = useRouter();
@@ -23,7 +22,7 @@ export default function CreatePlacePage() {
   }, [router]);
 
   function closeDialog(type: PlaceType) {
-    router.push(type === "cafe" ? "/cafes?focus=create-place" : "/restaurants?focus=create-place");
+    router.push(`/places?type=${type}&focus=create-place`);
   }
 
   return (
@@ -42,5 +41,10 @@ function initialTypeFromUrl(): PlaceType {
     return "restaurant";
   }
 
-  return new URLSearchParams(window.location.search).get("type") === "cafe" ? "cafe" : "restaurant";
+  const type = new URLSearchParams(window.location.search).get("type");
+  if (type === "cafe" || type === "ice_cream") {
+    return type;
+  }
+
+  return "restaurant";
 }

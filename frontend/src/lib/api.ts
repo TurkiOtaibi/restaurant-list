@@ -20,7 +20,25 @@ export type RefreshResponse = {
 export type Place = {
   id: string;
   name: string;
-  type: "restaurant" | "cafe";
+  type: "restaurant" | "cafe" | "ice_cream";
+  subtype:
+    | "burger"
+    | "italian"
+    | "american"
+    | "steak"
+    | "grill"
+    | "shawarma"
+    | "saudi"
+    | "gulf"
+    | "indian"
+    | "asian"
+    | "seafood"
+    | "breakfast"
+    | "healthy"
+    | "other"
+    | "coffee"
+    | "tea"
+    | null;
   description: string | null;
   createdByUserId: string;
   createdAt: string;

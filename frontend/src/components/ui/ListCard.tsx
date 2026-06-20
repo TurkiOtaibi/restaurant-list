@@ -35,7 +35,7 @@ export function ListCard({
     <>
       <span className="ds-list-card__spine" aria-hidden="true" />
       <div className="ds-list-card__identity">
-        <p className="ds-list-card__kicker">رف محفوظ</p>
+        <p className="ds-list-card__kicker">قائمة</p>
         <h2 className="ds-list-card__title">
           {href && actions ? (
             <Link aria-label={accessibleName} className="ds-list-card__link" href={href}>
@@ -46,7 +46,7 @@ export function ListCard({
           )}
         </h2>
         <p className="ds-list-card__hint">
-          {placeCount === 0 ? "جاهز لأول مكان يستحق التذكر" : "أماكن اخترتها لتعود إليها"}
+          {placeCount === 0 ? "لا توجد أماكن" : "أماكن محفوظة"}
         </p>
       </div>
 

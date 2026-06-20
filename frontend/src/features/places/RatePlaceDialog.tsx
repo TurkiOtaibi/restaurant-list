@@ -113,7 +113,7 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
       setRating(response.rating);
       setInitialRating(response.rating);
       setNotes("");
-      setSuccess("حفظنا تقييمك. صار المكان مجربًا في ذوقك.");
+      setSuccess("تم حفظ التقييم.");
     } catch (caught) {
       setFormError(caught instanceof ApiError ? caught.message : "تعذر حفظ التقييم.");
     } finally {
@@ -129,7 +129,7 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
       labelledBy="rate-place-title"
       onClose={() => onClose(place)}
       open={open}
-      title="قيّم تجربتك"
+      title="قيّم المكان"
     >
       <form className="rate-place-dialog form-surface__form" noValidate onSubmit={handleSubmit}>
         {needsAuth ? (
@@ -140,19 +140,19 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
 
         {loading ? (
           <div className="rate-place-dialog__loading" aria-live="polite" role="status">
-            جاري تحميل علاقة المكان
+            جاري تحميل المكان
           </div>
         ) : null}
 
         {place ? (
           <>
             <div className="rate-place-dialog__place">
-              <p className="eyebrow">علاقتك بالمكان</p>
+              <p className="eyebrow">تقييم المكان</p>
               <h2>
                 <BidiText>{place.name}</BidiText>
               </h2>
               <div className="rate-place-dialog__meta">
-                {place.currentUserTried ? <Badge>جربته</Badge> : <Badge variant="rating">تجربة جديدة</Badge>}
+                {place.currentUserTried ? <Badge>جربته</Badge> : null}
                 {place.currentUserRating ? (
                   <Badge variant="rating">تقييمك الحالي {place.currentUserRating}/10</Badge>
                 ) : null}
@@ -161,7 +161,7 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
             </div>
 
             <RatingControl
-              consequenceMessage="بعد الحفظ سيظهر المكان كمجرب ويخرج من رفوفك الحالية. يمكنك إضافته لاحقًا دون إنشاء تقييم جديد."
+              consequenceMessage="سيظهر المكان كمجرب ويخرج من قوائمك الحالية."
               error={ratingError}
               id="rating-control"
               name="place-rating"
@@ -175,7 +175,7 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
             />
 
             <TextArea
-              helper="ملاحظة خاصة لك فقط، ولا تظهر في القوائم العامة أو لأي مستخدم آخر."
+              helper="ملاحظة خاصة لا تظهر للآخرين."
               id="rating-notes"
               label="ملاحظتك الخاصة"
               name="notes"
@@ -194,7 +194,7 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
 
         <div className="form-surface__footer">
           <Button className="ds-button--full" isLoading={submitting} type="submit">
-            {place?.currentUserRating ? "حدّث التقييم" : "احفظ التقييم"}
+            {place?.currentUserRating ? "تعديل التقييم" : "حفظ"}
           </Button>
           <Button onClick={() => onClose(place)} type="button" variant="secondary">
             العودة لتفاصيل المكان

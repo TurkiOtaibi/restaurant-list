@@ -1,27 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   Badge,
   BidiText,
+  BottomSheet,
+  Button,
   ButtonLink,
   Chip,
   EmptyState,
   LoadingState,
+  Modal,
   StatusMessage
 } from "@/components/ui";
-import { ApiError, Place, apiRequest, clearTokens, getAccessToken } from "@/lib/api";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { ApiError, Place, UserList, apiCollection, apiRequest, clearTokens, getAccessToken } from "@/lib/api";
 import { formatAverageRating } from "@/lib/format";
-import { cx } from "@/lib/ui";
+
+import { placeSubtypeLabel, placeTypeLabel } from "./taxonomy";
 
 type PlaceDetailPageProps = {
   placeId: string;
-};
-
-type PlaceRelationship = {
-  listNames: string[];
 };
 
 export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
@@ -29,6 +30,7 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [needsAuth, setNeedsAuth] = useState(false);
+  const [addToListOpen, setAddToListOpen] = useState(false);
 
   const loadPlace = useCallback(async () => {
     if (!getAccessToken()) {
@@ -41,14 +43,13 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
     setError("");
     try {
       const placeResponse = await apiRequest<Place>(`/places/${placeId}`);
-
       setPlace(placeResponse);
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 401) {
         clearTokens();
         setNeedsAuth(true);
       } else {
-        setError(caught instanceof ApiError ? caught.message : "تعذر تحميل علاقة المكان.");
+        setError(caught instanceof ApiError ? caught.message : "تعذر تحميل المكان.");
       }
     } finally {
       setLoading(false);
@@ -59,13 +60,11 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
     void loadPlace();
   }, [loadPlace]);
 
-  const relationship = useMemo(() => buildRelationship(place), [place]);
-
   if (needsAuth) {
     return (
       <main className="content place-detail-page">
         <StatusMessage tone="notice">
-          سجّل الدخول لعرض علاقتك بهذا المكان. <Link href="/login">تسجيل الدخول</Link>
+          سجل الدخول لعرض التفاصيل. <Link href="/login">تسجيل الدخول</Link>
         </StatusMessage>
       </main>
     );
@@ -74,7 +73,7 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
   if (loading) {
     return (
       <main className="content place-detail-page">
-        <LoadingState count={4} delayMs={0} label="جاري تحميل علاقة المكان" />
+        <LoadingState count={4} delayMs={0} label="جاري تحميل المكان" />
       </main>
     );
   }
@@ -83,8 +82,8 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
     return (
       <main className="content place-detail-page">
         <StatusMessage tone="error">{error}</StatusMessage>
-        <ButtonLink href="/restaurants" variant="secondary">
-          العودة للمطاعم
+        <ButtonLink href="/places" variant="secondary">
+          العودة للأماكن
         </ButtonLink>
       </main>
     );
@@ -94,176 +93,225 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
     return (
       <main className="content place-detail-page">
         <EmptyState
-          action={<ButtonLink href="/restaurants">العودة للمطاعم</ButtonLink>}
-          body="لم نجد هذا المكان في مكتبة الأماكن."
+          action={<ButtonLink href="/places">العودة للأماكن</ButtonLink>}
+          body="لم نجد هذا المكان."
           title="المكان غير موجود"
         />
       </main>
     );
   }
 
-  const signals = personalContextSignals(place, relationship);
-  const headline = relationshipHeadlineFor(place, relationship);
-  const hasRelationship =
-    relationship.listNames.length > 0 || Boolean(place.currentUserRating) || place.currentUserTried;
-  const backHref = place.type === "cafe" ? "/cafes" : "/restaurants";
-  const backLabel = place.type === "cafe" ? "العودة للمقاهي" : "العودة للمطاعم";
-  const typeLabel = place.type === "cafe" ? "مقهى" : "مطعم";
+  const subtype = placeSubtypeLabel(place.subtype);
 
   return (
     <main className="content place-detail-page">
-      <section
-        aria-labelledby="place-detail-title"
-        className={cx("place-detail-hero", hasRelationship && "place-detail-hero--known")}
-      >
-        <span aria-hidden="true" className="place-detail-hero__spine" />
+      <section aria-labelledby="place-detail-title" className="place-detail-hero">
         <div className="place-detail-hero__content">
-          <p className="eyebrow">علاقتك بالمكان</p>
-          <div className="place-detail-hero__relationship">
-            <span>{headline}</span>
-          </div>
           <h1 id="place-detail-title">
             <BidiText>{place.name}</BidiText>
           </h1>
-          <p className="muted">
-            {hasRelationship
-              ? "هذه الصفحة تحفظ ما يعنيه المكان لك قبل أي وصف آخر."
-              : "ابدأ العلاقة بتقييم التجربة أو حفظ المكان في رف من رفوف ذوقك."}
-          </p>
-          <div className="place-detail-hero__chips" aria-label="ملخص علاقتك بالمكان">
-            <Chip>{typeLabel}</Chip>
-            {place.currentUserTried ? <Badge>جربته</Badge> : <Chip>لم تجربه بعد</Chip>}
-            {place.currentUserRating ? (
-              <Badge variant="rating">تقييمك {place.currentUserRating}/10</Badge>
-            ) : (
-              <Chip>لا يوجد تقييم شخصي</Chip>
-            )}
-            {relationship.listNames.length > 0 ? (
-              <Chip>{listRelationshipLabel(relationship.listNames.length)}</Chip>
-            ) : (
-              <Chip>ليس في رفوفك الآن</Chip>
-            )}
+          <div className="place-detail-hero__chips" aria-label="نوع المكان">
+            <Chip>{placeTypeLabel(place.type)}</Chip>
+            {subtype ? <Chip>{subtype}</Chip> : null}
           </div>
           <div className="actions place-detail-hero__actions">
-            <ButtonLink href={`/places/${place.id}/rate`}>
-              {place.currentUserRating ? "حدّث تقييمك" : "قيّم تجربتك"}
-            </ButtonLink>
-            <ButtonLink href={backHref} variant="secondary">
-              {backLabel}
+            <Button onClick={() => setAddToListOpen(true)} type="button">
+              أضف إلى قائمة
+            </Button>
+            <ButtonLink href={`/places/${place.id}/rate`} variant="secondary">
+              {place.currentUserRating ? "تعديل التقييم" : "قيّم المكان"}
             </ButtonLink>
           </div>
         </div>
       </section>
 
-      <section className="place-detail-grid" aria-label="تفاصيل علاقة المكان">
-        <article className="place-detail-panel place-detail-panel--primary">
-          <p className="eyebrow">ما تعرفه ذوق عنك</p>
-          <h2>إشاراتك الشخصية</h2>
-          <ul className="place-detail-signals">
-            {signals.map((signal) => (
-              <li key={signal}>{signal}</li>
-            ))}
-          </ul>
-        </article>
-
-        <article className="place-detail-panel">
-          <p className="eyebrow">رفوفك</p>
-          <h2>أين يظهر المكان؟</h2>
-          {relationship.listNames.length > 0 ? (
+      <section className="place-detail-grid" aria-label="تفاصيل المكان">
+        {place.currentUserListNames.length > 0 ? (
+          <article className="place-detail-panel">
+            <h2>موجود في</h2>
             <div className="place-detail-shelves">
-              {relationship.listNames.map((name) => (
+              {place.currentUserListNames.map((name) => (
                 <Chip key={name}>
                   <BidiText>{name}</BidiText>
                 </Chip>
               ))}
             </div>
-          ) : (
-            <p className="muted">
-              ليس محفوظًا في أي رف حاليًا. إذا قيّمته الآن فسيبقى مجربًا حتى لو أضفته لاحقًا.
-            </p>
-          )}
-        </article>
+          </article>
+        ) : null}
+
+        {place.currentUserRating ? (
+          <article className="place-detail-panel">
+            <h2>تقييمك</h2>
+            <div className="place-detail-community">
+              <Badge variant="rating">{place.currentUserRating}/10</Badge>
+              <ButtonLink href={`/places/${place.id}/rate`} variant="secondary">
+                تعديل التقييم
+              </ButtonLink>
+            </div>
+          </article>
+        ) : null}
+
+        {place.averageRating !== null && place.ratingCount > 0 ? (
+          <article className="place-detail-panel">
+            <h2>تقييم المجتمع</h2>
+            <div className="place-detail-community">
+              <Badge variant="rating">{formatAverageRating(place.averageRating)}</Badge>
+              <span>{ratingCountLabel(place.ratingCount)}</span>
+            </div>
+          </article>
+        ) : null}
 
         <article className="place-detail-panel">
-          <p className="eyebrow">المجتمع</p>
-          <h2>إشارة مساعدة فقط</h2>
-          <div className="place-detail-community">
-            <Badge variant="rating">{formatAverageRating(place.averageRating)}</Badge>
-            <span>{ratingCountLabel(place.ratingCount)}</span>
-          </div>
-          <p className="muted">
-            تقييم المجتمع لا يغيّر علاقتك بالمكان. تقييمك أنت هو الذي يجعله مجربًا في مكتبتك.
-          </p>
+          <h2>معلومات المكان</h2>
+          <dl className="place-detail-info">
+            <div>
+              <dt>نوع المكان</dt>
+              <dd>{placeTypeLabel(place.type)}</dd>
+            </div>
+            {subtype ? (
+              <div>
+                <dt>النوع الفرعي</dt>
+                <dd>{subtype}</dd>
+              </div>
+            ) : null}
+          </dl>
         </article>
       </section>
+
+      {addToListOpen ? (
+        <SavePlaceToListDialog
+          onClose={() => setAddToListOpen(false)}
+          onSaved={(updatedPlace) => setPlace(updatedPlace)}
+          open
+          place={place}
+        />
+      ) : null}
     </main>
   );
 }
 
-function buildRelationship(place: Place | null): PlaceRelationship {
-  return {
-    listNames: place?.currentUserListNames ?? []
-  };
-}
+function SavePlaceToListDialog({
+  onClose,
+  onSaved,
+  open,
+  place
+}: {
+  onClose: () => void;
+  onSaved: (place: Place) => void;
+  open: boolean;
+  place: Place;
+}) {
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const Dialog = isDesktop ? Modal : BottomSheet;
+  const [lists, setLists] = useState<UserList[]>([]);
+  const [loadingLists, setLoadingLists] = useState(true);
+  const [savingListId, setSavingListId] = useState<string | null>(null);
+  const [savedListIds, setSavedListIds] = useState(place.currentUserListIds);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
-function personalContextSignals(place: Place, relationship: PlaceRelationship): string[] {
-  const signals: string[] = [];
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
 
-  if (relationship.listNames.length > 0) {
-    signals.push(listRelationshipLabel(relationship.listNames.length));
+    let isMounted = true;
+    setLoadingLists(true);
+    setError("");
+
+    apiCollection<UserList>("/lists")
+      .then((response) => {
+        if (isMounted) {
+          setLists(response.data);
+        }
+      })
+      .catch((caught) => {
+        if (isMounted) {
+          setError(caught instanceof ApiError ? caught.message : "تعذر تحميل القوائم.");
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setLoadingLists(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [open]);
+
+  async function saveToList(list: UserList) {
+    setMessage("");
+    setError("");
+    setSavingListId(list.id);
+    try {
+      await apiRequest(`/lists/${list.id}/items`, {
+        method: "POST",
+        body: JSON.stringify({ placeId: place.id })
+      });
+      const updatedPlace = await apiRequest<Place>(`/places/${place.id}`);
+      onSaved(updatedPlace);
+      setSavedListIds(updatedPlace.currentUserListIds);
+      setMessage("تمت الإضافة.");
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : "تعذرت الإضافة.");
+    } finally {
+      setSavingListId(null);
+    }
   }
 
-  if (place.currentUserTried) {
-    signals.push("جربته");
-  }
-
-  if (place.currentUserRating) {
-    signals.push(`تقييمك ${place.currentUserRating}/10`);
-  }
-
-  return signals.length > 0 ? signals : ["لا توجد علاقة شخصية محفوظة بعد"];
-}
-
-function relationshipHeadlineFor(place: Place, relationship: PlaceRelationship): string {
-  const isSaved = relationship.listNames.length > 0;
-  const isRated = Boolean(place.currentUserRating);
-
-  if (isSaved && place.currentUserTried && isRated) {
-    return "محفوظ ومجرّب ومقيّم في ذوقك";
-  }
-
-  if (isSaved && place.currentUserTried) {
-    return "محفوظ ومجرّب في ذوقك";
-  }
-
-  if (isSaved && isRated) {
-    return "محفوظ وله تقييمك";
-  }
-
-  if (isSaved) {
-    return listRelationshipLabel(relationship.listNames.length);
-  }
-
-  if (place.currentUserTried && isRated) {
-    return "جربته وقيّمته";
-  }
-
-  if (place.currentUserTried) {
-    return "مكان جربته";
-  }
-
-  if (isRated) {
-    return `قيّمته ${place.currentUserRating}/10`;
-  }
-
-  return "ينتظر سببًا ليدخل ذوقك";
+  return (
+    <Dialog
+      initialFocusSelector="#save-place-list-options"
+      labelledBy="save-place-title"
+      onClose={onClose}
+      open={open}
+      title="أضف إلى قائمة"
+    >
+      <div className="place-save-dialog">
+        {message ? <StatusMessage tone="success">{message}</StatusMessage> : null}
+        {error ? <StatusMessage tone="error">{error}</StatusMessage> : null}
+        {loadingLists ? <LoadingState count={2} delayMs={0} label="جاري تحميل القوائم" /> : null}
+        {!loadingLists && lists.length === 0 ? (
+          <EmptyState
+            action={<Link href="/lists/new">أنشئ قائمة</Link>}
+            body="لا توجد قوائم."
+            title="لا توجد قوائم"
+          />
+        ) : null}
+        {!loadingLists && lists.length > 0 ? (
+          <div className="place-save-dialog__lists" id="save-place-list-options" tabIndex={-1}>
+            {lists.map((list) => {
+              const isSavedHere = savedListIds.includes(list.id);
+              return (
+                <article className="place-save-dialog__list" key={list.id}>
+                  <div>
+                    <h3>
+                      <BidiText>{list.name}</BidiText>
+                    </h3>
+                    <p className="muted">{listPlaceCountLabel(list.placeCount)}</p>
+                  </div>
+                  <Button
+                    disabled={isSavedHere}
+                    isLoading={savingListId === list.id}
+                    onClick={() => void saveToList(list)}
+                    type="button"
+                    variant={isSavedHere ? "secondary" : "primary"}
+                  >
+                    {isSavedHere ? "موجود" : "أضف"}
+                  </Button>
+                </article>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+    </Dialog>
+  );
 }
 
 function ratingCountLabel(count: number): string {
-  if (count === 0) {
-    return "لا تقييمات بعد";
-  }
-
   if (count === 1) {
     return "تقييم واحد";
   }
@@ -272,17 +320,21 @@ function ratingCountLabel(count: number): string {
     return "تقييمان";
   }
 
-  return `${count} تقييمات`;
+  return `${count} تقييم`;
 }
 
-function listRelationshipLabel(count: number): string {
+function listPlaceCountLabel(count: number): string {
+  if (count === 0) {
+    return "قائمة فارغة";
+  }
+
   if (count === 1) {
-    return "محفوظ في رف واحد";
+    return "مكان واحد";
   }
 
   if (count === 2) {
-    return "محفوظ في رفين";
+    return "مكانان";
   }
 
-  return `محفوظ في ${count} رفوف`;
+  return `${count} أماكن`;
 }

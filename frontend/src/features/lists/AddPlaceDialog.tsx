@@ -4,16 +4,17 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import {
+  BidiText,
   BottomSheet,
   Button,
   EmptyState,
   Modal,
-  PlaceCard,
   SearchField,
   StatusMessage
 } from "@/components/ui";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { ApiError, ListDetail, Place, apiRequest } from "@/lib/api";
+import { placeSubtypeLabel, placeTypeLabel } from "@/features/places/taxonomy";
 
 type AddPlaceDialogProps = {
   listId: string;
@@ -76,12 +77,12 @@ export function AddPlaceDialog({
       labelledBy="add-place-title"
       onClose={onClose}
       open={open}
-      title="أضف مكان"
+      title="أضف مكانًا"
     >
       <div className="add-place-dialog">
         <SearchField
           id="add-place-search"
-          label="ابحث باسم المكان"
+          label="بحث"
           onChange={(event) => {
             setQuery(event.target.value);
             setError("");
@@ -89,7 +90,7 @@ export function AddPlaceDialog({
           }}
           onClear={query ? () => setQuery("") : undefined}
           resultCount={normalizedQuery ? results.length : undefined}
-          scopeLabel="ابحث بالاسم فقط."
+          scopeLabel="بحث باسم المكان فقط."
           value={query}
         />
 
@@ -99,14 +100,14 @@ export function AddPlaceDialog({
         {!normalizedQuery ? (
           <EmptyState
             body="اكتب اسم مطعم أو مقهى موجود لحفظه في هذه القائمة."
-            title="ابحث باسم المكان"
+            title="بحث"
           />
         ) : null}
 
         {normalizedQuery && results.length === 0 ? (
           <EmptyState
             action={<Link href="/places/new">أضف مكان</Link>}
-            body="يمكنك إنشاء المكان إذا لم يكن موجودًا بعد."
+            body="أضف المكان أولًا ثم أعد البحث."
             title="لا يوجد مكان بهذا الاسم"
           />
         ) : null}
@@ -117,21 +118,26 @@ export function AddPlaceDialog({
               const alreadySaved = savedPlaceIds.includes(place.id);
 
               return (
-                <PlaceCard
-                  actions={
-                    <Button
-                      disabled={alreadySaved}
-                      isLoading={addingPlaceId === place.id}
-                      onClick={() => void addPlace(place.id)}
-                      type="button"
-                      variant={alreadySaved ? "secondary" : "primary"}
-                    >
-                      {alreadySaved ? "موجود" : "أضف"}
-                    </Button>
-                  }
-                  key={place.id}
-                  place={place}
-                />
+                <article className="place-save-dialog__list" key={place.id}>
+                  <div>
+                    <h3>
+                      <BidiText>{place.name}</BidiText>
+                    </h3>
+                    <p className="muted">
+                      {placeTypeLabel(place.type)}
+                      {place.subtype ? ` · ${placeSubtypeLabel(place.subtype)}` : ""}
+                    </p>
+                  </div>
+                  <Button
+                    disabled={alreadySaved}
+                    isLoading={addingPlaceId === place.id}
+                    onClick={() => void addPlace(place.id)}
+                    type="button"
+                    variant={alreadySaved ? "secondary" : "primary"}
+                  >
+                    {alreadySaved ? "موجود" : "أضف"}
+                  </Button>
+                </article>
               );
             })}
           </div>

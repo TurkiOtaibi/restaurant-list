@@ -115,7 +115,7 @@ export default function ListDetailPage() {
     <main className="content list-detail-page">
       <section className="collection-hero" aria-labelledby="list-detail-title">
         <div className="collection-hero__copy">
-          <p className="eyebrow">مجموعة شخصية</p>
+          <p className="eyebrow">قائمة</p>
           <h1 id="list-detail-title">
             {list ? <BidiText>{list.name}</BidiText> : "القائمة"}
           </h1>
@@ -125,7 +125,7 @@ export default function ListDetailPage() {
               <span>{placeCountLabel(placeCount)}</span>
             </div>
           ) : null}
-          <p className="muted">أماكن اخترتها لتبقى قريبة من ذاكرتك لا من جدول مهامك.</p>
+          <p className="muted">أماكن محفوظة في هذه القائمة.</p>
         </div>
         <div className="list-detail-header__actions">
           <Button onClick={() => setAddPlaceOpen(true)} type="button">
@@ -161,9 +161,8 @@ export default function ListDetailPage() {
           <section className="collection-places" aria-labelledby="list-places-title">
             <div className="library-section__header library-section__header--inline">
               <div>
-                <p className="eyebrow">الأماكن المحفوظة</p>
-                <h2 id="list-places-title">قطع صغيرة من ذوقك</h2>
-                <p className="muted">كل مكان هنا محفوظ كاختيار ينتظر تجربة قادمة.</p>
+                <p className="eyebrow">الأماكن</p>
+                <h2 id="list-places-title">أماكن القائمة</h2>
               </div>
               <Button onClick={() => setAddPlaceOpen(true)} type="button" variant="secondary">
                 أضف مكان
@@ -177,14 +176,15 @@ export default function ListDetailPage() {
                     أضف أول مكان
                   </Button>
                 }
-                body="احفظ مطعمًا أو مقهى واحدًا لتبدأ هذه المجموعة بإشارة واضحة."
-                title="هذه القائمة تنتظر أول مكان"
+                body="أضف مكانًا للبدء."
+                title="لا توجد أماكن"
               />
             ) : (
               <div className="collection-artifacts" aria-label="أماكن القائمة">
                 {list.items.map((item) => (
-                  <PlaceCard
-                    actions={
+                  <div className="stack" key={item.id}>
+                    <PlaceCard href={`/places/${item.place.id}`} place={item.place} />
+                    <div className="actions">
                       <Button
                         aria-label={`إخراج ${item.place.name} من القائمة`}
                         onClick={() => void handleRemovePlace(item.place.id)}
@@ -193,10 +193,8 @@ export default function ListDetailPage() {
                       >
                         إخراج
                       </Button>
-                    }
-                    key={item.id}
-                    place={item.place}
-                  />
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -204,9 +202,8 @@ export default function ListDetailPage() {
 
           <section className="list-settings" aria-labelledby="list-settings-title">
             <div className="library-section__header">
-              <p className="eyebrow">خصوصية الرف</p>
+              <p className="eyebrow">الخصوصية</p>
               <h2 id="list-settings-title">ظهور القائمة</h2>
-              <p className="muted">من يرى هذا الرف لا يغير ما حفظته داخله.</p>
             </div>
             <VisibilitySelector
               name="detail-visibility"

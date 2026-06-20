@@ -9,7 +9,35 @@ from app.db.utils import new_id, utc_now
 
 class Place(Base):
     __tablename__ = "places"
-    __table_args__ = (CheckConstraint("type IN ('restaurant', 'cafe')", name="ck_places_type"),)
+    __table_args__ = (
+        CheckConstraint("type IN ('restaurant', 'cafe', 'ice_cream')", name="ck_places_type"),
+        CheckConstraint(
+            """
+            (
+                type = 'restaurant'
+                AND subtype IN (
+                    'burger',
+                    'italian',
+                    'american',
+                    'steak',
+                    'grill',
+                    'shawarma',
+                    'saudi',
+                    'gulf',
+                    'indian',
+                    'asian',
+                    'seafood',
+                    'breakfast',
+                    'healthy',
+                    'other'
+                )
+            )
+            OR (type = 'cafe' AND subtype IN ('coffee', 'tea'))
+            OR (type = 'ice_cream' AND subtype IS NULL)
+            """,
+            name="ck_places_subtype_for_type",
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     name: Mapped[str] = mapped_column(String(120), nullable=False, unique=True, index=True)
@@ -17,6 +45,7 @@ class Place(Base):
         String(120), nullable=False, unique=True, index=True
     )
     type: Mapped[str] = mapped_column(String(20), nullable=False)
+    subtype: Mapped[str | None] = mapped_column(String(30), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by_user_id: Mapped[str] = mapped_column(
         String(36),

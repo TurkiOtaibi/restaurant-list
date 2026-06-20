@@ -65,12 +65,10 @@ export default function LoginPage() {
         <div className="auth-card__header">
           <div className="auth-brand" aria-hidden="true">
             <TasteMarkIcon />
-            <span>ذوق</span>
+            <span>سجل</span>
           </div>
           <h1 id="login-title">تسجيل الدخول</h1>
-          <p className="muted">
-            ارجع إلى مكتبة ذوقك الشخصية، حيث تحفظ الأماكن التي تستحق التجربة.
-          </p>
+          <p className="muted">ادخل إلى قوائمك وأماكنك.</p>
         </div>
 
         <form className="auth-form" noValidate onSubmit={handleSubmit}>

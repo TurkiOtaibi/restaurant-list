@@ -84,7 +84,6 @@ export function CreateListDialog({ onClose, open }: CreateListDialogProps) {
       title="أضف قائمة"
     >
       <form className="form-surface__form" noValidate onSubmit={handleSubmit}>
-        <p className="muted">احفظ رفًا جديدًا للأماكن التي تريد تجربتها.</p>
         <TextInput
           error={nameError}
           id="list-name"

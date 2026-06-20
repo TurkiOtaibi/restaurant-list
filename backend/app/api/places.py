@@ -8,7 +8,7 @@ from app.core.schemas import CollectionResponse, collection_response
 from app.db.session import get_db
 from app.modules.auth.dependencies import get_current_user
 from app.modules.auth.models import User
-from app.modules.places.schemas import PlaceCreateRequest, PlaceResponse
+from app.modules.places.schemas import PlaceCreateRequest, PlaceResponse, PlaceType
 from app.modules.places.services import (
     create_place_for_user,
     get_place_summary,
@@ -25,10 +25,18 @@ async def list_places(
     current_user: CurrentUser,
     db: DatabaseSession,
     q: Annotated[str | None, Query(max_length=120)] = None,
+    type: PlaceType | None = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> CollectionResponse[PlaceResponse]:
-    result = await list_place_summaries(db, current_user.id, query=q, limit=limit, offset=offset)
+    result = await list_place_summaries(
+        db,
+        current_user.id,
+        query=q,
+        place_type=type,
+        limit=limit,
+        offset=offset,
+    )
     return collection_response(
         result.items,
         limit=limit,

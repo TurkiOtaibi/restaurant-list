@@ -118,16 +118,12 @@ export function PublicListDetailPage({ listId }: PublicListDetailPageProps) {
         <section className="public-list-places" aria-labelledby="public-list-places-title">
           <div className="library-section__header">
             <p className="eyebrow">أماكن عامة</p>
-            <h2 id="public-list-places-title">أماكن محفوظة في هذا الرف</h2>
+            <h2 id="public-list-places-title">أماكن محفوظة في هذه القائمة</h2>
           </div>
           <div className="collection-artifacts" aria-label="أماكن القائمة العامة">
             {list.items.map((item) => (
               <PlaceCard
-                actions={
-                  <ButtonLink href={`/places/${item.place.id}`} variant="secondary">
-                    افتح المكان
-                  </ButtonLink>
-                }
+                href={`/places/${item.place.id}`}
                 key={item.id}
                 place={item.place}
               />

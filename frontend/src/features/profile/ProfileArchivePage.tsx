@@ -60,7 +60,7 @@ export function ProfileArchivePage() {
         clearTokens();
         setNeedsAuth(true);
       } else {
-        setError(caught instanceof ApiError ? caught.message : "تعذر تحميل أرشيف ذوقك.");
+        setError(caught instanceof ApiError ? caught.message : "تعذر تحميل صفحتك.");
       }
       setLoading(false);
       return;
@@ -74,7 +74,7 @@ export function ProfileArchivePage() {
           .map((list) => ({ ...list, items: [] }))
       );
     } catch {
-      setPublicListsError("تعذر تحميل رفوفك العامة. بقية الأرشيف ما زالت متاحة.");
+      setPublicListsError("تعذر تحميل قوائمك العامة.");
     } finally {
       setLoading(false);
     }
@@ -93,14 +93,14 @@ export function ProfileArchivePage() {
     <main className="content profile-page">
       <section className="profile-hero" aria-labelledby="profile-title">
         <div className="profile-hero__copy">
-          <p className="eyebrow">أرشيف ذوقك</p>
+          <p className="eyebrow">صفحتي</p>
           <h1 id="profile-title">ملفي</h1>
           <p className="muted">
-            مساحة لما جربته وقيّمته وملاحظاتك الخاصة. ليست صفحة حساب، بل أثر ذوقك مع الوقت.
+            ملخص قوائمك وتقييماتك.
           </p>
         </div>
         {profile ? (
-          <div className="profile-stats" aria-label="ملخص أرشيف الذوق">
+          <div className="profile-stats" aria-label="ملخص الصفحة">
             {stats.map((stat) => (
               <div
                 aria-label={`${stat.label}: ${stat.value} ${stat.unit}`}
@@ -117,7 +117,7 @@ export function ProfileArchivePage() {
 
       {needsAuth ? (
         <StatusMessage tone="notice">
-          سجّل الدخول لعرض أرشيف ذوقك. <Link href="/login">تسجيل الدخول</Link>
+          سجّل الدخول لعرض صفحتك. <Link href="/login">تسجيل الدخول</Link>
         </StatusMessage>
       ) : null}
 
@@ -137,7 +137,7 @@ export function ProfileArchivePage() {
       {!loading && profile && !hasArchive ? (
         <EmptyState
           action={<ButtonLink href="/restaurants">افتح المطاعم</ButtonLink>}
-          body="قيّم مكانًا بعد تجربته ليظهر هنا. يبدأ الأرشيف من علاقتك بالمكان، لا من إعدادات الحساب."
+          body="قيّم مكانًا بعد تجربته ليظهر هنا."
           title="يبدأ أرشيفك بالتقييم"
         />
       ) : null}
@@ -147,27 +147,21 @@ export function ProfileArchivePage() {
           <section className="profile-section" aria-labelledby="profile-tried-title">
             <div className="library-section__header">
               <p className="eyebrow">ذاكرة مجرّبة</p>
-              <h2 id="profile-tried-title">أماكن صارت جزءًا من ذوقك</h2>
+              <h2 id="profile-tried-title">أماكن جربتها</h2>
             </div>
             {profile.triedPlaces.length === 0 ? (
               <p className="muted">لم يظهر مكان مجرّب بعد.</p>
             ) : (
               <div className="profile-place-grid" aria-label="الأماكن التي جربتها">
                 {profile.triedPlaces.map((place) => (
-                  <PlaceCard
-                    actions={
-                      <>
-                        <ButtonLink href={`/places/${place.id}`} variant="secondary">
-                          افتح المكان
-                        </ButtonLink>
-                        <ButtonLink href={`/places/${place.id}/rate`} variant="secondary">
-                          حدّث التقييم
-                        </ButtonLink>
-                      </>
-                    }
-                    key={place.id}
-                    place={place}
-                  />
+                  <div className="stack" key={place.id}>
+                    <PlaceCard href={`/places/${place.id}`} place={place} />
+                    <div className="actions">
+                      <ButtonLink href={`/places/${place.id}/rate`} variant="secondary">
+                        تعديل التقييم
+                      </ButtonLink>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -195,7 +189,7 @@ export function ProfileArchivePage() {
         <section className="profile-section" aria-labelledby="profile-public-title">
           <div className="library-section__header library-section__header--inline">
             <div>
-              <p className="eyebrow">رفوف عامة</p>
+              <p className="eyebrow">قوائم عامة</p>
               <h2 id="profile-public-title">ما يظهر للآخرين من قوائمك</h2>
             </div>
             <ButtonLink href="/lists/public" variant="secondary">
@@ -204,9 +198,9 @@ export function ProfileArchivePage() {
           </div>
           {publicListsError ? <StatusMessage tone="notice">{publicListsError}</StatusMessage> : null}
           {publicLists.length === 0 ? (
-            <p className="muted">لا توجد رفوف عامة من قوائمك حاليًا.</p>
+            <p className="muted">لا توجد قوائم عامة حاليًا.</p>
           ) : (
-            <div className="library-grid" aria-label="رفوفك العامة">
+            <div className="library-grid" aria-label="قوائمك العامة">
               {publicLists.map((list) => (
                 <ListCard
                   href={`/lists/${list.id}`}
@@ -261,7 +255,7 @@ function RatingArchiveCard({ rating }: { rating: ProfileRating }) {
 
 function ProfileLoadingState() {
   return (
-    <section className="profile-loading" aria-label="جاري تحميل أرشيف ذوقك">
+    <section className="profile-loading" aria-label="جاري تحميل صفحتك">
       <LoadingState count={4} delayMs={0} label="جاري تحميل إحصاءات الملف" variant="text" />
       <LoadingState count={3} delayMs={0} label="جاري تحميل أماكنك المجربة" />
     </section>

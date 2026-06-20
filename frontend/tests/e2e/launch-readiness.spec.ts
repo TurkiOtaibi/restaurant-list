@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { expect, type Page, type Route, test } from "@playwright/test";
 
-const apiPattern = "http://localhost:8000/**";
+const apiPattern = "**/api/v1/**";
 const timestamp = "2026-06-19T00:00:00.000Z";
 const axeSource = fs.readFileSync(
   path.resolve(process.cwd(), "node_modules", "axe-core", "axe.min.js"),
@@ -13,7 +13,8 @@ const axeSource = fs.readFileSync(
 type Place = {
   id: string;
   name: string;
-  type: "restaurant" | "cafe";
+  type: "restaurant" | "cafe" | "ice_cream";
+  subtype: string | null;
   description: string | null;
   createdByUserId: string;
   createdAt: string;
@@ -63,13 +64,14 @@ declare global {
 function makePlace(
   id: string,
   name: string,
-  type: "restaurant" | "cafe",
+  type: Place["type"],
   options: Partial<Pick<Place, "averageRating" | "currentUserRating" | "currentUserTried" | "ratingCount" | "currentUserListIds" | "currentUserListNames" | "currentUserListCount">> = {}
 ): Place {
   return {
     id,
     name,
     type,
+    subtype: type === "restaurant" ? "burger" : type === "cafe" ? "coffee" : null,
     description: null,
     createdByUserId: "user-1",
     createdAt: timestamp,
