@@ -1,7 +1,26 @@
 from functools import lru_cache
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def async_database_url(value: str) -> str:
+    if value.startswith("postgresql://"):
+        return value.replace("postgresql://", "postgresql+asyncpg://", 1)
+    if value.startswith("postgres://"):
+        return value.replace("postgres://", "postgresql+asyncpg://", 1)
+    if value.startswith("postgresql+psycopg://"):
+        return value.replace("postgresql+psycopg://", "postgresql+asyncpg://", 1)
+    if value.startswith("postgresql+psycopg2://"):
+        return value.replace("postgresql+psycopg2://", "postgresql+asyncpg://", 1)
+    return value
+
+
+def sync_database_url(value: str) -> str:
+    normalized = async_database_url(value)
+    if normalized.startswith("postgresql+asyncpg://"):
+        return normalized.replace("postgresql+asyncpg://", "postgresql+psycopg://", 1)
+    return normalized
 
 
 class Settings(BaseSettings):
@@ -34,6 +53,11 @@ class Settings(BaseSettings):
         extra="ignore",
         populate_by_name=True,
     )
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def normalize_database_url(cls, value: str) -> str:
+        return async_database_url(value)
 
     @model_validator(mode="after")
     def reject_default_production_secrets(self) -> "Settings":

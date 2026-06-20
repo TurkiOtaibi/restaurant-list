@@ -3,7 +3,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from app.core.config import get_settings
+from app.core.config import get_settings, sync_database_url
 from app.db.base import Base
 
 config = context.config
@@ -15,7 +15,7 @@ target_metadata = Base.metadata
 
 
 def _sync_database_url() -> str:
-    return get_settings().database_url.replace("+asyncpg", "")
+    return sync_database_url(get_settings().database_url)
 
 
 def run_migrations_offline() -> None:
