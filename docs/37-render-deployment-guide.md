@@ -21,7 +21,7 @@ Do not deploy until the deployment checklist in this document is complete.
 | Environment variables | Manual values required | `CORS_ORIGINS` and `NEXT_PUBLIC_API_BASE_URL` must be set to the actual Render service URLs. |
 | CORS | Ready if exact origin is configured | Credentials are enabled, so do not use wildcard origins. |
 | Cookie/auth under HTTPS | Ready | Refresh token is HttpOnly, Secure, SameSite, and scoped to `/api/v1/auth`. |
-| Migrations | Ready | Backend runs `alembic upgrade head` as a Render pre-deploy command. |
+| Migrations | Ready | Backend startup command runs `alembic upgrade head` before `uvicorn` on the free Render instance. |
 | Health endpoints | Ready | Backend uses `/health/ready`; frontend uses `/api/health`. |
 | Startup commands | Ready | Defined in `render.yaml`. |
 
@@ -37,8 +37,7 @@ rootDir: backend
 plan: free
 region: singapore
 buildCommand: python -m pip install --upgrade pip && pip install -e .
-preDeployCommand: alembic upgrade head
-startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
 healthCheckPath: /health/ready
 autoDeployTrigger: checksPass
 ```
@@ -49,8 +48,8 @@ Manual Render settings, if not using the Blueprint:
 - Runtime: Python
 - Root directory: `backend`
 - Build command: `python -m pip install --upgrade pip && pip install -e .`
-- Pre-deploy command: `alembic upgrade head`
-- Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- Pre-deploy command: leave empty on the free Render service.
+- Start command: `alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 - Health check path: `/health/ready`
 
 ## Frontend Render Configuration
@@ -175,18 +174,18 @@ Use `REFRESH_COOKIE_SAMESITE=none` only if frontend and backend are on genuinely
 
 ## Migration Execution Strategy
 
-Render should run migrations through the backend service pre-deploy command:
+On the free Render service, run migrations through the backend service start command:
 
 ```text
-alembic upgrade head
+alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
 
-This runs after dependencies install and before the new backend instance starts.
+This runs after dependencies install and immediately before the backend process starts.
 
 Operational rules:
 
 - Do not run migrations from the frontend service.
-- Do not run migrations manually unless a deploy is blocked.
+- If moving to a paid Render instance later, prefer moving `alembic upgrade head` back to Render's pre-deploy command and returning the start command to only `uvicorn`.
 - For destructive migrations in the future, use an explicit migration review before deploy.
 - Verify `/health/ready` after deployment because it checks database connectivity.
 
@@ -215,7 +214,7 @@ Frontend:
 - Confirm `APP_ENV=production`.
 - Confirm `REFRESH_COOKIE_SECURE=true`.
 - Confirm `ENABLE_API_DOCS=false`.
-- Confirm backend pre-deploy command is `alembic upgrade head`.
+- Confirm backend start command begins with `alembic upgrade head &&`.
 - Confirm frontend is a Node web service, not a static site.
 
 ## Post-Deployment Verification Checklist
@@ -258,7 +257,7 @@ Run these checks after deployment:
 
 6. Migration verification:
 
-   - Confirm backend deploy logs show `alembic upgrade head` completed.
+   - Confirm backend deploy logs show `alembic upgrade head` completed before `uvicorn` starts.
    - Confirm `/health/ready` reports database `ok`.
 
 ## Deployment Blockers
