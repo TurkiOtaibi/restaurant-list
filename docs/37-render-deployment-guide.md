@@ -35,7 +35,7 @@ name: restaurant-list-api
 runtime: python
 rootDir: backend
 plan: free
-region: oregon
+region: singapore
 buildCommand: python -m pip install --upgrade pip && pip install -e .
 preDeployCommand: alembic upgrade head
 startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
@@ -63,7 +63,7 @@ name: restaurant-list-web
 runtime: node
 rootDir: frontend
 plan: free
-region: oregon
+region: singapore
 buildCommand: npm ci && npm run build
 startCommand: npm run start -- -H 0.0.0.0 -p $PORT
 healthCheckPath: /api/health
