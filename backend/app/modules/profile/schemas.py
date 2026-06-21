@@ -8,7 +8,7 @@ from app.modules.places.schemas import PlaceResponse
 class ProfileRatingResponse(BaseModel):
     id: str
     place: PlaceResponse
-    rating: int
+    rating: float
     notes: str | None
     created_at: datetime = Field(serialization_alias="createdAt")
     updated_at: datetime = Field(serialization_alias="updatedAt")

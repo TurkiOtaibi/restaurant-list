@@ -13,11 +13,14 @@ import {
   EmptyState,
   LoadingState,
   Modal,
-  StatusMessage
+  NumberText,
+  StatusMessage,
+  VisualArtwork
 } from "@/components/ui";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { ApiError, Place, UserList, apiCollection, apiRequest, clearTokens, getAccessToken } from "@/lib/api";
 import { formatAverageRating } from "@/lib/format";
+import { formatOutOfTen, placeCountLabel, ratingCountLabel } from "@/lib/numerals";
 
 import { placeSubtypeLabel, placeTypeLabel } from "./taxonomy";
 
@@ -106,6 +109,13 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
   return (
     <main className="content place-detail-page">
       <section aria-labelledby="place-detail-title" className="place-detail-hero">
+        <VisualArtwork
+          className="place-detail-hero__art"
+          id={place.id}
+          label={place.name}
+          type={place.type}
+          variant="place"
+        />
         <div className="place-detail-hero__content">
           <h1 id="place-detail-title">
             <BidiText>{place.name}</BidiText>
@@ -114,6 +124,12 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
             <Chip>{placeTypeLabel(place.type)}</Chip>
             {subtype ? <Chip>{subtype}</Chip> : null}
           </div>
+          {place.averageRating !== null && place.ratingCount > 0 ? (
+            <div className="place-detail-hero__rating">
+              <NumberText>{formatAverageRating(place.averageRating)}</NumberText>
+              <span>{ratingCountLabel(place.ratingCount)}</span>
+            </div>
+          ) : null}
           <div className="actions place-detail-hero__actions">
             <Button onClick={() => setAddToListOpen(true)} type="button">
               أضف إلى قائمة
@@ -143,7 +159,9 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
           <article className="place-detail-panel">
             <h2>تقييمك</h2>
             <div className="place-detail-community">
-              <Badge variant="rating">{place.currentUserRating}/10</Badge>
+              <Badge variant="rating">
+                <NumberText>{formatOutOfTen(place.currentUserRating)}</NumberText>
+              </Badge>
               <ButtonLink href={`/places/${place.id}/rate`} variant="secondary">
                 تعديل التقييم
               </ButtonLink>
@@ -155,7 +173,9 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
           <article className="place-detail-panel">
             <h2>تقييم المجتمع</h2>
             <div className="place-detail-community">
-              <Badge variant="rating">{formatAverageRating(place.averageRating)}</Badge>
+              <Badge variant="rating">
+                <NumberText>{formatAverageRating(place.averageRating)}</NumberText>
+              </Badge>
               <span>{ratingCountLabel(place.ratingCount)}</span>
             </div>
           </article>
@@ -290,7 +310,7 @@ function SavePlaceToListDialog({
                     <h3>
                       <BidiText>{list.name}</BidiText>
                     </h3>
-                    <p className="muted">{listPlaceCountLabel(list.placeCount)}</p>
+                    <p className="muted">{placeCountLabel(list.placeCount)}</p>
                   </div>
                   <Button
                     disabled={isSavedHere}
@@ -309,32 +329,4 @@ function SavePlaceToListDialog({
       </div>
     </Dialog>
   );
-}
-
-function ratingCountLabel(count: number): string {
-  if (count === 1) {
-    return "تقييم واحد";
-  }
-
-  if (count === 2) {
-    return "تقييمان";
-  }
-
-  return `${count} تقييم`;
-}
-
-function listPlaceCountLabel(count: number): string {
-  if (count === 0) {
-    return "قائمة فارغة";
-  }
-
-  if (count === 1) {
-    return "مكان واحد";
-  }
-
-  if (count === 2) {
-    return "مكانان";
-  }
-
-  return `${count} أماكن`;
 }

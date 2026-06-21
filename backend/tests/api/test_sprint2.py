@@ -29,7 +29,7 @@ async def _rate_place(
     client: AsyncClient,
     token: str,
     place_id: str,
-    rating: int,
+    rating: float,
     notes: str | None = None,
 ) -> dict[str, Any]:
     response = await client.post(
@@ -51,17 +51,17 @@ async def test_rating_creates_tried_status_and_removes_place_from_all_user_lists
     await _add_place_to_list(client, token, first_list["id"], place["id"])
     await _add_place_to_list(client, token, second_list["id"], place["id"])
 
-    rating = await _rate_place(client, token, place["id"], 8, "  private notes  ")
+    rating = await _rate_place(client, token, place["id"], 8.5, "  private notes  ")
 
-    assert rating["rating"] == 8
+    assert rating["rating"] == 8.5
     assert rating["notes"] == "private notes"
 
     place_detail = await client.get(f"/api/v1/places/{place['id']}", headers=auth_header(token))
     assert place_detail.status_code == 200
     place_body = place_detail.json()
     assert place_body["currentUserTried"] is True
-    assert place_body["currentUserRating"] == 8
-    assert place_body["averageRating"] == 8.0
+    assert place_body["currentUserRating"] == 8.5
+    assert place_body["averageRating"] == 8.5
     assert place_body["ratingCount"] == 1
 
     first_detail = await client.get(f"/api/v1/lists/{first_list['id']}", headers=auth_header(token))
@@ -225,6 +225,19 @@ async def test_rating_validation_rejects_out_of_range_values(client: AsyncClient
     response = await client.post(
         "/api/v1/ratings",
         json={"placeId": place["id"], "rating": 11},
+        headers=auth_header(token),
+    )
+
+    assert response.status_code == 422
+
+
+async def test_rating_validation_rejects_non_half_step_values(client: AsyncClient) -> None:
+    token = await _token(client, "owner@example.com")
+    place = await _create_place(client, token, name="Nara Cafe", place_type="cafe")
+
+    response = await client.post(
+        "/api/v1/ratings",
+        json={"placeId": place["id"], "rating": 7.25},
         headers=auth_header(token),
     )
 

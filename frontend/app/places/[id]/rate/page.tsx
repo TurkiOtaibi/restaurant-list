@@ -21,7 +21,7 @@ export default function RatePlacePage() {
   }, [router]);
 
   function closeDialog(place: Place | null) {
-    router.push(place ? `/places/${place.id}` : "/restaurants");
+    router.push(place ? `/places/${place.id}` : "/places");
   }
 
   return (

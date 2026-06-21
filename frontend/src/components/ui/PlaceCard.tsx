@@ -1,11 +1,13 @@
 import type { Place } from "@/lib/api";
 import { formatAverageRating } from "@/lib/format";
+import { formatNumber, ratingCountLabel } from "@/lib/numerals";
 import { placeSubtypeLabel, placeTypeLabel } from "@/features/places/taxonomy";
 import { cx } from "@/lib/ui";
 
-import { Badge } from "./Badge";
 import { BidiText } from "./BidiText";
 import { Card, CardLink } from "./Card";
+import { NumberText } from "./NumberText";
+import { VisualArtwork } from "./VisualArtwork";
 
 type PlaceCardProps = {
   compact?: boolean;
@@ -25,18 +27,16 @@ export function PlaceCard({ compact = false, href, place }: PlaceCardProps) {
     );
   }
 
-  return (
-    <Card className={className}>
-      {content}
-    </Card>
-  );
+  return <Card className={className}>{content}</Card>;
 }
 
 function PlaceCardContent({ place }: { place: Place }) {
   const subtype = placeSubtypeLabel(place.subtype);
+  const hasRating = place.averageRating !== null && place.ratingCount > 0;
 
   return (
     <>
+      <VisualArtwork id={place.id} label={place.name} type={place.type} variant="place" />
       <div className="ds-place-card__main">
         <h2 className="ds-place-card__title">
           <BidiText>{place.name}</BidiText>
@@ -45,12 +45,13 @@ function PlaceCardContent({ place }: { place: Place }) {
           <span>{placeTypeLabel(place.type)}</span>
           {subtype ? <span>{subtype}</span> : null}
         </p>
+        {hasRating ? (
+          <p className="ds-place-card__rating" aria-label={ratingCountLabel(place.ratingCount)}>
+            <NumberText>{formatAverageRating(place.averageRating)}</NumberText>
+            {place.ratingCount > 1 ? <NumberText>{formatNumber(place.ratingCount)}</NumberText> : null}
+          </p>
+        ) : null}
       </div>
-      {place.averageRating !== null && place.ratingCount > 0 ? (
-        <Badge variant="rating">
-          {formatAverageRating(place.averageRating)} · {place.ratingCount} تقييم
-        </Badge>
-      ) : null}
     </>
   );
 }

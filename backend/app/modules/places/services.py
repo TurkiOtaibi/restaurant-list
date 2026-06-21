@@ -37,7 +37,7 @@ def _place_response(
     place: Place,
     average_rating: float | None,
     rating_count: int,
-    current_user_rating: int | None,
+    current_user_rating: float | None,
     relationship: UserPlaceRelationship | None = None,
 ) -> PlaceResponse:
     current_relationship = relationship or UserPlaceRelationship(list_ids=[], list_names=[])

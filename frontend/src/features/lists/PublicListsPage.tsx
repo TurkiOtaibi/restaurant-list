@@ -60,9 +60,7 @@ export function PublicListsPage() {
     <main className="content public-lists-page">
       <section className="public-lists-hero" aria-labelledby="public-lists-title">
         <div className="public-lists-hero__copy">
-          <p className="eyebrow">عام</p>
           <h1 id="public-lists-title">القوائم العامة</h1>
-          <p className="muted">قوائم عامة للمستخدمين المسجلين.</p>
         </div>
         <ButtonLink href="/lists" variant="secondary">
           رجوع لقوائمي
@@ -91,7 +89,6 @@ export function PublicListsPage() {
       {!loading && !needsAuth && !error && lists.length === 0 ? (
         <EmptyState
           action={<ButtonLink href="/lists">رجوع لقوائمي</ButtonLink>}
-          body="القوائم العامة تظهر هنا عندما تكون متاحة للمستخدمين المسجلين."
           title="لا توجد قوائم عامة"
         />
       ) : null}
@@ -99,7 +96,6 @@ export function PublicListsPage() {
       {!loading && !needsAuth && !error && lists.length > 0 ? (
         <section className="public-lists-section" aria-labelledby="public-lists-section-title">
           <div className="library-section__header">
-            <p className="eyebrow">للقراءة فقط</p>
             <h2 id="public-lists-section-title">قوائم عامة</h2>
           </div>
           <div className="library-grid" aria-label="القوائم العامة المتاحة">

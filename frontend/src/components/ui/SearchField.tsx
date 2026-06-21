@@ -3,6 +3,8 @@
 import type { InputHTMLAttributes } from "react";
 import { useId } from "react";
 
+import { formatNumber } from "@/lib/numerals";
+
 import { Button } from "./Button";
 import { ClearIcon } from "./Icon";
 
@@ -20,7 +22,7 @@ export function SearchField({
   label,
   onClear,
   resultCount,
-  scopeLabel = "بحث باسم المكان فقط.",
+  scopeLabel,
   value,
   ...props
 }: SearchFieldProps) {
@@ -29,7 +31,9 @@ export function SearchField({
   const scopeId = `${searchId}-scope`;
   const resultId = `${searchId}-results`;
   const describedBy =
-    resultCount === undefined ? scopeId : `${scopeId} ${resultId}`;
+    [scopeLabel ? scopeId : undefined, resultCount !== undefined ? resultId : undefined]
+      .filter(Boolean)
+      .join(" ") || undefined;
 
   return (
     <div className="ds-search">
@@ -49,12 +53,14 @@ export function SearchField({
           </Button>
         ) : null}
       </div>
-      <p className="muted" id={scopeId}>
-        {scopeLabel}
-      </p>
+      {scopeLabel ? (
+        <p className="muted" id={scopeId}>
+          {scopeLabel}
+        </p>
+      ) : null}
       {resultCount !== undefined ? (
         <p className="muted" id={resultId} role="status">
-          {resultCount === 1 ? "نتيجة واحدة" : `${resultCount} نتائج`}
+          {resultCount === 1 ? "1 نتيجة" : `${formatNumber(resultCount)} نتائج`}
         </p>
       ) : null}
     </div>

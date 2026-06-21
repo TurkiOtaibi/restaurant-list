@@ -4,7 +4,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
-    Integer,
+    Numeric,
     String,
     Text,
     UniqueConstraint,
@@ -19,7 +19,10 @@ class Rating(Base):
     __tablename__ = "ratings"
     __table_args__ = (
         UniqueConstraint("user_id", "place_id", name="uq_ratings_user_id_place_id"),
-        CheckConstraint("rating >= 1 AND rating <= 10", name="ck_ratings_rating_range"),
+        CheckConstraint(
+            "rating >= 1 AND rating <= 10 AND rating * 2 = ROUND(rating * 2, 0)",
+            name="ck_ratings_rating_range",
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
@@ -35,7 +38,7 @@ class Rating(Base):
         nullable=False,
         index=True,
     )
-    rating: Mapped[int] = mapped_column(Integer, nullable=False)
+    rating: Mapped[float] = mapped_column(Numeric(3, 1, asdecimal=False), nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

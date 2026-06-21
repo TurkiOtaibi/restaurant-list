@@ -6,11 +6,11 @@ import { useCallback, useEffect, useState } from "react";
 
 import {
   AddIcon,
+  ActionMenu,
   Badge,
   BidiText,
   Button,
   DeleteIcon,
-  EditIcon,
   EmptyState,
   PlaceCard,
   StatusMessage
@@ -28,6 +28,7 @@ import {
   clearTokens,
   getAccessToken
 } from "@/lib/api";
+import { placeCountLabel } from "@/lib/numerals";
 
 export default function ListDetailPage() {
   const params = useParams<{ id: string }>();
@@ -113,7 +114,7 @@ export default function ListDetailPage() {
         {list ? (
           <div className="list-detail-header__actions" aria-label="إجراءات القائمة">
             <Button
-              aria-label="أضف مكان"
+              aria-label="أضف مكانًا"
               className="list-action list-action--primary"
               onClick={() => setAddPlaceOpen(true)}
               type="button"
@@ -121,24 +122,13 @@ export default function ListDetailPage() {
             >
               <AddIcon />
             </Button>
-            <Button
-              aria-label="تعديل القائمة"
-              className="list-action"
-              onClick={() => setEditListOpen(true)}
-              type="button"
-              variant="icon"
-            >
-              <EditIcon />
-            </Button>
-            <Button
-              aria-label="حذف القائمة"
-              className="list-action list-action--danger"
-              onClick={() => setDeleteListOpen(true)}
-              type="button"
-              variant="icon"
-            >
-              <DeleteIcon />
-            </Button>
+            <ActionMenu
+              items={[
+                { label: "تعديل", onSelect: () => setEditListOpen(true) },
+                { destructive: true, label: "حذف", onSelect: () => setDeleteListOpen(true) }
+              ]}
+              label="إجراءات القائمة"
+            />
           </div>
         ) : (
           <Link className="text-link" href="/lists">
@@ -233,8 +223,4 @@ export default function ListDetailPage() {
 
 function visibilityLabel(visibility: "public" | "private"): string {
   return visibility === "public" ? "عامة" : "خاصة";
-}
-
-function placeCountLabel(count: number): string {
-  return `${count} مكان`;
 }

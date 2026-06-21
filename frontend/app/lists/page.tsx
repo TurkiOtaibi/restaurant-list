@@ -13,6 +13,7 @@ import {
   clearTokens,
   getAccessToken
 } from "@/lib/api";
+import { listCountLabel, placeCountLabel } from "@/lib/numerals";
 
 export default function ListsPage() {
   const createLinkRef = useRef<HTMLAnchorElement>(null);
@@ -66,7 +67,7 @@ export default function ListsPage() {
         <div className="lists-topbar__copy">
           <h1 id="my-lists-title">قوائمي</h1>
           {!loading && !needsAuth && !error && lists.length > 0 ? (
-            <p className="muted">{lists.length} قوائم · {totalPlaces} أماكن</p>
+            <p className="muted">{listCountLabel(lists.length)} · {placeCountLabel(totalPlaces)}</p>
           ) : null}
         </div>
         <Link

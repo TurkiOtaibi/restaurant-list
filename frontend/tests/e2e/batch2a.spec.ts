@@ -265,19 +265,21 @@ async function expectNoHorizontalOverflow(page: Page) {
 async function expectFinalVisualSystem(page: Page) {
   const styles = await page.evaluate(() => {
     const primaryButton = document.querySelector(".ds-button:not(.ds-button--secondary)");
+    const rootStyles = window.getComputedStyle(document.documentElement);
     const bodyStyles = window.getComputedStyle(document.body);
     const buttonStyles = primaryButton ? window.getComputedStyle(primaryButton) : null;
 
     return {
       background: bodyStyles.backgroundColor,
       buttonBackground: buttonStyles?.backgroundColor ?? "",
+      colorScheme: rootStyles.colorScheme,
       fontFamily: bodyStyles.fontFamily
     };
   });
 
   expect(styles.fontFamily).toContain("IBM Plex Sans Arabic");
-  expect(styles.background).toBe("rgb(251, 247, 238)");
-  expect(["rgb(47, 80, 56)", "rgb(36, 63, 43)"]).toContain(styles.buttonBackground);
+  expect(styles.colorScheme).toBe("dark");
+  expect(styles.buttonBackground).toBe("rgb(41, 203, 131)");
 }
 
 test("login and register use Arabic-first auth anatomy", async ({ page }) => {
@@ -338,7 +340,7 @@ test("my lists renders empty and populated personal taste library states", async
 
   await page.goto("/lists");
   await expect(page.getByRole("link", { name: /Weekend picks/ })).toBeVisible();
-  await expect(page.getByText("1 مكان")).toBeVisible();
+  await expect(page.getByRole("link", { name: /1 مكان/ })).toBeVisible();
   await expect(page.getByText("خاصة", { exact: true })).toBeVisible();
   await expect(page.getByText("مكتبة ذوقك")).toHaveCount(0);
   await expect(page.getByText("رف")).toHaveCount(0);
@@ -435,7 +437,7 @@ test("list detail prioritizes collection content and uses add-place dialog", asy
   await expect(page.getByRole("button", { name: "موجود" })).toBeDisabled();
 
   await page.getByRole("button", { name: "إغلاق" }).click();
-  await expect(page.getByRole("button", { name: "تعديل القائمة" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "إجراءات القائمة" })).toBeVisible();
   await expectNoEscapedUnicode(page);
 });
 
@@ -450,13 +452,13 @@ test("list detail supports compact edit and delete actions", async ({ page }) =>
 
   await page.goto("/lists/list-1");
   await expect(page.getByRole("heading", { name: "Weekend picks" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "أضف مكان" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "تعديل القائمة" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "حذف القائمة" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "أضف مكانًا" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "إجراءات القائمة" })).toBeVisible();
   await expect(page.getByRole("button", { name: /إخراج/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /إزالة Nara Cafe من القائمة/ })).toBeVisible();
 
-  await page.getByRole("button", { name: "تعديل القائمة" }).click();
+  await page.getByRole("button", { name: "إجراءات القائمة" }).click();
+  await page.getByRole("menuitem", { name: "تعديل" }).click();
   await expect(page.getByRole("dialog", { name: "تعديل القائمة" })).toBeVisible();
   await page.getByLabel("اسم القائمة").fill("قائمة سريعة");
   await page.getByRole("radio", { name: "عامة" }).check();
@@ -464,11 +466,13 @@ test("list detail supports compact edit and delete actions", async ({ page }) =>
   await expect(page.getByRole("heading", { name: "قائمة سريعة" })).toBeVisible();
   await expect(page.getByText("عامة", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "حذف القائمة" }).click();
+  await page.getByRole("button", { name: "إجراءات القائمة" }).click();
+  await page.getByRole("menuitem", { name: "حذف" }).click();
   await expect(page.getByRole("alertdialog", { name: "حذف القائمة" })).toBeVisible();
   await page.getByRole("button", { name: "إلغاء" }).click();
   await expect(page.getByRole("alertdialog", { name: "حذف القائمة" })).toHaveCount(0);
-  await page.getByRole("button", { name: "حذف القائمة" }).click();
+  await page.getByRole("button", { name: "إجراءات القائمة" }).click();
+  await page.getByRole("menuitem", { name: "حذف" }).click();
   await page.getByRole("button", { name: "حذف" }).click();
   await expect(page).toHaveURL(/\/lists$/);
   await expectNoHorizontalOverflow(page);

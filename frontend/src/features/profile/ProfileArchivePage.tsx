@@ -25,6 +25,7 @@ import {
   clearTokens,
   getAccessToken
 } from "@/lib/api";
+import { formatNumber, formatOutOfTen } from "@/lib/numerals";
 
 type ProfileStat = {
   label: string;
@@ -93,21 +94,18 @@ export function ProfileArchivePage() {
     <main className="content profile-page">
       <section className="profile-hero" aria-labelledby="profile-title">
         <div className="profile-hero__copy">
-          <p className="eyebrow">صفحتي</p>
-          <h1 id="profile-title">ملفي</h1>
-          <p className="muted">
-            ملخص قوائمك وتقييماتك.
-          </p>
+          <h1 id="profile-title">صفحتي</h1>
+          <p className="muted">قوائمك وتقييماتك</p>
         </div>
         {profile ? (
           <div className="profile-stats" aria-label="ملخص الصفحة">
             {stats.map((stat) => (
               <div
-                aria-label={`${stat.label}: ${stat.value} ${stat.unit}`}
+                aria-label={`${stat.label}: ${formatNumber(stat.value)} ${stat.unit}`}
                 className="profile-stat"
                 key={stat.label}
               >
-                <span className="profile-stat__value">{stat.value}</span>
+                <span className="profile-stat__value">{formatNumber(stat.value)}</span>
                 <span className="profile-stat__label">{stat.label}</span>
               </div>
             ))}
@@ -136,9 +134,8 @@ export function ProfileArchivePage() {
 
       {!loading && profile && !hasArchive ? (
         <EmptyState
-          action={<ButtonLink href="/restaurants">افتح المطاعم</ButtonLink>}
-          body="قيّم مكانًا بعد تجربته ليظهر هنا."
-          title="يبدأ أرشيفك بالتقييم"
+          action={<ButtonLink href="/places">الأماكن</ButtonLink>}
+          title="لا توجد تقييمات"
         />
       ) : null}
 
@@ -146,7 +143,6 @@ export function ProfileArchivePage() {
         <>
           <section className="profile-section" aria-labelledby="profile-tried-title">
             <div className="library-section__header">
-              <p className="eyebrow">ذاكرة مجرّبة</p>
               <h2 id="profile-tried-title">أماكن جربتها</h2>
             </div>
             {profile.triedPlaces.length === 0 ? (
@@ -169,8 +165,7 @@ export function ProfileArchivePage() {
 
           <section className="profile-section" aria-labelledby="profile-ratings-title">
             <div className="library-section__header">
-              <p className="eyebrow">تقييماتك</p>
-              <h2 id="profile-ratings-title">الدرجات والملاحظات الخاصة</h2>
+              <h2 id="profile-ratings-title">تقييماتك</h2>
             </div>
             {profile.userRatings.length === 0 ? (
               <p className="muted">لم تحفظ أي تقييم بعد.</p>
@@ -189,8 +184,7 @@ export function ProfileArchivePage() {
         <section className="profile-section" aria-labelledby="profile-public-title">
           <div className="library-section__header library-section__header--inline">
             <div>
-              <p className="eyebrow">قوائم عامة</p>
-              <h2 id="profile-public-title">ما يظهر للآخرين من قوائمك</h2>
+              <h2 id="profile-public-title">قوائم عامة</h2>
             </div>
             <ButtonLink href="/lists/public" variant="secondary">
               القوائم العامة
@@ -221,7 +215,7 @@ export function ProfileArchivePage() {
 function RatingArchiveCard({ rating }: { rating: ProfileRating }) {
   return (
     <article
-      aria-label={`${rating.place.name}، تقييمك ${rating.rating} من 10${
+      aria-label={`${rating.place.name}، تقييمك ${formatOutOfTen(rating.rating)}${
         rating.notes ? "، ملاحظة خاصة" : ""
       }`}
       className="profile-rating-card"
@@ -232,7 +226,7 @@ function RatingArchiveCard({ rating }: { rating: ProfileRating }) {
           <BidiText>{rating.place.name}</BidiText>
         </h3>
         <div className="profile-rating-card__meta">
-          <Badge variant="rating">تقييمك {rating.rating}/10</Badge>
+          <Badge variant="rating">تقييمك {formatOutOfTen(rating.rating)}</Badge>
           <Badge>جربته</Badge>
         </div>
       </div>

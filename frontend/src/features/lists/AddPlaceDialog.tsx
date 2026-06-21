@@ -10,7 +10,8 @@ import {
   EmptyState,
   Modal,
   SearchField,
-  StatusMessage
+  StatusMessage,
+  VisualArtwork
 } from "@/components/ui";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { ApiError, ListDetail, Place, apiRequest } from "@/lib/api";
@@ -90,7 +91,6 @@ export function AddPlaceDialog({
           }}
           onClear={query ? () => setQuery("") : undefined}
           resultCount={normalizedQuery ? results.length : undefined}
-          scopeLabel="بحث باسم المكان فقط."
           value={query}
         />
 
@@ -99,15 +99,13 @@ export function AddPlaceDialog({
 
         {!normalizedQuery ? (
           <EmptyState
-            body="اكتب اسم مطعم أو مقهى موجود لحفظه في هذه القائمة."
             title="بحث"
           />
         ) : null}
 
         {normalizedQuery && results.length === 0 ? (
           <EmptyState
-            action={<Link href="/places/new">أضف مكان</Link>}
-            body="أضف المكان أولًا ثم أعد البحث."
+            action={<Link href="/places/new">أضف مكانًا</Link>}
             title="لا يوجد مكان بهذا الاسم"
           />
         ) : null}
@@ -119,6 +117,7 @@ export function AddPlaceDialog({
 
               return (
                 <article className="place-save-dialog__list" key={place.id}>
+                  <VisualArtwork id={place.id} label={place.name} type={place.type} variant="mini" />
                   <div>
                     <h3>
                       <BidiText>{place.name}</BidiText>

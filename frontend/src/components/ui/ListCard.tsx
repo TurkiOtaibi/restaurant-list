@@ -2,11 +2,12 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import type { UserList } from "@/lib/api";
+import { placeCountLabel } from "@/lib/numerals";
 import { cx } from "@/lib/ui";
 
-import { Badge } from "./Badge";
 import { BidiText } from "./BidiText";
 import { Card, CardLink } from "./Card";
+import { VisualArtwork } from "./VisualArtwork";
 
 type ListCardProps = {
   actions?: ReactNode;
@@ -33,7 +34,8 @@ export function ListCard({
 
   const content = (
     <>
-      <div className="ds-list-card__identity">
+      <VisualArtwork id={list.id} label={list.name} variant="list" />
+      <div className="ds-list-card__main">
         <h2 className="ds-list-card__title">
           {href && actions ? (
             <Link aria-label={accessibleName} className="ds-list-card__link" href={href}>
@@ -43,16 +45,19 @@ export function ListCard({
             <BidiText>{list.name}</BidiText>
           )}
         </h2>
+        <div className="ds-list-card__meta" aria-hidden="true">
+          <span>{count}</span>
+          <span>{visibility}</span>
+          {context === "viewer" ? <span>عرض فقط</span> : null}
+        </div>
       </div>
-
-      <div className="ds-list-card__meta" aria-hidden="true">
-        <span className="ds-list-card__count">{count}</span>
-        <Badge variant={list.visibility}>{visibility}</Badge>
-        {context === "viewer" ? <span>عرض فقط</span> : null}
-        {isEmpty ? <span>فارغة</span> : null}
-      </div>
-
-      {actions ? <div className="actions">{actions}</div> : null}
+      {actions ? (
+        <div className="ds-list-card__actions">{actions}</div>
+      ) : (
+        <span aria-hidden="true" className="ds-list-card__more">
+          •••
+        </span>
+      )}
     </>
   );
 
@@ -80,8 +85,4 @@ export function ListCard({
 
 function visibilityLabel(visibility: UserList["visibility"]): string {
   return visibility === "public" ? "عامة" : "خاصة";
-}
-
-function placeCountLabel(count: number): string {
-  return `${count} مكان`;
 }

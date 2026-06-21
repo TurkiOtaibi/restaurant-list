@@ -14,6 +14,7 @@ import {
   StatusMessage
 } from "@/components/ui";
 import { ApiError, ListDetail, apiRequest, clearTokens, getAccessToken } from "@/lib/api";
+import { placeCountLabel } from "@/lib/numerals";
 
 type PublicListDetailPageProps = {
   listId: string;
@@ -67,20 +68,16 @@ export function PublicListDetailPage({ listId }: PublicListDetailPageProps) {
         className="public-list-detail-hero"
       >
         <div className="public-list-detail-hero__copy">
-          <p className="eyebrow">قائمة عامة</p>
           <h1 id="public-list-detail-title">
             {list ? <BidiText>{list.name}</BidiText> : "قائمة عامة"}
           </h1>
           {list ? (
             <div className="collection-hero__meta">
-              <Badge variant="public">عام</Badge>
+              <Badge variant="public">عامة</Badge>
               <span>{placeCountLabel(placeCount)}</span>
               <span>عرض فقط</span>
             </div>
           ) : null}
-          <p className="muted">
-            قائمة عامة قابلة للقراءة للمستخدمين المسجلين. لا تظهر هنا ملاحظات خاصة أو أدوات إدارة.
-          </p>
         </div>
         <ButtonLink href="/lists/public" variant="secondary">
           رجوع للقوائم العامة
@@ -109,7 +106,6 @@ export function PublicListDetailPage({ listId }: PublicListDetailPageProps) {
       {!loading && list && list.items.length === 0 ? (
         <EmptyState
           action={<ButtonLink href="/lists/public">رجوع للقوائم العامة</ButtonLink>}
-          body="لا توجد أماكن في هذه القائمة العامة."
           title="هذه القائمة فارغة"
         />
       ) : null}
@@ -117,10 +113,9 @@ export function PublicListDetailPage({ listId }: PublicListDetailPageProps) {
       {!loading && list && list.items.length > 0 ? (
         <section className="public-list-places" aria-labelledby="public-list-places-title">
           <div className="library-section__header">
-            <p className="eyebrow">أماكن عامة</p>
-            <h2 id="public-list-places-title">أماكن محفوظة في هذه القائمة</h2>
+            <h2 id="public-list-places-title">الأماكن</h2>
           </div>
-          <div className="collection-artifacts" aria-label="أماكن القائمة العامة">
+          <div className="place-memory-grid" aria-label="أماكن القائمة العامة">
             {list.items.map((item) => (
               <PlaceCard
                 href={`/places/${item.place.id}`}
@@ -133,20 +128,4 @@ export function PublicListDetailPage({ listId }: PublicListDetailPageProps) {
       ) : null}
     </main>
   );
-}
-
-function placeCountLabel(count: number): string {
-  if (count === 0) {
-    return "لا توجد أماكن";
-  }
-
-  if (count === 1) {
-    return "مكان واحد";
-  }
-
-  if (count === 2) {
-    return "مكانان";
-  }
-
-  return `${count} أماكن`;
 }

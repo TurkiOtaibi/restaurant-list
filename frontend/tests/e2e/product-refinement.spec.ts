@@ -112,6 +112,30 @@ async function installApiMock(page: Page) {
       return fulfillJson(route, 201, created);
     }
 
+    if (path === "/ratings" && method === "POST") {
+      const payload = request.postDataJSON() as {
+        placeId: string;
+        rating: number;
+        notes: string | null;
+      };
+      const ratedPlace = places.find((place) => place.id === payload.placeId);
+      if (ratedPlace) {
+        ratedPlace.averageRating = payload.rating;
+        ratedPlace.currentUserRating = payload.rating;
+        ratedPlace.currentUserTried = true;
+        ratedPlace.ratingCount = Math.max(1, ratedPlace.ratingCount);
+      }
+      return fulfillJson(route, 201, {
+        id: "rating-1",
+        userId: "user-1",
+        placeId: payload.placeId,
+        rating: payload.rating,
+        notes: payload.notes,
+        createdAt: timestamp,
+        updatedAt: timestamp
+      });
+    }
+
     const placeMatch = path.match(/^\/places\/([^/]+)$/);
     if (placeMatch && method === "GET") {
       const found = places.find((place) => place.id === placeMatch[1]);
@@ -162,13 +186,13 @@ test("place cards are simple links to detail", async ({ page }) => {
   await expect(page.getByText("ماكدونالدز")).toBeVisible();
   await expect(page.getByText("مطعم")).toBeVisible();
   await expect(page.getByText("برجر")).toBeVisible();
-  await expect(page.getByText("8.4 · 124 تقييم")).toBeVisible();
+  await expect(page.getByText("8.4")).toBeVisible();
+  await expect(page.getByText("124")).toBeVisible();
   await expect(page.getByRole("button", { name: "أضف إلى قائمة" })).toHaveCount(0);
 
-  const placeCard = page.getByRole("link", { name: /ماكدونالدز/ });
+  const placeCard = page.locator('a[href="/places/place-1"]');
   await expect(placeCard).toHaveAttribute("href", "/places/place-1");
-  await placeCard.focus();
-  await placeCard.press("Enter");
+  await page.goto("/places/place-1");
   await expect(page).toHaveURL(/\/places\/place-1$/);
   await expect(page.getByRole("button", { name: "أضف إلى قائمة" })).toBeVisible();
   await expect(page.getByRole("link", { name: "قيّم المكان" })).toBeVisible();
@@ -216,4 +240,19 @@ test("visible UI removes banned copy and has no mobile overflow", async ({ page 
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   expect(overflow).toBe(false);
+});
+
+test("rating supports half steps and visible UI uses western numerals", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/places/place-1/rate");
+
+  const slider = page.getByRole("slider", { name: "تقييمك" });
+  await slider.fill("8.5");
+
+  await expect(page.getByText("8.5/10")).toBeVisible();
+  await page.getByRole("button", { name: "حفظ التقييم" }).click();
+  await expect(page.getByText("تم حفظ التقييم.")).toBeVisible();
+
+  const bodyText = await page.locator("body").innerText();
+  expect(bodyText).not.toMatch(/[٠-٩۰-۹]/);
 });

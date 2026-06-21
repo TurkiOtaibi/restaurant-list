@@ -16,6 +16,7 @@ import {
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { ApiError, Place, Rating, apiRequest, clearTokens, getAccessToken } from "@/lib/api";
 import { formatAverageRating } from "@/lib/format";
+import { formatOutOfTen } from "@/lib/numerals";
 
 type RatePlaceDialogProps = {
   onClose: (place: Place | null) => void;
@@ -154,7 +155,7 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
               <div className="rate-place-dialog__meta">
                 {place.currentUserTried ? <Badge>جربته</Badge> : null}
                 {place.currentUserRating ? (
-                  <Badge variant="rating">تقييمك الحالي {place.currentUserRating}/10</Badge>
+                  <Badge variant="rating">تقييمك الحالي {formatOutOfTen(place.currentUserRating)}</Badge>
                 ) : null}
                 <span>{formatAverageRating(place.averageRating)}</span>
               </div>
@@ -175,9 +176,9 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
             />
 
             <TextArea
-              helper="ملاحظة خاصة لا تظهر للآخرين."
+              helper="ملاحظتك خاصة"
               id="rating-notes"
-              label="ملاحظتك الخاصة"
+              label="ملاحظتك"
               name="notes"
               onChange={(event) => {
                 setNotes(event.target.value);
@@ -194,10 +195,10 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
 
         <div className="form-surface__footer">
           <Button className="ds-button--full" isLoading={submitting} type="submit">
-            {place?.currentUserRating ? "تعديل التقييم" : "حفظ"}
+            حفظ التقييم
           </Button>
           <Button onClick={() => onClose(place)} type="button" variant="secondary">
-            العودة لتفاصيل المكان
+            إلغاء
           </Button>
         </div>
       </form>

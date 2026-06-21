@@ -5,8 +5,8 @@ import type { FormEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
+  AddIcon,
   Button,
-  ButtonLink,
   EmptyState,
   PlaceCard,
   SearchField,
@@ -99,8 +99,13 @@ export function PlaceLibraryPage() {
         <div className="place-library-hero__copy">
           <h1 id="places-title">الأماكن</h1>
         </div>
-        <Link className="ds-button" href={`/places/new?type=${activeType}`} ref={createLinkRef}>
-          أضف مكانًا
+        <Link
+          aria-label="أضف مكانًا"
+          className="ds-button ds-button--icon"
+          href={`/places/new?type=${activeType}`}
+          ref={createLinkRef}
+        >
+          <AddIcon />
         </Link>
       </section>
 
@@ -132,9 +137,8 @@ export function PlaceLibraryPage() {
               label="بحث"
               onChange={(event) => setSearchTerm(event.target.value)}
               onClear={searchTerm || submittedSearch ? handleClearSearch : undefined}
-              placeholder="اسم المكان"
+              placeholder="ابحث عن مكان"
               resultCount={!loading && isSearching ? places.length : undefined}
-              scopeLabel="بحث باسم المكان فقط."
               value={searchTerm}
             />
             <Button isLoading={loading && isSearching} type="submit" variant="secondary">
@@ -155,7 +159,7 @@ export function PlaceLibraryPage() {
                 مسح البحث
               </Button>
             ) : (
-              <ButtonLink href={`/places/new?type=${activeType}`}>أضف مكانًا</ButtonLink>
+              <Link className="ds-button" href={`/places/new?type=${activeType}`}>أضف مكانًا</Link>
             )
           }
           body={isSearching ? "غيّر الاسم أو امسح البحث." : "أضف مكانًا للبدء."}
