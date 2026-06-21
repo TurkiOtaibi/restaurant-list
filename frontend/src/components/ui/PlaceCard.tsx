@@ -17,7 +17,7 @@ type PlaceCardProps = {
 };
 
 export function PlaceCard({ compact = false, href, place, view = "card" }: PlaceCardProps) {
-  const content = <PlaceCardContent place={place} />;
+  const content = <PlaceCardContent place={place} view={view} />;
   const className = cx(
     "ds-place-card",
     view === "row" && "ds-place-card--row",
@@ -35,7 +35,7 @@ export function PlaceCard({ compact = false, href, place, view = "card" }: Place
   return <Card className={className}>{content}</Card>;
 }
 
-function PlaceCardContent({ place }: { place: Place }) {
+function PlaceCardContent({ place, view }: { place: Place; view: PlaceCardProps["view"] }) {
   const subtype = placeSubtypeLabel(place.subtype);
   const hasRating = place.averageRating !== null && place.ratingCount > 0;
 
@@ -55,6 +55,8 @@ function PlaceCardContent({ place }: { place: Place }) {
             <NumberText>{formatAverageRating(place.averageRating)}</NumberText>
             {place.ratingCount > 1 ? <NumberText>{formatNumber(place.ratingCount)}</NumberText> : null}
           </p>
+        ) : view === "row" ? (
+          <span aria-hidden="true" className="ds-place-card__affordance" />
         ) : null}
       </div>
     </>

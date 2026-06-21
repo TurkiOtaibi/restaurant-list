@@ -11,7 +11,8 @@ import {
   EmptyState,
   ListCard,
   LoadingState,
-  StatusMessage
+  StatusMessage,
+  VisualArtwork
 } from "@/components/ui";
 import {
   ApiError,
@@ -189,7 +190,7 @@ function RatingArchiveCard({ rating }: { rating: ProfileRating }) {
       }`}
       className="profile-rating-card"
     >
-      <span aria-hidden="true" className="profile-rating-card__spine" />
+      <VisualArtwork id={rating.place.id} label={rating.place.name} type={rating.place.type} variant="mini" />
       <div className="profile-rating-card__main">
         <h3>
           <BidiText>{rating.place.name}</BidiText>
@@ -209,7 +210,7 @@ function RatingArchiveCard({ rating }: { rating: ProfileRating }) {
       )}
       <div className="actions">
         <ButtonLink href={`/places/${rating.place.id}/rate`} variant="secondary">
-          حدّث التقييم
+          تعديل
         </ButtonLink>
       </div>
     </article>

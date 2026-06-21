@@ -102,9 +102,14 @@ export default function ListsPage() {
       {!loading && !needsAuth && !error && lists.length === 0 ? (
         <EmptyState
           action={
-            <Link className="ds-button" href="/lists/new">
-              أنشئ أول قائمة
-            </Link>
+            <div className="empty-actions">
+              <Link className="ds-button" href="/lists/new">
+                أنشئ أول قائمة
+              </Link>
+              <Link className="text-link" href="/lists/public">
+                استكشف القوائم العامة <span aria-hidden="true">{"\u2192"}</span>
+              </Link>
+            </div>
           }
           body="ابدأ بقائمة واحدة."
           title="لا توجد قوائم"
@@ -128,7 +133,7 @@ export default function ListsPage() {
         </section>
       ) : null}
 
-      {!loading && !needsAuth && !error ? (
+      {!loading && !needsAuth && !error && lists.length > 0 ? (
         <div className="public-lists-entry-compact">
           <Link href="/lists/public">
             استكشف القوائم العامة <span aria-hidden="true">→</span>
