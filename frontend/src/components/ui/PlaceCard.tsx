@@ -13,11 +13,16 @@ type PlaceCardProps = {
   compact?: boolean;
   href?: string;
   place: Place;
+  view?: "card" | "row";
 };
 
-export function PlaceCard({ compact = false, href, place }: PlaceCardProps) {
+export function PlaceCard({ compact = false, href, place, view = "card" }: PlaceCardProps) {
   const content = <PlaceCardContent place={place} />;
-  const className = cx("ds-place-card", compact && "ds-place-card--compact");
+  const className = cx(
+    "ds-place-card",
+    view === "row" && "ds-place-card--row",
+    compact && "ds-place-card--compact"
+  );
 
   if (href) {
     return (

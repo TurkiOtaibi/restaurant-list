@@ -169,9 +169,9 @@ export function PlaceLibraryPage() {
 
       {!loading && !needsAuth && places.length > 0 ? (
         <section className="place-memory-section" aria-label="قائمة الأماكن">
-          <div className="place-memory-grid">
+          <div className="place-memory-list">
             {places.map((place) => (
-              <PlaceCard href={`/places/${place.id}`} key={place.id} place={place} />
+              <PlaceCard href={`/places/${place.id}`} key={place.id} place={place} view="row" />
             ))}
           </div>
         </section>

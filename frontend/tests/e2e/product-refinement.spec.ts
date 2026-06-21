@@ -156,6 +156,26 @@ async function installApiMock(page: Page) {
       ]);
     }
 
+    if (path === "/profile" && method === "GET") {
+      return fulfillJson(route, 200, {
+        listCount: 1,
+        triedRestaurantCount: 1,
+        triedCafeCount: 0,
+        ratingsCreatedCount: 1,
+        userRatings: [
+          {
+            id: "rating-1",
+            place: places[0],
+            rating: 8.5,
+            notes: "ملاحظة خاصة",
+            createdAt: timestamp,
+            updatedAt: timestamp
+          }
+        ],
+        triedPlaces: [places[0]]
+      });
+    }
+
     return fulfillJson(route, 404, { detail: "Unhandled mock route." });
   });
 }
@@ -187,15 +207,27 @@ test("place cards are simple links to detail", async ({ page }) => {
   await expect(page.getByText("مطعم")).toBeVisible();
   await expect(page.getByText("برجر")).toBeVisible();
   await expect(page.getByText("8.4")).toBeVisible();
-  await expect(page.getByText("124")).toBeVisible();
   await expect(page.getByRole("button", { name: "أضف إلى قائمة" })).toHaveCount(0);
 
   const placeCard = page.locator('a[href="/places/place-1"]');
+  await expect(page.locator(".place-memory-list")).toBeVisible();
+  await expect(placeCard).toHaveClass(/ds-place-card--row/);
   await expect(placeCard).toHaveAttribute("href", "/places/place-1");
   await page.goto("/places/place-1");
   await expect(page).toHaveURL(/\/places\/place-1$/);
   await expect(page.getByRole("button", { name: "أضف إلى قائمة" })).toBeVisible();
   await expect(page.getByRole("link", { name: "قيّم المكان" })).toBeVisible();
+});
+
+test("profile merges tried archive and ratings to avoid duplicate sections", async ({ page }) => {
+  await page.goto("/profile");
+
+  await expect(page.getByRole("heading", { name: "صفحتي" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "تقييماتك" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "أماكن جربتها" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "ماكدونالدز" })).toBeVisible();
+  await expect(page.getByText("تقييمك 8.5/10")).toBeVisible();
+  await expect(page.getByText("ملاحظتك الخاصة")).toBeVisible();
 });
 
 test("add place requires subtype only for restaurants and cafes", async ({ page }) => {

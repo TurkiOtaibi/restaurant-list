@@ -11,7 +11,6 @@ import {
   EmptyState,
   ListCard,
   LoadingState,
-  PlaceCard,
   StatusMessage
 } from "@/components/ui";
 import {
@@ -86,9 +85,7 @@ export function ProfileArchivePage() {
   }, [loadProfile]);
 
   const stats = profile ? profileStats(profile) : [];
-  const hasArchive = profile
-    ? profile.triedPlaces.length > 0 || profile.userRatings.length > 0
-    : false;
+  const hasRatings = profile ? profile.userRatings.length > 0 : false;
 
   return (
     <main className="content profile-page">
@@ -132,52 +129,24 @@ export function ProfileArchivePage() {
         </section>
       ) : null}
 
-      {!loading && profile && !hasArchive ? (
+      {!loading && profile && !hasRatings ? (
         <EmptyState
           action={<ButtonLink href="/places">الأماكن</ButtonLink>}
           title="لا توجد تقييمات"
         />
       ) : null}
 
-      {!loading && profile && hasArchive ? (
-        <>
-          <section className="profile-section" aria-labelledby="profile-tried-title">
-            <div className="library-section__header">
-              <h2 id="profile-tried-title">أماكن جربتها</h2>
-            </div>
-            {profile.triedPlaces.length === 0 ? (
-              <p className="muted">لم يظهر مكان مجرّب بعد.</p>
-            ) : (
-              <div className="profile-place-grid" aria-label="الأماكن التي جربتها">
-                {profile.triedPlaces.map((place) => (
-                  <div className="stack" key={place.id}>
-                    <PlaceCard href={`/places/${place.id}`} place={place} />
-                    <div className="actions">
-                      <ButtonLink href={`/places/${place.id}/rate`} variant="secondary">
-                        تعديل التقييم
-                      </ButtonLink>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section className="profile-section" aria-labelledby="profile-ratings-title">
-            <div className="library-section__header">
-              <h2 id="profile-ratings-title">تقييماتك</h2>
-            </div>
-            {profile.userRatings.length === 0 ? (
-              <p className="muted">لم تحفظ أي تقييم بعد.</p>
-            ) : (
-              <div className="profile-rating-list" aria-label="تقييماتك الخاصة">
-                {profile.userRatings.map((rating) => (
-                  <RatingArchiveCard key={rating.id} rating={rating} />
-                ))}
-              </div>
-            )}
-          </section>
-        </>
+      {!loading && profile && hasRatings ? (
+        <section className="profile-section" aria-labelledby="profile-ratings-title">
+          <div className="library-section__header">
+            <h2 id="profile-ratings-title">تقييماتك</h2>
+          </div>
+          <div className="profile-rating-list" aria-label="تقييماتك الخاصة">
+            {profile.userRatings.map((rating) => (
+              <RatingArchiveCard key={rating.id} rating={rating} />
+            ))}
+          </div>
+        </section>
       ) : null}
 
       {!loading && profile ? (
