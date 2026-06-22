@@ -43,6 +43,19 @@ test.afterAll(() => {
 test("real frontend and api complete auth, create, search, and detail flow", async ({ page }) => {
   test.setTimeout(60_000);
 
+  page.on("console", (msg) => console.log(`[page:${msg.type()}] ${msg.text()}`));
+  page.on("response", async (response) => {
+    if (response.url().includes("/api/v1/")) {
+      let body = "";
+      try {
+        body = await response.text();
+      } catch {
+        body = "<unreadable>";
+      }
+      console.log(`[response] ${response.status()} ${response.url()} :: ${body.slice(0, 200)}`);
+    }
+  });
+
   const unique = Date.now();
   const email = `e2e-${unique}@example.com`;
   const placeName = `محل آيس كريم ${unique}`;
