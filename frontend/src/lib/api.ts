@@ -182,6 +182,21 @@ export async function ensureSession(): Promise<string | null> {
   return refreshAccessToken();
 }
 
+/**
+ * Revokes the refresh token server-side (via the HttpOnly cookie) and clears the
+ * in-memory token, broadcasting the logout to other tabs. The local session is
+ * cleared even if the network call fails.
+ */
+export async function logout(): Promise<void> {
+  try {
+    await apiRequest("/auth/logout", { method: "POST", auth: false, skipRefresh: true });
+  } catch {
+    // Ignore network/HTTP errors — clear the local session regardless.
+  } finally {
+    clearTokens();
+  }
+}
+
 export async function apiRequest<T>(
   path: string,
   options: ApiRequestOptions = {}

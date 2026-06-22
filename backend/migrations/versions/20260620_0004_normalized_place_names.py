@@ -29,6 +29,25 @@ def upgrade() -> None:
     op.alter_column(
         "places", "normalized_name", existing_type=sa.String(length=120), nullable=False
     )
+    # Quarantine any pre-existing duplicate normalized names (keep the earliest
+    # row unchanged, suffix the rest) so the unique index below cannot fail on a
+    # populated database. No-op on a clean database.
+    op.execute(
+        """
+        UPDATE places
+        SET normalized_name = substr(normalized_name, 1, 70) || '-dup-' || id
+        WHERE id IN (
+            SELECT p.id
+            FROM places p
+            JOIN places q
+              ON q.normalized_name = p.normalized_name
+             AND (
+                 q.created_at < p.created_at
+                 OR (q.created_at = p.created_at AND q.id < p.id)
+             )
+        )
+        """
+    )
     op.create_index(op.f("ix_places_normalized_name"), "places", ["normalized_name"], unique=True)
 
 
