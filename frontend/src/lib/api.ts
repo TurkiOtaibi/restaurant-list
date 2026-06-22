@@ -95,6 +95,7 @@ export type Profile = {
   listCount: number;
   triedRestaurantCount: number;
   triedCafeCount: number;
+  triedIceCreamCount: number;
   ratingsCreatedCount: number;
   userRatings: ProfileRating[];
   triedPlaces: Place[];

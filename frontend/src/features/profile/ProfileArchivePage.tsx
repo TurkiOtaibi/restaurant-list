@@ -231,6 +231,7 @@ function profileStats(profile: Profile): ProfileStat[] {
     { label: "قوائم", unit: "قائمة", value: profile.listCount },
     { label: "مطاعم مجربة", unit: "مطعم", value: profile.triedRestaurantCount },
     { label: "مقاهٍ مجربة", unit: "مقهى", value: profile.triedCafeCount },
+    { label: "آيس كريم مجرب", unit: "محل", value: profile.triedIceCreamCount },
     { label: "تقييمات", unit: "تقييم", value: profile.ratingsCreatedCount }
   ];
 }
