@@ -23,11 +23,23 @@ os.environ.setdefault(
     "CORS_ORIGINS",
     '["http://127.0.0.1:3000","http://localhost:3000"]',
 )
+os.environ.setdefault(
+    "CORS_ALLOW_ORIGIN_REGEX",
+    r"http://(localhost|127\.0\.0\.1):3000",
+)
 
 sys.path.insert(0, str(BACKEND_ROOT))
 
+from app.core.config import get_settings  # noqa: E402
 from app.db.base import Base  # noqa: E402
 from app.db.session import engine  # noqa: E402
+
+_settings = get_settings()
+print(
+    f"[e2e-api] cors_origins={_settings.cors_origins} "
+    f"cors_allow_origin_regex={_settings.cors_allow_origin_regex}",
+    flush=True,
+)
 
 
 async def prepare_database() -> None:

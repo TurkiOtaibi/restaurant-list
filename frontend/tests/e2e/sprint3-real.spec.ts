@@ -34,6 +34,7 @@ test.beforeAll(async () => {
   });
 
   await waitForApi();
+  console.log(`[api-startup]\n${apiOutput}`);
 });
 
 test.afterAll(() => {
