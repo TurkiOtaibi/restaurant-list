@@ -37,15 +37,6 @@ def create_app() -> FastAPI:
         redoc_url="/redoc" if settings.enable_api_docs else None,
     )
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_origin_regex=settings.cors_allow_origin_regex,
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
-    )
-
     @app.middleware("http")
     async def add_operational_headers(
         request: Request,
@@ -93,6 +84,17 @@ def create_app() -> FastAPI:
                 }
             },
         )
+
+    # Register CORS last so it becomes the outermost middleware and answers
+    # preflight requests before the operational-headers middleware runs.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_origin_regex=settings.cors_allow_origin_regex,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+    )
 
     app.include_router(health_router)
     app.include_router(auth_router, prefix="/api/v1")

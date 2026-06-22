@@ -70,6 +70,18 @@ test("real frontend and api complete auth, create, search, and detail flow", asy
 
   // Register -> redirected to the lists shell.
   await page.goto("/register");
+  const probe = await page.evaluate(async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:8000/health/ready");
+      return {
+        status: response.status,
+        acao: response.headers.get("access-control-allow-origin")
+      };
+    } catch (error) {
+      return { error: String(error) };
+    }
+  });
+  console.log("[probe] cross-origin GET /health/ready ->", JSON.stringify(probe));
   await page.getByLabel("البريد الإلكتروني").fill(email);
   await page.getByLabel("كلمة المرور").fill("password123");
   await page.getByRole("button", { name: "إنشاء حساب" }).click();
