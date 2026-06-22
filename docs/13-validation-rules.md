@@ -28,7 +28,10 @@ OAuth, Google login, Apple login, and social login are not valid authentication 
 | name | Must be 1 to 120 characters after trimming. | Too long. |
 | name | Must be globally unique by normalized name. | Duplicate place name. |
 | type | Required. | Missing type. |
-| type | Must be `restaurant` or `cafe`. | Unsupported type. |
+| type | Must be `restaurant`, `cafe`, or `ice_cream`. | Unsupported type. |
+| subtype | Required and valid for `restaurant`. | Missing or unsupported restaurant subtype. |
+| subtype | Required and valid for `cafe`. | Missing or unsupported cafe subtype. |
+| subtype | Must be omitted for `ice_cream`. | Ice cream subtype supplied. |
 | description | Optional. | No error if blank. |
 | description | Maximum 1000 characters. | Too long. |
 
@@ -90,10 +93,11 @@ MVP uniqueness is normalized exact-name uniqueness, not fuzzy duplicate detectio
 | Parameter | Rule | Error Condition |
 | --- | --- | --- |
 | q | Optional place-name query. | Too long when over 120 characters. |
-| type | Optional for place list; if present, must be `restaurant` or `cafe`. | Unsupported type. |
-| sort | Must be `name_asc`. | Unsupported sort. |
-| page | Positive integer. | Invalid page. |
-| pageSize | Positive integer up to 50. | Invalid page size. |
+| type | Optional for place list; if present, must be `restaurant`, `cafe`, or `ice_cream`. | Unsupported type. |
+| subtype | Optional; requires `type` and must be valid for the selected type. | Missing type or incompatible subtype. |
+| sort | Must be `rating_desc`. | Unsupported sort. |
+| limit | Positive integer up to 100. | Invalid limit. |
+| offset | 0 or greater. | Invalid offset. |
 
 Search does not accept location, neighborhood, distance, category, popularity, trending, or recommendation parameters.
 

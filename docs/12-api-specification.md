@@ -678,18 +678,19 @@ Exactly one of `placeId` or `place` is required. One request targets one list on
 | Authentication | JWT required |
 | Authorization | Any authenticated user |
 | Pagination | Yes |
-| Sorting | `name_asc` only |
+| Sorting | `rating_desc` only |
 | Idempotency | Safe read |
 
 **Query parameters:**
 
 | Parameter | Required | Notes |
 | --- | --- | --- |
-| `type` | No | `restaurant` or `cafe`. |
+| `type` | No | `restaurant`, `cafe`, or `ice_cream`. Required when `subtype` is supplied. |
+| `subtype` | No | Restaurant subtypes: `burger`, `italian`, `american`, `steak`, `grill`, `shawarma`, `saudi`, `gulf`, `indian`, `asian`, `seafood`, `breakfast`, `healthy`, `other`. Cafe subtypes: `coffee`, `tea`. Not valid for `ice_cream`. |
 | `q` | No | Place-name search only. |
-| `page` | No | Positive integer. |
-| `pageSize` | No | 1 to 50. |
-| `sort` | No | Only `name_asc`. |
+| `limit` | No | 1 to 100. |
+| `offset` | No | 0 or greater. |
+| `sort` | No | Only `rating_desc`. |
 
 **Response schema:**
 
@@ -700,25 +701,39 @@ Exactly one of `placeId` or `place` is required. One request targets one list on
       "id": "place_123",
       "name": "Example Cafe",
       "type": "cafe",
+      "subtype": "coffee",
+      "description": null,
+      "createdByUserId": "user_123",
+      "createdAt": "2026-06-23T10:00:00Z",
+      "updatedAt": "2026-06-23T10:00:00Z",
       "averageRating": 8.3,
       "ratingCount": 12,
-      "currentUserTried": true
+      "currentUserRating": null,
+      "currentUserTried": true,
+      "currentUserListIds": [],
+      "currentUserListNames": [],
+      "currentUserListCount": 0
     }
   ],
   "meta": {
-    "page": 1,
-    "pageSize": 20,
-    "totalItems": 1,
-    "totalPages": 1
+    "limit": 100,
+    "offset": 0,
+    "total": 1,
+    "sort": "rating_desc"
   }
 }
 ```
 
 **Validation rules:**
 
-- `type` must be `restaurant` or `cafe` when supplied.
+- `type` must be `restaurant`, `cafe`, or `ice_cream` when supplied.
+- `subtype` requires `type`.
+- Restaurant subtypes are valid only when `type=restaurant`.
+- Cafe subtypes are valid only when `type=cafe`.
+- `ice_cream` does not accept `subtype`.
 - `q` searches place name only and must be 120 characters or fewer.
-- Location, neighborhood, distance, category, popularity, trending, and recommendation parameters are rejected.
+- Default sorting is highest average rating first, then rating count descending, then normalized place name ascending. Unrated places are last.
+- Location, neighborhood, distance, popularity, trending, and recommendation parameters are rejected.
 
 **Error responses:**
 
@@ -742,6 +757,7 @@ Exactly one of `placeId` or `place` is required. One request targets one list on
 {
   "name": "Example Restaurant",
   "type": "restaurant",
+  "subtype": "burger",
   "description": "Optional description."
 }
 ```
@@ -751,7 +767,10 @@ Exactly one of `placeId` or `place` is required. One request targets one list on
 **Validation rules:**
 
 - Name required and globally unique after normalization.
-- Type required and must be `restaurant` or `cafe`.
+- Type required and must be `restaurant`, `cafe`, or `ice_cream`.
+- Restaurant subtype is required and must be valid for restaurants.
+- Cafe subtype is required and must be valid for cafes.
+- Ice cream places must omit subtype.
 - Description optional and max 1000 characters.
 - Client-supplied aggregate fields are ignored or rejected.
 

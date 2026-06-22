@@ -56,6 +56,21 @@ async def _create_list(
     return cast(dict[str, Any], response.json())
 
 
+async def _rate_place(
+    client: AsyncClient,
+    token: str,
+    *,
+    place_id: str,
+    rating: float,
+) -> None:
+    response = await client.post(
+        "/api/v1/ratings",
+        json={"placeId": place_id, "rating": rating},
+        headers=auth_header(token),
+    )
+    assert response.status_code == 201
+
+
 async def test_places_require_authentication(client: AsyncClient) -> None:
     response = await client.get("/api/v1/places")
 
@@ -147,7 +162,7 @@ async def test_places_listing_is_bounded_and_offset_paginated(client: AsyncClien
         "limit": 2,
         "offset": 0,
         "total": 3,
-        "sort": "created_at_desc",
+        "sort": "rating_desc",
     }
     assert second_page.status_code == 200
     assert len(collection_data(second_page)) == 1
@@ -300,8 +315,32 @@ async def test_place_taxonomy_validation_and_filtering(client: AsyncClient) -> N
         "/api/v1/places?type=restaurant",
         headers=auth_header(token),
     )
+    restaurant_subtype_filter = await client.get(
+        "/api/v1/places?type=restaurant&subtype=burger",
+        headers=auth_header(token),
+    )
+    cafe_subtype_filter = await client.get(
+        "/api/v1/places?type=cafe&subtype=tea",
+        headers=auth_header(token),
+    )
+    search_and_subtype_filter = await client.get(
+        "/api/v1/places?type=restaurant&subtype=burger&q=house",
+        headers=auth_header(token),
+    )
     ice_cream_filter = await client.get(
         "/api/v1/places?type=ice_cream",
+        headers=auth_header(token),
+    )
+    subtype_without_type = await client.get(
+        "/api/v1/places?subtype=burger",
+        headers=auth_header(token),
+    )
+    incompatible_subtype = await client.get(
+        "/api/v1/places?type=cafe&subtype=burger",
+        headers=auth_header(token),
+    )
+    ice_cream_with_subtype = await client.get(
+        "/api/v1/places?type=ice_cream&subtype=coffee",
         headers=auth_header(token),
     )
 
@@ -312,4 +351,92 @@ async def test_place_taxonomy_validation_and_filtering(client: AsyncClient) -> N
     assert missing_cafe_subtype.status_code == 422
     assert invalid_ice_cream_subtype.status_code == 422
     assert {place["id"] for place in collection_data(restaurant_filter)} == {restaurant["id"]}
+    assert {place["id"] for place in collection_data(restaurant_subtype_filter)} == {
+        restaurant["id"]
+    }
+    assert {place["id"] for place in collection_data(cafe_subtype_filter)} == {cafe["id"]}
+    assert {place["id"] for place in collection_data(search_and_subtype_filter)} == {
+        restaurant["id"]
+    }
     assert {place["id"] for place in collection_data(ice_cream_filter)} == {ice_cream["id"]}
+    assert subtype_without_type.status_code == 422
+    assert subtype_without_type.json()["detail"]["code"] == "PLACE_TYPE_REQUIRED_FOR_SUBTYPE_FILTER"
+    assert incompatible_subtype.status_code == 422
+    assert incompatible_subtype.json()["detail"]["code"] == "INVALID_PLACE_SUBTYPE_FILTER"
+    assert ice_cream_with_subtype.status_code == 422
+    assert ice_cream_with_subtype.json()["detail"]["code"] == "INVALID_PLACE_SUBTYPE_FILTER"
+
+
+async def test_places_default_sorting_uses_rating_count_name_and_unrated_last(
+    client: AsyncClient,
+) -> None:
+    owner_token = await _token(client, email="sort-owner@example.com")
+    second_token = await _token(client, email="sort-second@example.com")
+
+    top = await _create_place(
+        client,
+        owner_token,
+        name="Aster Table",
+        place_type="restaurant",
+        subtype="italian",
+    )
+    tied_more_ratings = await _create_place(
+        client,
+        owner_token,
+        name="Bravo Burger",
+        place_type="restaurant",
+        subtype="burger",
+    )
+    tied_fewer_ratings = await _create_place(
+        client,
+        owner_token,
+        name="Casa Grill",
+        place_type="restaurant",
+        subtype="grill",
+    )
+    lower = await _create_place(
+        client,
+        owner_token,
+        name="Delta Steak",
+        place_type="restaurant",
+        subtype="steak",
+    )
+    unrated = await _create_place(
+        client,
+        owner_token,
+        name="Echo Shawarma",
+        place_type="restaurant",
+        subtype="shawarma",
+    )
+
+    await _rate_place(client, owner_token, place_id=top["id"], rating=9.5)
+    await _rate_place(client, owner_token, place_id=tied_more_ratings["id"], rating=9.0)
+    await _rate_place(client, second_token, place_id=tied_more_ratings["id"], rating=9.0)
+    await _rate_place(client, owner_token, place_id=tied_fewer_ratings["id"], rating=9.0)
+    await _rate_place(client, owner_token, place_id=lower["id"], rating=8.0)
+
+    first_page = await client.get(
+        "/api/v1/places?type=restaurant&limit=3",
+        headers=auth_header(owner_token),
+    )
+    second_page = await client.get(
+        "/api/v1/places?type=restaurant&limit=3&offset=3",
+        headers=auth_header(owner_token),
+    )
+
+    assert first_page.status_code == 200
+    assert [place["id"] for place in collection_data(first_page)] == [
+        top["id"],
+        tied_more_ratings["id"],
+        tied_fewer_ratings["id"],
+    ]
+    assert first_page.json()["meta"] == {
+        "limit": 3,
+        "offset": 0,
+        "total": 5,
+        "sort": "rating_desc",
+    }
+    assert [place["id"] for place in collection_data(second_page)] == [
+        lower["id"],
+        unrated["id"],
+    ]

@@ -37,6 +37,35 @@ export const cafeSubtypeOptions: Array<{ label: string; value: PlaceSubtype }> =
   { label: "شاهي", value: "tea" }
 ];
 
+export type SubtypeFilterValue = PlaceSubtype | "all";
+
+export const allSubtypeOption: { label: string; value: "all" } = {
+  label: "الكل",
+  value: "all"
+};
+
+export function subtypeOptionsForType(
+  type: PlaceType
+): Array<{ label: string; value: SubtypeFilterValue }> {
+  if (type === "restaurant") {
+    return [allSubtypeOption, ...restaurantSubtypeOptions];
+  }
+
+  if (type === "cafe") {
+    return [allSubtypeOption, ...cafeSubtypeOptions];
+  }
+
+  return [];
+}
+
+export function isSubtypeValidForType(type: PlaceType, subtype: SubtypeFilterValue): boolean {
+  if (subtype === "all") {
+    return true;
+  }
+
+  return subtypeOptionsForType(type).some((option) => option.value === subtype);
+}
+
 export function placeTypeLabel(type: PlaceType): string {
   if (type === "restaurant") {
     return "مطعم";

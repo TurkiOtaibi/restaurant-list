@@ -15,6 +15,7 @@ export {
   CloseIcon,
   DeleteIcon,
   EditIcon,
+  FilterIcon,
   RestaurantIcon,
   ShelfIcon,
   TasteMarkIcon

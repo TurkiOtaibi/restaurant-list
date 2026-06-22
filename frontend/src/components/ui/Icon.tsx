@@ -101,6 +101,16 @@ export function AddIcon(props: IconProps) {
   );
 }
 
+export function FilterIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M5 6h14" />
+      <path d="M8 12h8" />
+      <path d="M10 18h4" />
+    </BaseIcon>
+  );
+}
+
 export function EditIcon(props: IconProps) {
   return (
     <BaseIcon {...props}>

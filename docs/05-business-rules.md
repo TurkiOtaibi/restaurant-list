@@ -86,7 +86,7 @@ Business rules use the prefix `BR`.
 | BR-060 | Search remains in MVP. | Place list API supports name query. |
 | BR-061 | Search is by place name only. | API validation and query design. |
 | BR-062 | Search must not support recommendations, trending, popularity sorting, location search, or category exploration. | API contract and QA boundary tests. |
-| BR-063 | Search results use deterministic sorting. | Default sort is `name_asc`. |
+| BR-063 | Place results use deterministic rating-first sorting. | Default sort is average rating descending, rating count descending, then normalized place name ascending. Unrated places are last. |
 
 ## Permission Rules
 

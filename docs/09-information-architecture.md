@@ -70,7 +70,7 @@ Public Lists
 | User | System account | Identifies owner of lists and ratings. |
 | Refresh Token | User-owned session credential | Allows access token refresh and logout revocation. |
 | List | User-owned | Groups places selected by the user. |
-| Place | Shared catalog | Represents a restaurant or cafe. |
+| Place | Shared catalog | Represents a restaurant, cafe, or ice cream place. |
 | List Place | User-owned through list | Connects a place to a list. |
 | Rating | User-owned | Marks a place as tried and stores rating/private notes. |
 
@@ -122,8 +122,9 @@ Search remains in MVP but is deliberately narrow.
 Allowed:
 
 - Place-name search only.
-- Type filter for required Restaurants and Cafes sections.
-- Deterministic `name_asc` sorting.
+- Type filter for restaurants, cafes, and ice cream.
+- Contextual subtype filter for restaurants and cafes.
+- Deterministic rating-first sorting with unrated places last.
 
 Excluded:
 

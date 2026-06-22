@@ -97,6 +97,7 @@ async def list_place_summaries(
     current_user_id: str,
     query: str | None = None,
     place_type: PlaceType | None = None,
+    place_subtype: PlaceSubtype | None = None,
     limit: int = 100,
     offset: int = 0,
 ) -> PlaceListResult:
@@ -105,6 +106,10 @@ async def list_place_summaries(
     if place_type is not None:
         statement = statement.where(Place.type == place_type)
         count_statement = count_statement.where(Place.type == place_type)
+
+    if place_subtype is not None:
+        statement = statement.where(Place.subtype == place_subtype)
+        count_statement = count_statement.where(Place.subtype == place_subtype)
 
     normalized_query = _normalize_search_query(query)
     if normalized_query is not None:
@@ -115,7 +120,15 @@ async def list_place_summaries(
         statement = statement.where(search_filter)
         count_statement = count_statement.where(search_filter)
 
-    rows = await db.execute(statement.order_by(Place.created_at.desc()).offset(offset).limit(limit))
+    rows = await db.execute(
+        statement.order_by(
+            func.avg(Rating.rating).desc().nulls_last(),
+            func.count(Rating.id).desc(),
+            Place.normalized_name.asc(),
+        )
+        .offset(offset)
+        .limit(limit)
+    )
     row_items = rows.all()
     relationships = await get_user_place_relationships(
         db,
