@@ -17,8 +17,8 @@ import { cx } from "@/lib/ui";
 
 import { placeTypeOptions, PlaceType } from "./taxonomy";
 
-export function PlaceLibraryPage() {
-  const [activeType, setActiveType] = useState<PlaceType>("restaurant");
+export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
+  const [activeType, setActiveType] = useState<PlaceType>(initialType);
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -26,23 +26,27 @@ export function PlaceLibraryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [submittedSearch, setSubmittedSearch] = useState("");
   const createLinkRef = useRef<HTMLAnchorElement>(null);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const type = params.get("type");
-    if (type === "restaurant" || type === "cafe" || type === "ice_cream") {
-      setActiveType(type);
-    }
-
     if (params.get("focus") === "create-place") {
       createLinkRef.current?.focus();
     }
   }, []);
 
   const loadPlaces = useCallback(async () => {
+    // Guard against out-of-order responses (e.g. a fast type switch): only the
+    // most recently started load is allowed to apply its result.
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    const isCurrent = () => requestId === requestIdRef.current;
+
     if (!(await ensureSession())) {
-      setNeedsAuth(true);
-      setLoading(false);
+      if (isCurrent()) {
+        setNeedsAuth(true);
+        setLoading(false);
+      }
       return;
     }
 
@@ -56,8 +60,13 @@ export function PlaceLibraryPage() {
       }
 
       const response = await apiCollection<Place>(`/places?${params.toString()}`);
-      setPlaces(response.data);
+      if (isCurrent()) {
+        setPlaces(response.data);
+      }
     } catch (caught) {
+      if (!isCurrent()) {
+        return;
+      }
       if (caught instanceof ApiError && caught.status === 401) {
         clearTokens();
         setNeedsAuth(true);
@@ -65,7 +74,9 @@ export function PlaceLibraryPage() {
         setError(caught instanceof ApiError ? caught.message : "تعذر تحميل الأماكن.");
       }
     } finally {
-      setLoading(false);
+      if (isCurrent()) {
+        setLoading(false);
+      }
     }
   }, [activeType, submittedSearch]);
 
