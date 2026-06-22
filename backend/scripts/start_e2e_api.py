@@ -23,6 +23,10 @@ os.environ.setdefault(
     "CORS_ORIGINS",
     '["http://127.0.0.1:3000","http://localhost:3000"]',
 )
+os.environ.setdefault(
+    "CORS_ALLOW_ORIGIN_REGEX",
+    r"http://(localhost|127\.0\.0\.1):3000",
+)
 
 sys.path.insert(0, str(BACKEND_ROOT))
 

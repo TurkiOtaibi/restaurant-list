@@ -30,14 +30,52 @@ export function formatOutOfTen(value: number): string {
   return `${formatRating(value)}/10`;
 }
 
+type ArabicNounForms = {
+  one: string;
+  two: string;
+  few: string;
+  many: string;
+};
+
+// Arabic counted-noun agreement (CLDR-aligned): 1 singular, 2 dual, 3–10 plural,
+// 11+ singular accusative. The digit is shown only when it is not already implied
+// by the dual/singular wording, matching natural Arabic.
+function arabicCount(count: number, forms: ArabicNounForms): string {
+  const n = Math.abs(count);
+  if (n === 1) {
+    return forms.one;
+  }
+  if (n === 2) {
+    return forms.two;
+  }
+  const mod100 = n % 100;
+  const form = mod100 >= 3 && mod100 <= 10 ? forms.few : forms.many;
+  return `${formatNumber(count)} ${form}`;
+}
+
 export function listCountLabel(count: number): string {
-  return `${formatNumber(count)} ${count === 1 ? "قائمة" : "قوائم"}`;
+  return arabicCount(count, {
+    one: "قائمة واحدة",
+    two: "قائمتان",
+    few: "قوائم",
+    many: "قائمة"
+  });
 }
 
 export function placeCountLabel(count: number): string {
-  return `${formatNumber(count)} ${count === 1 ? "مكان" : "أماكن"}`;
+  return arabicCount(count, {
+    one: "مكان واحد",
+    two: "مكانان",
+    few: "أماكن",
+    many: "مكانًا"
+  });
 }
 
 export function ratingCountLabel(count: number): string {
-  return `${formatNumber(count)} ${count === 1 ? "تقييم" : "تقييمات"}`;
+  return arabicCount(count, {
+    one: "تقييم واحد",
+    two: "تقييمان",
+    few: "تقييمات",
+    many: "تقييمًا"
+  });
 }

@@ -18,7 +18,7 @@ import {
   VisualArtwork
 } from "@/components/ui";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { ApiError, Place, UserList, apiCollection, apiRequest, clearTokens, getAccessToken } from "@/lib/api";
+import { ApiError, Place, UserList, apiCollection, apiRequest, clearTokens, ensureSession } from "@/lib/api";
 import { formatAverageRating } from "@/lib/format";
 import { formatOutOfTen, placeCountLabel, ratingCountLabel } from "@/lib/numerals";
 
@@ -36,7 +36,7 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
   const [addToListOpen, setAddToListOpen] = useState(false);
 
   const loadPlace = useCallback(async () => {
-    if (!getAccessToken()) {
+    if (!(await ensureSession())) {
       setNeedsAuth(true);
       setLoading(false);
       return;

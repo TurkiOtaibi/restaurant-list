@@ -11,7 +11,7 @@ import {
   UserList,
   apiCollection,
   clearTokens,
-  getAccessToken
+  ensureSession
 } from "@/lib/api";
 import { listCountLabel, placeCountLabel } from "@/lib/numerals";
 
@@ -27,7 +27,7 @@ export default function ListsPage() {
     setNeedsAuth(false);
     setLoading(true);
 
-    if (!getAccessToken()) {
+    if (!(await ensureSession())) {
       setNeedsAuth(true);
       setLoading(false);
       return;

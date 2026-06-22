@@ -20,6 +20,7 @@ class ProfileResponse(BaseModel):
     list_count: int = Field(serialization_alias="listCount")
     tried_restaurant_count: int = Field(serialization_alias="triedRestaurantCount")
     tried_cafe_count: int = Field(serialization_alias="triedCafeCount")
+    tried_ice_cream_count: int = Field(serialization_alias="triedIceCreamCount")
     ratings_created_count: int = Field(serialization_alias="ratingsCreatedCount")
     user_ratings: list[ProfileRatingResponse] = Field(serialization_alias="userRatings")
     tried_places: list[PlaceResponse] = Field(serialization_alias="triedPlaces")

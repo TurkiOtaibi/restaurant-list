@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { CreatePlaceDialog } from "@/features/places/CreatePlaceDialog";
 import type { PlaceType } from "@/features/places/taxonomy";
-import { getAccessToken } from "@/lib/api";
+import { ensureSession } from "@/lib/api";
 
 export default function CreatePlacePage() {
   const router = useRouter();
@@ -13,12 +13,20 @@ export default function CreatePlacePage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    if (!getAccessToken()) {
-      router.replace("/login");
-      return;
-    }
-
-    setIsAuthenticated(true);
+    let active = true;
+    void ensureSession().then((token) => {
+      if (!active) {
+        return;
+      }
+      if (token) {
+        setIsAuthenticated(true);
+      } else {
+        router.replace("/login");
+      }
+    });
+    return () => {
+      active = false;
+    };
   }, [router]);
 
   function closeDialog(type: PlaceType) {

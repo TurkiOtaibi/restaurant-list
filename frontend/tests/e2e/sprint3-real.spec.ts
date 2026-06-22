@@ -40,36 +40,54 @@ test.afterAll(() => {
   apiProcess?.kill();
 });
 
-test("real frontend and api complete Sprint 3 auth, create, and name search flow", async ({
-  page
-}) => {
+test("real frontend and api complete auth, create, search, and detail flow", async ({ page }) => {
   test.setTimeout(60_000);
 
   const unique = Date.now();
-  const email = `sprint3-${unique}@example.com`;
-  const placeName = `مطعم الذاكرة ${unique}`;
+  const email = `e2e-${unique}@example.com`;
+  const placeName = `محل آيس كريم ${unique}`;
 
+  // Register -> redirected to the lists shell.
   await page.goto("/register");
   await page.getByLabel("البريد الإلكتروني").fill(email);
   await page.getByLabel("كلمة المرور").fill("password123");
   await page.getByRole("button", { name: "إنشاء حساب" }).click();
   await expect(page).toHaveURL(/\/lists$/, { timeout: 15_000 });
 
-  await page.goto("/places/new?type=restaurant");
+  // Create an ice-cream place (no subtype required) via the create dialog.
+  await page.goto("/places/new?type=ice_cream");
   await page.getByLabel("اسم المكان").fill(placeName);
-  await page.getByRole("button", { name: "حفظ المكان" }).click();
-  await expect(page.getByText("حفظنا")).toBeVisible();
-  await page.getByRole("link", { name: "العودة للمطاعم" }).click();
+  await page.getByRole("button", { name: "حفظ", exact: true }).click();
+  await expect(page.getByText("تم حفظ المكان.")).toBeVisible();
+  await page.getByRole("button", { name: "إلغاء" }).click();
 
-  await expect(page.getByRole("heading", { name: placeName })).toBeVisible();
-  await page.getByLabel("ابحث باسم مطعم").fill(placeName);
-  await page.getByRole("button", { name: "ابحث" }).click();
-  await expect(page.getByRole("status")).toContainText("نتيجة واحدة");
-  await expect(page.getByRole("heading", { name: placeName })).toBeVisible();
+  // The new place appears in the ice-cream library.
+  await expect(page).toHaveURL(/\/places\?type=ice_cream/);
+  await expect(page.getByText(placeName)).toBeVisible();
 
-  await page.getByLabel("ابحث باسم مطعم").fill("restaurant");
-  await page.getByRole("button", { name: "ابحث" }).click();
-  await expect(page.getByText("لا يوجد مطعم بهذا الاسم")).toBeVisible();
+  // Reload: the access token is held in memory only, so this proves it is
+  // silently re-established from the HttpOnly refresh cookie (no sign-in prompt).
+  await page.reload();
+  await expect(page.getByText(placeName)).toBeVisible();
+  await expect(page.getByText("سجل الدخول لعرض الأماكن")).toHaveCount(0);
+
+  // Name search finds exactly one result, and a miss shows the empty state.
+  await page.getByRole("searchbox", { name: "بحث" }).fill(placeName);
+  await page.getByRole("button", { name: "بحث", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("1 نتيجة");
+  await expect(page.getByText(placeName)).toBeVisible();
+
+  await page.getByRole("searchbox", { name: "بحث" }).fill("zzzzzznomatch");
+  await page.getByRole("button", { name: "بحث", exact: true }).click();
+  await expect(page.getByText("لا توجد نتائج")).toBeVisible();
+
+  // Open the place detail and confirm the rate affordance is present.
+  await page.getByRole("searchbox", { name: "بحث" }).fill(placeName);
+  await page.getByRole("button", { name: "بحث", exact: true }).click();
+  await page.getByText(placeName).click();
+  await expect(page).toHaveURL(/\/places\/[0-9a-f-]+$/);
+  await expect(page.getByRole("heading", { name: placeName })).toBeVisible();
+  await expect(page.getByRole("link", { name: "قيّم المكان" })).toBeVisible();
 });
 
 async function waitForApi() {
@@ -79,7 +97,10 @@ async function waitForApi() {
     }
 
     try {
-      const response = await fetch("http://localhost:8000/health/live");
+      // Gate on readiness (DB-backed), not liveness, so the API can actually
+      // serve a database-backed request before the test proceeds. This mirrors
+      // the production healthCheckPath and avoids racing the first cold request.
+      const response = await fetch("http://localhost:8000/health/ready");
       if (response.ok) {
         return;
       }

@@ -42,6 +42,15 @@ Additional review and remediation artifacts:
 31. [Design Remediation Phase Package](31-design-remediation-phase-package.md)
 32. [Final Design Production Package](32-final-design-production-package.md)
 
+## Status note (post-audit remediation)
+
+A full-system adversarial audit found that CI had never passed and that several
+"launch readiness" / "completion" reports overstated readiness. Treat documents
+33–36 and the sprint completion reports (25–27) as **historical**: they predate the
+remediation and do not reflect verified state. The current source of truth for how
+delivery works is [CI/CD and Deployment Contract](38-ci-cd-and-deploy-contract.md).
+Release readiness is "controlled beta" until the remediation roadmap is complete.
+
 The Core Foundation is deliberately focused on two user intents:
 
 - Places I want to try.

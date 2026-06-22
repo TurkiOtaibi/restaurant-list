@@ -37,14 +37,6 @@ def create_app() -> FastAPI:
         redoc_url="/redoc" if settings.enable_api_docs else None,
     )
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
-    )
-
     @app.middleware("http")
     async def add_operational_headers(
         request: Request,
@@ -56,6 +48,10 @@ def create_app() -> FastAPI:
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault(
+            "Strict-Transport-Security",
+            "max-age=63072000; includeSubDomains; preload",
+        )
         response.headers.setdefault(
             "Content-Security-Policy",
             "default-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
@@ -88,6 +84,17 @@ def create_app() -> FastAPI:
                 }
             },
         )
+
+    # Register CORS last so it becomes the outermost middleware and answers
+    # preflight requests before the operational-headers middleware runs.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_origin_regex=settings.cors_allow_origin_regex,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+    )
 
     app.include_router(health_router)
     app.include_router(auth_router, prefix="/api/v1")

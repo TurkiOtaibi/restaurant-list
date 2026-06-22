@@ -33,13 +33,18 @@ services:
       - key: REFRESH_COOKIE_SAMESITE
         value: none
       - key: AUTH_RATE_LIMIT_REQUESTS
-        value: "100"
+        value: "10"
       - key: AUTH_RATE_LIMIT_WINDOW_SECONDS
         value: "60"
       - key: ENABLE_API_DOCS
         value: "false"
       - key: CORS_ORIGINS
         sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: restaurant-rate-limit
+          property: connectionString
 
   - type: web
     name: restaurant-list-web
@@ -56,3 +61,14 @@ services:
         value: "22"
       - key: NEXT_PUBLIC_API_BASE_URL
         sync: false
+
+  - type: redis
+    name: restaurant-rate-limit
+    plan: free
+    region: singapore
+    # No eviction so rate-limit counters are not dropped under memory pressure.
+    # NOTE: guaranteed persistence across restarts/deployments requires a paid
+    # plan; the free plan is shared across instances but may not persist on
+    # restart. Upgrade the plan before public beta to fully meet the requirement.
+    maxmemoryPolicy: noeviction
+    ipAllowList: []

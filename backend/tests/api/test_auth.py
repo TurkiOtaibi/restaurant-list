@@ -73,6 +73,48 @@ async def test_register_login_refresh_and_logout(client: AsyncClient) -> None:
     }
 
 
+async def test_register_rejects_weak_password(client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/v1/auth/register",
+        json={"email": "weak@example.com", "password": "short"},
+    )
+    assert response.status_code == 422
+
+
+async def test_register_rejects_overlong_password(client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/v1/auth/register",
+        json={"email": "long@example.com", "password": "a" * 73},
+    )
+    assert response.status_code == 422
+
+
+async def test_refresh_reuse_revokes_token_family(client: AsyncClient) -> None:
+    refresh_cookie_name = get_settings().refresh_cookie_name
+    await register_user(client, email="reuse@example.com")
+    stolen = client.cookies.get(refresh_cookie_name)
+    assert stolen
+
+    rotate = await client.post("/api/v1/auth/refresh")
+    assert rotate.status_code == 200
+    rotated = client.cookies.get(refresh_cookie_name)
+    assert rotated and rotated != stolen
+
+    # Replaying the old, already-rotated token signals theft.
+    client.cookies.clear()
+    client.cookies.set(refresh_cookie_name, stolen, path="/api/v1/auth")
+    reused = await client.post("/api/v1/auth/refresh")
+    assert reused.status_code == 401
+    assert reused.json()["detail"]["code"] == "REFRESH_TOKEN_REVOKED"
+
+    # The most recent token of the family must now be dead too.
+    client.cookies.clear()
+    client.cookies.set(refresh_cookie_name, rotated, path="/api/v1/auth")
+    after = await client.post("/api/v1/auth/refresh")
+    assert after.status_code == 401
+    assert after.json()["detail"]["code"] == "REFRESH_TOKEN_REVOKED"
+
+
 async def test_duplicate_email_rejected(client: AsyncClient) -> None:
     await register_user(client)
     response = await client.post(

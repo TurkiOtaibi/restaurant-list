@@ -26,7 +26,7 @@ import {
   apiCollection,
   apiRequest,
   clearTokens,
-  getAccessToken
+  ensureSession
 } from "@/lib/api";
 import { placeCountLabel } from "@/lib/numerals";
 
@@ -47,7 +47,7 @@ export default function ListDetailPage() {
     setNeedsAuth(false);
     setLoading(true);
 
-    if (!getAccessToken()) {
+    if (!(await ensureSession())) {
       setNeedsAuth(true);
       setLoading(false);
       return;

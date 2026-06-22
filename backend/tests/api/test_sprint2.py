@@ -218,6 +218,34 @@ async def test_profile_statistics_are_calculated_from_user_data(client: AsyncCli
     assert len(body["triedPlaces"]) == 2
 
 
+async def test_profile_counts_ice_cream_places(client: AsyncClient) -> None:
+    token = await _token(client, "icecream@example.com")
+    gelato = await _create_place(client, token, name="Gelato Bar", place_type="ice_cream")
+    await _rate_place(client, token, gelato["id"], 9)
+
+    response = await client.get("/api/v1/profile", headers=auth_header(token))
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["triedIceCreamCount"] == 1
+    assert body["triedRestaurantCount"] == 0
+    assert body["triedCafeCount"] == 0
+    assert body["ratingsCreatedCount"] == 1
+
+
+async def test_rating_rejects_overlong_notes(client: AsyncClient) -> None:
+    token = await _token(client, "notes@example.com")
+    place = await _create_place(client, token, name="Nara Cafe", place_type="cafe")
+
+    response = await client.post(
+        "/api/v1/ratings",
+        json={"placeId": place["id"], "rating": 8, "notes": "x" * 1001},
+        headers=auth_header(token),
+    )
+
+    assert response.status_code == 422
+
+
 async def test_rating_validation_rejects_out_of_range_values(client: AsyncClient) -> None:
     token = await _token(client, "owner@example.com")
     place = await _create_place(client, token, name="Nara Cafe", place_type="cafe")

@@ -229,10 +229,9 @@ async def create_place_for_user(
     db.add(place)
     try:
         await db.commit()
-    except IntegrityError as exc:
+    except IntegrityError:
         await db.rollback()
         conflict("DUPLICATE_PLACE_NAME", "Place name already exists.")
-        raise exc
 
     await db.refresh(place)
     return place
