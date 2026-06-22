@@ -14,7 +14,7 @@ import {
   TextArea
 } from "@/components/ui";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { ApiError, Place, Rating, apiRequest, clearTokens, getAccessToken } from "@/lib/api";
+import { ApiError, Place, Rating, apiRequest, clearTokens, ensureSession } from "@/lib/api";
 import { formatAverageRating } from "@/lib/format";
 import { formatOutOfTen } from "@/lib/numerals";
 
@@ -44,7 +44,7 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
     let active = true;
 
     async function loadPlace() {
-      if (!getAccessToken()) {
+      if (!(await ensureSession())) {
         setNeedsAuth(true);
         setLoading(false);
         return;

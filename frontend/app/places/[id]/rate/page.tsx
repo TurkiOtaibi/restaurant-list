@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 import { RatePlaceDialog } from "@/features/places/RatePlaceDialog";
-import { Place, getAccessToken } from "@/lib/api";
+import { Place, ensureSession } from "@/lib/api";
 
 export default function RatePlacePage() {
   const params = useParams<{ id: string }>();
@@ -12,12 +12,20 @@ export default function RatePlacePage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    if (!getAccessToken()) {
-      router.replace("/login");
-      return;
-    }
-
-    setIsAuthenticated(true);
+    let active = true;
+    void ensureSession().then((token) => {
+      if (!active) {
+        return;
+      }
+      if (token) {
+        setIsAuthenticated(true);
+      } else {
+        router.replace("/login");
+      }
+    });
+    return () => {
+      active = false;
+    };
   }, [router]);
 
   function closeDialog(place: Place | null) {

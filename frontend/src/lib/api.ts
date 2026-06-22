@@ -1,6 +1,5 @@
 import { apiBaseUrl } from "./env";
 
-const ACCESS_TOKEN_KEY = "restaurantWishlist.accessToken";
 const API_VERSION_PREFIX = "/api/v1";
 
 export type User = {
@@ -122,7 +121,28 @@ export type CollectionResponse<T> = {
   meta: CollectionMeta;
 };
 
+// The access token is kept in memory only (never in localStorage/sessionStorage)
+// so it is not exposed to persistent XSS exfiltration. The refresh token lives in
+// an HttpOnly Secure cookie and is used to silently re-establish the session after
+// a reload. A BroadcastChannel shares the in-memory token across tabs so they do
+// not each refresh (which, with refresh-token rotation, could trigger reuse
+// detection and log everyone out).
+let accessToken: string | null = null;
 let refreshPromise: Promise<string | null> | null = null;
+
+const authChannel: BroadcastChannel | null =
+  typeof BroadcastChannel === "undefined"
+    ? null
+    : new BroadcastChannel("restaurantWishlist.auth");
+
+authChannel?.addEventListener("message", (event: MessageEvent) => {
+  const data = event.data as { type?: string; token?: string } | null;
+  if (data?.type === "token" && typeof data.token === "string") {
+    accessToken = data.token;
+  } else if (data?.type === "logout") {
+    accessToken = null;
+  }
+});
 
 export class ApiError extends Error {
   status: number;
@@ -137,18 +157,29 @@ export class ApiError extends Error {
 }
 
 export function getAccessToken(): string | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-  return window.localStorage.getItem(ACCESS_TOKEN_KEY);
+  return accessToken;
 }
 
-export function saveAccessToken(accessToken: string): void {
-  window.localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+export function saveAccessToken(token: string): void {
+  accessToken = token;
+  authChannel?.postMessage({ type: "token", token });
 }
 
 export function clearTokens(): void {
-  window.localStorage.removeItem(ACCESS_TOKEN_KEY);
+  accessToken = null;
+  authChannel?.postMessage({ type: "logout" });
+}
+
+/**
+ * Returns the in-memory access token, performing a single silent refresh (shared
+ * across tabs) if none is held yet — e.g. on the first request after a reload.
+ * Returns null when the user has no valid session.
+ */
+export async function ensureSession(): Promise<string | null> {
+  if (accessToken) {
+    return accessToken;
+  }
+  return refreshAccessToken();
 }
 
 export async function apiRequest<T>(
@@ -207,25 +238,42 @@ async function performRequest(path: string, options: ApiRequestOptions): Promise
 
 async function refreshAccessToken(): Promise<string | null> {
   if (!refreshPromise) {
-    refreshPromise = apiRequest<RefreshResponse>("/auth/refresh", {
-      method: "POST",
-      auth: false,
-      skipRefresh: true
-    })
-      .then((response) => {
-        saveAccessToken(response.accessToken);
-        return response.accessToken;
-      })
-      .catch(() => {
-        clearTokens();
-        return null;
-      })
-      .finally(() => {
-        refreshPromise = null;
-      });
+    refreshPromise = runRefreshWithLock().finally(() => {
+      refreshPromise = null;
+    });
   }
 
   return refreshPromise;
+}
+
+// Serialize refresh across tabs with the Web Locks API when available, so only
+// one tab rotates the refresh token at a time. Other tabs pick up the new token
+// via the BroadcastChannel and skip refreshing.
+async function runRefreshWithLock(): Promise<string | null> {
+  const locks = typeof navigator === "undefined" ? undefined : navigator.locks;
+  if (locks?.request) {
+    return locks.request("restaurantWishlist.auth-refresh", performRefresh);
+  }
+  return performRefresh();
+}
+
+async function performRefresh(): Promise<string | null> {
+  if (accessToken) {
+    return accessToken;
+  }
+
+  try {
+    const response = await apiRequest<RefreshResponse>("/auth/refresh", {
+      method: "POST",
+      auth: false,
+      skipRefresh: true
+    });
+    saveAccessToken(response.accessToken);
+    return response.accessToken;
+  } catch {
+    clearTokens();
+    return null;
+  }
 }
 
 async function parseResponseBody(response: Response): Promise<unknown> {

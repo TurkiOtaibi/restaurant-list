@@ -17,7 +17,7 @@ import {
   UserList,
   apiCollection,
   clearTokens,
-  getAccessToken
+  ensureSession
 } from "@/lib/api";
 
 export function PublicListsPage() {
@@ -31,7 +31,7 @@ export function PublicListsPage() {
     setNeedsAuth(false);
     setLoading(true);
 
-    if (!getAccessToken()) {
+    if (!(await ensureSession())) {
       setNeedsAuth(true);
       setLoading(false);
       return;

@@ -12,7 +12,7 @@ import {
   SearchField,
   StatusMessage
 } from "@/components/ui";
-import { ApiError, Place, apiCollection, clearTokens, getAccessToken } from "@/lib/api";
+import { ApiError, Place, apiCollection, clearTokens, ensureSession } from "@/lib/api";
 import { cx } from "@/lib/ui";
 
 import { placeTypeOptions, PlaceType } from "./taxonomy";
@@ -40,7 +40,7 @@ export function PlaceLibraryPage() {
   }, []);
 
   const loadPlaces = useCallback(async () => {
-    if (!getAccessToken()) {
+    if (!(await ensureSession())) {
       setNeedsAuth(true);
       setLoading(false);
       return;

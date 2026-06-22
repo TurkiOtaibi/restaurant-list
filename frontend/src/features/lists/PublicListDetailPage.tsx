@@ -13,7 +13,7 @@ import {
   PlaceCard,
   StatusMessage
 } from "@/components/ui";
-import { ApiError, ListDetail, apiRequest, clearTokens, getAccessToken } from "@/lib/api";
+import { ApiError, ListDetail, apiRequest, clearTokens, ensureSession } from "@/lib/api";
 import { placeCountLabel } from "@/lib/numerals";
 
 type PublicListDetailPageProps = {
@@ -31,7 +31,7 @@ export function PublicListDetailPage({ listId }: PublicListDetailPageProps) {
     setNeedsAuth(false);
     setLoading(true);
 
-    if (!getAccessToken()) {
+    if (!(await ensureSession())) {
       setNeedsAuth(true);
       setLoading(false);
       return;

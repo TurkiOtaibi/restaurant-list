@@ -23,7 +23,7 @@ import {
   apiCollection,
   apiRequest,
   clearTokens,
-  getAccessToken
+  ensureSession
 } from "@/lib/api";
 import { formatNumber, formatOutOfTen } from "@/lib/numerals";
 
@@ -47,7 +47,7 @@ export function ProfileArchivePage() {
     setNeedsAuth(false);
     setLoading(true);
 
-    if (!getAccessToken()) {
+    if (!(await ensureSession())) {
       setNeedsAuth(true);
       setLoading(false);
       return;

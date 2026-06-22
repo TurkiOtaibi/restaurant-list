@@ -65,6 +65,12 @@ test("real frontend and api complete auth, create, search, and detail flow", asy
   await expect(page).toHaveURL(/\/places\?type=ice_cream/);
   await expect(page.getByText(placeName)).toBeVisible();
 
+  // Reload: the access token is held in memory only, so this proves it is
+  // silently re-established from the HttpOnly refresh cookie (no sign-in prompt).
+  await page.reload();
+  await expect(page.getByText(placeName)).toBeVisible();
+  await expect(page.getByText("سجل الدخول لعرض الأماكن")).toHaveCount(0);
+
   // Name search finds exactly one result, and a miss shows the empty state.
   await page.getByRole("searchbox", { name: "بحث" }).fill(placeName);
   await page.getByRole("button", { name: "بحث", exact: true }).click();
