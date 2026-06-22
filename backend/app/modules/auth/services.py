@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Literal, NoReturn, cast
 
 from fastapi import Response, status
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
@@ -186,6 +186,15 @@ async def revoke_refresh_token(
     await db.commit()
 
 
+async def revoke_all_user_refresh_tokens(db: AsyncSession, *, user_id: str) -> None:
+    await db.execute(
+        update(RefreshToken)
+        .where(RefreshToken.user_id == user_id, RefreshToken.revoked_at.is_(None))
+        .values(revoked_at=utc_now(), updated_at=utc_now())
+    )
+    await db.commit()
+
+
 async def stored_refresh_token(
     db: AsyncSession,
     token: str,
@@ -206,6 +215,9 @@ async def stored_refresh_token(
         refresh_token_error()
 
     if stored_token.revoked_at is not None:
+        # A revoked token being presented again signals reuse (likely theft after
+        # rotation). Revoke the entire token family so a stolen token cannot be used.
+        await revoke_all_user_refresh_tokens(db, user_id=user_id)
         refresh_token_error("REFRESH_TOKEN_REVOKED", "Refresh token has been revoked.")
 
     if _as_aware_utc(stored_token.expires_at) <= datetime.now(UTC):

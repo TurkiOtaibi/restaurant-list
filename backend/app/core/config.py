@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     )
     refresh_cookie_secure: bool = Field(default=True, alias="REFRESH_COOKIE_SECURE")
     refresh_cookie_samesite: str = Field(default="lax", alias="REFRESH_COOKIE_SAMESITE")
-    auth_rate_limit_requests: int = Field(default=100, alias="AUTH_RATE_LIMIT_REQUESTS")
+    auth_rate_limit_requests: int = Field(default=10, alias="AUTH_RATE_LIMIT_REQUESTS")
     auth_rate_limit_window_seconds: int = Field(default=60, alias="AUTH_RATE_LIMIT_WINDOW_SECONDS")
     enable_api_docs: bool = Field(default=False, alias="ENABLE_API_DOCS")
     cors_origins: list[str] = Field(

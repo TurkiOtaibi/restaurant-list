@@ -33,7 +33,7 @@ services:
       - key: REFRESH_COOKIE_SAMESITE
         value: none
       - key: AUTH_RATE_LIMIT_REQUESTS
-        value: "100"
+        value: "10"
       - key: AUTH_RATE_LIMIT_WINDOW_SECONDS
         value: "60"
       - key: ENABLE_API_DOCS
