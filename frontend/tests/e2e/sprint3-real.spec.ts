@@ -84,10 +84,117 @@ test("real frontend and api complete auth, create, search, and detail flow", asy
   // Open the place detail and confirm the rate affordance is present.
   await page.getByRole("searchbox", { name: "بحث" }).fill(placeName);
   await page.getByRole("button", { name: "بحث", exact: true }).click();
-  await page.getByText(placeName).click();
+  const placeLink = page.getByRole("link", { name: new RegExp(placeName) });
+  await placeLink.click({ position: { x: 24, y: 24 } });
   await expect(page).toHaveURL(/\/places\/[0-9a-f-]+$/);
   await expect(page.getByRole("heading", { name: placeName })).toBeVisible();
   await expect(page.getByRole("link", { name: "قيّم المكان" })).toBeVisible();
+});
+
+test("real frontend and api complete list edit add remove delete and profile flow", async ({
+  page
+}) => {
+  test.setTimeout(90_000);
+
+  const unique = Date.now();
+  const email = `lists-${unique}@example.com`;
+  const placeName = `مطعم برجر الاختبار ${unique}`;
+  const listName = `قائمة الاختبار ${unique}`;
+  const editedListName = `قائمة معدلة ${unique}`;
+
+  await page.goto("/register");
+  await page.getByLabel("البريد الإلكتروني").fill(email);
+  await page.getByLabel("كلمة المرور").fill("password123");
+  await page.getByRole("button", { name: "إنشاء حساب" }).click();
+  await expect(page).toHaveURL(/\/lists$/, { timeout: 15_000 });
+
+  await page.goto("/places/new?type=restaurant");
+  await page.getByLabel("اسم المكان").fill(placeName);
+  await page.getByLabel("نوع المطعم").selectOption("burger");
+  await page.getByRole("button", { name: "حفظ", exact: true }).click();
+  await expect(page.getByText("تم حفظ المكان.")).toBeVisible();
+  await page.getByRole("button", { name: "إلغاء" }).click();
+  await expect(page).toHaveURL(/\/places\?type=restaurant/);
+
+  await page.goto("/lists/new");
+  await page.getByLabel("اسم القائمة").fill(listName);
+  await page.getByLabel("عامة").check();
+  await page.getByRole("button", { name: "حفظ", exact: true }).click();
+  await expect(page).toHaveURL(/\/lists\/[0-9a-f-]+$/, { timeout: 15_000 });
+  await expect(page.getByRole("heading", { name: listName })).toBeVisible();
+  await expect(page.getByText("عامة")).toBeVisible();
+
+  await page.getByRole("button", { name: "إجراءات القائمة" }).click();
+  await page.getByRole("menuitem", { name: "تعديل" }).click();
+  await page.getByLabel("اسم القائمة").fill(editedListName);
+  await page.getByLabel("خاصة").check();
+  await page.getByRole("button", { name: "حفظ", exact: true }).click();
+  await expect(page.getByRole("heading", { name: editedListName })).toBeVisible();
+  await expect(page.getByText("خاصة")).toBeVisible();
+
+  await page.getByRole("button", { name: "أضف مكانًا" }).click();
+  await page.getByRole("searchbox", { name: "بحث" }).fill(placeName);
+  await page.getByRole("button", { name: "أضف" }).click();
+  await expect(page.getByText("تمت إضافة المكان إلى القائمة.")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("link", { name: new RegExp(placeName) })).toBeVisible();
+
+  await page.getByRole("button", { name: new RegExp(`إزالة ${placeName}`) }).click();
+  await expect(page.getByText("لا توجد أماكن")).toBeVisible();
+
+  await page.getByRole("button", { name: "أضف أول مكان" }).click();
+  await page.getByRole("searchbox", { name: "بحث" }).fill(placeName);
+  await page.getByRole("button", { name: "أضف" }).click();
+  await expect(page.getByText("تمت إضافة المكان إلى القائمة.")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByRole("link", { name: new RegExp(placeName) }).click({ position: { x: 24, y: 24 } });
+  await expect(page).toHaveURL(/\/places\/[0-9a-f-]+$/);
+
+  await page.getByRole("link", { name: "قيّم المكان" }).click();
+  await page.getByLabel("تقييمك").fill("8.5");
+  await page.getByLabel("ملاحظتك").fill("ملاحظة خاصة للاختبار");
+  await page.getByRole("button", { name: "حفظ التقييم" }).click();
+  await expect(page.getByText("تم حفظ التقييم.")).toBeVisible();
+  await page.getByRole("button", { name: "إلغاء" }).click();
+  await expect(page.getByText("تقييمك الحالي 8.5/10")).toBeVisible();
+
+  await page.goto("/profile");
+  await expect(page.getByRole("heading", { name: "صفحتي" })).toBeVisible();
+  await expect(page.getByText(placeName)).toBeVisible();
+  await expect(page.getByText("ملاحظة خاصة للاختبار")).toBeVisible();
+  await expect(page.locator("body")).not.toContainText(/[٠-٩۰-۹]/);
+
+  await page.goto(`/lists`);
+  await page.getByRole("link", { name: new RegExp(editedListName) }).click();
+  await page.getByRole("button", { name: "إجراءات القائمة" }).click();
+  await page.getByRole("menuitem", { name: "حذف" }).click();
+  await expect(page.getByRole("alertdialog", { name: "حذف القائمة" })).toBeVisible();
+  await page.getByRole("button", { name: "حذف" }).click();
+  await expect(page).toHaveURL(/\/lists$/);
+  await expect(page.getByText(editedListName)).toHaveCount(0);
+});
+
+test("technical shell stories expose manifest headers and legacy redirects", async ({
+  page,
+  request
+}) => {
+  const manifest = await request.get("/manifest.webmanifest");
+  expect(manifest.ok()).toBeTruthy();
+  await expect(manifest.json()).resolves.toMatchObject({
+    name: "سجل",
+    short_name: "سجل",
+    display: "standalone"
+  });
+
+  const health = await request.get("/health");
+  expect(health.headers()["x-content-type-options"]).toBe("nosniff");
+  expect(health.headers()["x-frame-options"]).toBe("DENY");
+  expect(health.headers()["content-security-policy"]).toContain("default-src 'self'");
+
+  await page.goto("/restaurants");
+  await expect(page).toHaveURL(/\/places\?type=restaurant/);
+  await page.goto("/cafes");
+  await expect(page).toHaveURL(/\/places\?type=cafe/);
 });
 
 async function waitForApi() {

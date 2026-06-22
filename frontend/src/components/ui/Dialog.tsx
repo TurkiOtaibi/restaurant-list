@@ -25,6 +25,7 @@ export function Modal(props: DialogProps) {
   const layer = useDialogLayer(props.open);
   const ref = useDialogBehavior(props.open, layer?.root ?? null, props.initialFocusSelector);
   const { cancelClose, close, confirmingClose, confirmClose } = useConfirmableClose(props);
+  useDocumentEscape(props.open, close);
   useFocusAfterConfirmClose(props.open, ref, confirmingClose, props.initialFocusSelector);
 
   if (!props.open || !layer) {
@@ -62,6 +63,7 @@ export function BottomSheet(props: DialogProps) {
   const layer = useDialogLayer(props.open);
   const ref = useDialogBehavior(props.open, layer?.root ?? null, props.initialFocusSelector);
   const { cancelClose, close, confirmingClose, confirmClose } = useConfirmableClose(props);
+  useDocumentEscape(props.open, close);
   useFocusAfterConfirmClose(props.open, ref, confirmingClose, props.initialFocusSelector);
 
   if (!props.open || !layer) {
@@ -231,6 +233,26 @@ function useConfirmableClose({
   };
 }
 
+function useDocumentEscape(open: boolean, onClose: () => void) {
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    function handleKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      event.preventDefault();
+      onClose();
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose, open]);
+}
+
 function useFocusAfterConfirmClose(
   open: boolean,
   ref: RefObject<HTMLElement | null>,
@@ -280,6 +302,8 @@ function ConfirmCloseNotice({
 
 function handleDialogKeyDown(event: KeyboardEvent<HTMLElement>, onClose: () => void) {
   if (event.key === "Escape") {
+    event.preventDefault();
+    event.stopPropagation();
     onClose();
     return;
   }
