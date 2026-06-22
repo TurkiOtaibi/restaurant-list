@@ -43,26 +43,6 @@ test.afterAll(() => {
 test("real frontend and api complete auth, create, search, and detail flow", async ({ page }) => {
   test.setTimeout(60_000);
 
-  // Diagnostics: surface API responses, failed requests, and page errors into the
-  // CI log so a request-level failure is visible.
-  page.on("console", (msg) => console.log(`[page:${msg.type()}] ${msg.text()}`));
-  page.on("requestfailed", (request) =>
-    console.log(
-      `[requestfailed] ${request.method()} ${request.url()} :: ${request.failure()?.errorText ?? ""}`
-    )
-  );
-  page.on("response", async (response) => {
-    if (response.url().includes("/api/v1/")) {
-      let body = "";
-      try {
-        body = await response.text();
-      } catch {
-        body = "<unreadable>";
-      }
-      console.log(`[response] ${response.status()} ${response.url()} :: ${body.slice(0, 300)}`);
-    }
-  });
-
   const unique = Date.now();
   const email = `e2e-${unique}@example.com`;
   const placeName = `محل آيس كريم ${unique}`;
