@@ -36,6 +36,29 @@ After this remediation, keep `main` green; do not merge red. If a deploy is ever
 required while `main` is red, it must be an explicit, logged manual action, not the
 default path.
 
+## Rate limiting
+
+Authentication endpoints are rate limited (default 10 requests / 60s per client +
+path). When `REDIS_URL` is set the counter is backed by Redis so it is shared
+across instances; otherwise an in-process fallback is used (local dev and tests).
+`render.yaml` provisions a Redis service and wires `REDIS_URL`.
+
+> The free Redis plan is shared across instances but does not guarantee
+> persistence across restarts/deployments. Upgrade to a persistent (paid) plan
+> before public beta to fully satisfy the "persist across restarts" requirement.
+
+## Controlled-beta scope and pre-public-beta requirements
+
+Intentional constraints during the current controlled beta:
+
+- **Public lists are login-only.** Anonymous users cannot browse them.
+
+Required before public beta (tracked, not yet implemented):
+
+- **Anonymous read-only browsing of public lists** (and public list detail) for
+  logged-out visitors. This is deferred deliberately and must be designed with
+  its own rate limiting and abuse controls.
+
 ## Secrets
 
 `DATABASE_URL`, `CORS_ORIGINS`, and `NEXT_PUBLIC_API_BASE_URL` are `sync: false`

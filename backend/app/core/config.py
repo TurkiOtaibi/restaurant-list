@@ -47,6 +47,7 @@ class Settings(BaseSettings):
         alias="CORS_ORIGINS",
     )
     cors_allow_origin_regex: str | None = Field(default=None, alias="CORS_ALLOW_ORIGIN_REGEX")
+    redis_url: str | None = Field(default=None, alias="REDIS_URL")
 
     model_config = SettingsConfigDict(
         env_file=".env",
