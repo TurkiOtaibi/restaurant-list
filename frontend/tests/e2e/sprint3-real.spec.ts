@@ -34,7 +34,6 @@ test.beforeAll(async () => {
   });
 
   await waitForApi();
-  console.log(`[api-startup]\n${apiOutput}`);
 });
 
 test.afterAll(() => {
@@ -70,18 +69,6 @@ test("real frontend and api complete auth, create, search, and detail flow", asy
 
   // Register -> redirected to the lists shell.
   await page.goto("/register");
-  const probe = await page.evaluate(async () => {
-    try {
-      const response = await fetch("http://127.0.0.1:8000/health/ready");
-      return {
-        status: response.status,
-        acao: response.headers.get("access-control-allow-origin")
-      };
-    } catch (error) {
-      return { error: String(error) };
-    }
-  });
-  console.log("[probe] cross-origin GET /health/ready ->", JSON.stringify(probe));
   await page.getByLabel("البريد الإلكتروني").fill(email);
   await page.getByLabel("كلمة المرور").fill("password123");
   await page.getByRole("button", { name: "إنشاء حساب" }).click();
@@ -100,17 +87,17 @@ test("real frontend and api complete auth, create, search, and detail flow", asy
 
   // Name search finds exactly one result, and a miss shows the empty state.
   await page.getByRole("searchbox", { name: "بحث" }).fill(placeName);
-  await page.getByRole("button", { name: "بحث" }).click();
+  await page.getByRole("button", { name: "بحث", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("1 نتيجة");
   await expect(page.getByText(placeName)).toBeVisible();
 
   await page.getByRole("searchbox", { name: "بحث" }).fill("zzzzzznomatch");
-  await page.getByRole("button", { name: "بحث" }).click();
+  await page.getByRole("button", { name: "بحث", exact: true }).click();
   await expect(page.getByText("لا توجد نتائج")).toBeVisible();
 
   // Open the place detail and confirm the rate affordance is present.
   await page.getByRole("searchbox", { name: "بحث" }).fill(placeName);
-  await page.getByRole("button", { name: "بحث" }).click();
+  await page.getByRole("button", { name: "بحث", exact: true }).click();
   await page.getByText(placeName).click();
   await expect(page).toHaveURL(/\/places\/[0-9a-f-]+$/);
   await expect(page.getByRole("heading", { name: placeName })).toBeVisible();
