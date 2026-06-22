@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import {
@@ -23,7 +24,8 @@ import {
   apiCollection,
   apiRequest,
   clearTokens,
-  ensureSession
+  ensureSession,
+  logout
 } from "@/lib/api";
 import { formatNumber, formatOutOfTen } from "@/lib/numerals";
 
@@ -40,6 +42,12 @@ export function ProfileArchivePage() {
   const [error, setError] = useState("");
   const [publicListsError, setPublicListsError] = useState("");
   const [needsAuth, setNeedsAuth] = useState(false);
+  const router = useRouter();
+
+  async function handleLogout() {
+    await logout();
+    router.push("/login");
+  }
 
   const loadProfile = useCallback(async () => {
     setError("");
@@ -95,6 +103,11 @@ export function ProfileArchivePage() {
           <h1 id="profile-title">صفحتي</h1>
           <p className="muted">قوائمك وتقييماتك</p>
         </div>
+        {!needsAuth ? (
+          <Button onClick={() => void handleLogout()} type="button" variant="secondary">
+            تسجيل الخروج
+          </Button>
+        ) : null}
         {profile ? (
           <div className="profile-stats" aria-label="ملخص الصفحة">
             {stats.map((stat) => (
