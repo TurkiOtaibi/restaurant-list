@@ -111,7 +111,10 @@ async function waitForApi() {
     }
 
     try {
-      const response = await fetch("http://localhost:8000/health/live");
+      // Gate on readiness (DB-backed), not liveness, so the API can actually
+      // serve a database-backed request before the test proceeds. This mirrors
+      // the production healthCheckPath and avoids racing the first cold request.
+      const response = await fetch("http://localhost:8000/health/ready");
       if (response.ok) {
         return;
       }
