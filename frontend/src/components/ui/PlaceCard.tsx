@@ -54,7 +54,11 @@ function PlaceCardContent({ place }: { place: Place }) {
       {hasRating ? (
         <p className="ds-place-card__rating" aria-label={ratingCountLabel(place.ratingCount)}>
           <NumberText>{formatAverageRating(place.averageRating)}</NumberText>
-          {place.ratingCount > 1 ? <NumberText>{formatNumber(place.ratingCount)}</NumberText> : null}
+          {place.ratingCount > 1 ? (
+            <span className="ds-place-card__rating-count">
+              <NumberText>{formatNumber(place.ratingCount)}</NumberText>
+            </span>
+          ) : null}
         </p>
       ) : null}
     </>
