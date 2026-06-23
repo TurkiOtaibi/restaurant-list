@@ -163,13 +163,14 @@ function useDialogBehavior(
       inert: (child as HTMLElement & { inert?: boolean }).inert,
       ariaHidden: child.getAttribute("aria-hidden")
     }));
+    const previousBodyOverflowY = document.body.style.overflowY;
 
     previousStates.forEach(({ element }) => {
       element.inert = true;
       element.setAttribute("aria-hidden", "true");
     });
 
-    document.body.style.overflow = "hidden";
+    document.body.style.overflowY = "hidden";
     const initialFocus =
       initialFocusSelector && ref.current
         ? ref.current.querySelector<HTMLElement>(initialFocusSelector)
@@ -186,7 +187,7 @@ function useDialogBehavior(
           element.setAttribute("aria-hidden", ariaHidden);
         }
       });
-      document.body.style.overflow = "";
+      document.body.style.overflowY = previousBodyOverflowY;
       previousFocusRef.current?.focus();
     };
   }, [initialFocusSelector, open, portalRoot]);
