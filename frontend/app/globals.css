@@ -1258,6 +1258,8 @@ textarea:disabled {
 .public-list-places {
   display: grid;
   gap: 10px;
+  min-inline-size: 0;
+  max-inline-size: 100%;
   padding: 12px;
   border: 1px solid rgba(40, 53, 68, 0.72);
   border-radius: var(--radius-md);
@@ -1525,18 +1527,24 @@ textarea:disabled {
 .profile-hero {
   display: grid;
   gap: 8px;
+  min-inline-size: 0;
+  max-inline-size: 100%;
 }
 
 .profile-stats {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  min-inline-size: 0;
+  max-inline-size: 100%;
 }
 
 .profile-stat {
   display: inline-flex;
   align-items: baseline;
   gap: 6px;
+  min-inline-size: 0;
+  max-inline-size: 100%;
   padding: 5px 9px;
   border: 1px solid var(--color-border);
   border-radius: 999px;
@@ -1549,8 +1557,12 @@ textarea:disabled {
 }
 
 .profile-stat__label {
+  min-inline-size: 0;
+  overflow: hidden;
   color: var(--color-text-2);
   font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .library-section__header,
@@ -1907,6 +1919,20 @@ textarea:disabled {
   .profile-private-note {
     grid-column: 2;
     grid-row: auto;
+  }
+
+  .profile-stat {
+    flex: 1 1 calc(50% - 4px);
+    gap: 4px;
+    padding-inline: 6px;
+  }
+
+  .profile-stat__value {
+    flex: 0 0 auto;
+  }
+
+  .profile-stat__label {
+    flex: 1 1 auto;
   }
 
   .app-nav {
