@@ -1,6 +1,6 @@
 from typing import Any, cast
 
-from httpx import AsyncClient
+from httpx import AsyncClient, Response
 
 from tests.api.test_auth import auth_header, register_user
 from tests.api.test_places_and_lists import _create_list, _create_place, collection_data
@@ -59,7 +59,7 @@ async def _post_rating(
     place_id: str,
     rating: float,
     notes: str | None = None,
-):
+) -> Response:
     return await client.post(
         "/api/v1/ratings",
         json={"placeId": place_id, "rating": rating, "notes": notes},
