@@ -19,9 +19,9 @@ A relational database is recommended for the MVP. PostgreSQL is a strong fit, bu
 | --- | --- |
 | users | Authenticated product users. |
 | refresh_tokens | Hashed refresh tokens for session refresh and logout revocation. |
-| places | Shared restaurant and cafe catalog. |
+| places | Shared restaurant, cafe, and ice cream catalog. |
 | lists | User-owned lists. |
-| list_places | Join table connecting lists and places. |
+| list_items | Join table connecting lists and places. |
 | ratings | User-owned ratings that mark places as tried and store private notes. |
 
 ## Table: users
@@ -65,7 +65,8 @@ A relational database is recommended for the MVP. PostgreSQL is a strong fit, bu
 | id | UUID or big integer | Yes | Primary key. |
 | name | String | Yes | Display name. |
 | normalized_name | String | Yes | Lowercase, trimmed, whitespace-normalized value for uniqueness. |
-| type | Enum/String | Yes | `restaurant` or `cafe`. |
+| type | Enum/String | Yes | `restaurant`, `cafe`, or `ice_cream`. |
+| subtype | Enum/String | Conditional | Restaurant/cafe subtype; null for ice cream. |
 | description | Text | No | Optional. |
 | created_at | Timestamp | Yes | Creation time. |
 | updated_at | Timestamp | Yes | Last update time; changed only by operational processes outside user-facing MVP. |
@@ -75,7 +76,7 @@ A relational database is recommended for the MVP. PostgreSQL is a strong fit, bu
 - Primary key on `id`.
 - Unique index on `normalized_name`.
 - Index on `(type, normalized_name)`.
-- Check constraint for valid type.
+- Check constraint for valid type/subtype combinations.
 
 **MVP Editing Rule:**
 
@@ -102,7 +103,7 @@ A relational database is recommended for the MVP. PostgreSQL is a strong fit, bu
 - Index on `visibility`.
 - No unique constraint on list name.
 
-## Table: list_places
+## Table: list_items
 
 | Column | Type | Required | Notes |
 | --- | --- | --- | --- |
@@ -128,7 +129,7 @@ A relational database is recommended for the MVP. PostgreSQL is a strong fit, bu
 | id | UUID or big integer | Yes | Primary key. |
 | user_id | UUID or big integer | Yes | Rating owner. |
 | place_id | UUID or big integer | Yes | Rated place. |
-| rating | Integer | Yes | Required value from 1 to 10. |
+| rating | Numeric/Float | Yes | Required value from 1 to 10 in 0.5 increments. |
 | notes | Text | No | Optional private notes. Blank notes stored as null. |
 | created_at | Timestamp | Yes | First rating time. |
 | updated_at | Timestamp | Yes | Last edit time. |
@@ -139,7 +140,7 @@ A relational database is recommended for the MVP. PostgreSQL is a strong fit, bu
 - Foreign key `user_id` references `users.id`.
 - Foreign key `place_id` references `places.id`.
 - Unique index on `(user_id, place_id)`.
-- Check constraint for `rating between 1 and 10`.
+- Check constraint for `rating between 1 and 10` and half-step increments.
 - Index on `user_id`.
 - Index on `place_id`.
 
@@ -185,7 +186,7 @@ Adding a place to a list is idempotent:
 
 | Delete Action | Behavior |
 | --- | --- |
-| Delete list | Delete rows from `list_places` for that list. Do not delete places or ratings. |
+| Delete list | Delete rows from `list_items` for that list. Do not delete places or ratings. |
 | Delete place | No user-facing delete in MVP. |
 | Delete rating | Not included in MVP. |
 | Delete user | No self-service deletion in MVP. Operational deletion policy is outside MVP implementation scope but must not be improvised in product flows. |
@@ -205,21 +206,13 @@ Adding a place to a list is idempotent:
 - Include current user's tried state from ratings.
 - Do not expose rating notes except for current user's own rating where the endpoint explicitly returns them.
 
-### Restaurants
+### Places
 
-- Query places where `type = restaurant`.
+- Query places by optional primary type and subtype filters.
 - Optional name search by normalized place name.
-- Sort by name ascending.
+- Default sort is average rating descending, rating count descending, then normalized name ascending; unrated places are last.
 - Return average rating and rating count from ratings table.
-- Include current user's tried state.
-
-### Cafes
-
-- Query places where `type = cafe`.
-- Optional name search by normalized place name.
-- Sort by name ascending.
-- Return average rating and rating count from ratings table.
-- Include current user's tried state.
+- Include current user's tried state and owned-list membership context.
 
 ### Place Detail
 
@@ -233,7 +226,8 @@ Adding a place to a list is idempotent:
 - Count lists by current user.
 - Count ratings joined to places where type is restaurant.
 - Count ratings joined to places where type is cafe.
-- Fetch tried places joined to current user's ratings.
+- Count ratings joined to places where type is ice cream.
+- Fetch rating archive rows joined to current user's ratings. This archive is the canonical tried-place history.
 
 ## Data Integrity Risks and Mitigations
 

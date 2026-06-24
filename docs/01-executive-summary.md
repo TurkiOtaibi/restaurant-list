@@ -6,7 +6,7 @@ Restaurant & Cafe Wishlist Tracker
 
 ## Product Vision
 
-Restaurant & Cafe Wishlist Tracker is a simple personal organization application that helps users keep track of restaurants and cafes they want to try, mark places they have tried, and rate those places after visiting.
+سجل is a simple personal organization application that helps users keep track of restaurants, cafes, and ice cream places they want to try, mark places they have tried, and rate those places after visiting.
 
 The core product promise is:
 
@@ -21,7 +21,7 @@ People often collect restaurant and cafe recommendations from conversations, soc
 Existing products often focus on discovery, maps, business listings, photos, reviews, and social engagement. This MVP avoids that complexity and focuses on a narrower job:
 
 - Save places into personal wishlist lists.
-- Separate restaurants from cafes.
+- Browse places from one Places screen with internal filters for restaurants, cafes, and ice cream.
 - Mark a place as tried.
 - Rate a tried place from 1 to 10.
 - Keep personal tried history and community rating aggregates.
@@ -54,8 +54,7 @@ The MVP is successful when a user can:
 
 - Create and manage lists.
 - Add an existing place or create a new place.
-- Browse all restaurants.
-- Browse all cafes.
+- Browse all places by primary type.
 - Add places to one or more lists.
 - Mark a place as tried with a mandatory 1 to 10 rating.
 - Edit their rating later.

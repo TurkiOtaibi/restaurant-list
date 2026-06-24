@@ -36,7 +36,7 @@ async def create_or_update_rating(
     *,
     payload: RatingCreateRequest,
     user_id: str,
-) -> Rating:
+) -> tuple[Rating, bool]:
     place = await db.get(Place, payload.place_id)
     if place is None:
         not_found("Place")
@@ -49,7 +49,7 @@ async def create_or_update_rating(
         existing.notes = normalize_notes(payload.notes)
         await db.commit()
         await db.refresh(existing)
-        return existing
+        return existing, False
 
     rating = Rating(
         user_id=user_id,
@@ -67,7 +67,7 @@ async def create_or_update_rating(
         conflict("DUPLICATE_RATING", "Rating already exists.")
 
     await db.refresh(rating)
-    return rating
+    return rating, True
 
 
 async def update_existing_rating(

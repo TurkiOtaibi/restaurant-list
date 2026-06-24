@@ -1,5 +1,7 @@
 # 32. Final Design Production Package
 
+> Canonical status note (2026-06-24): This document is retained as historical design production context. Where it conflicts with current product decisions, use the current canonical implementation: `سجل`; primary navigation `قوائمي`, `الأماكن`, `صفحتي`; restaurants/cafes/ice cream are Places filters; ratings support 0.5 increments; profile uses `تقييماتك` as the single archive.
+
 ## Document Purpose
 
 This is the final implementation-grade design production package for the Restaurant & Cafe Wishlist Tracker.

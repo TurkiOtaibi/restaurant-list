@@ -22,12 +22,10 @@
 
 ```json
 {
-  "error": {
+  "detail": {
     "code": "VALIDATION_ERROR",
-    "message": "Rating is required.",
-    "fields": {
-      "rating": "Required"
-    }
+    "message": "Request validation failed.",
+    "errors": []
   }
 }
 ```
@@ -49,18 +47,18 @@ Used by list endpoints unless otherwise stated.
 
 | Parameter | Default | Max | Notes |
 | --- | --- | --- | --- |
-| `page` | 1 | N/A | Positive integer. |
-| `pageSize` | 20 | 50 | Positive integer. |
+| `limit` | 100 | 100 | Positive integer from 1 to 100. |
+| `offset` | 0 | N/A | Non-negative integer. |
 
 Response metadata:
 
 ```json
 {
   "meta": {
-    "page": 1,
-    "pageSize": 20,
-    "totalItems": 42,
-    "totalPages": 3
+    "limit": 100,
+    "offset": 0,
+    "total": 42,
+    "sort": "rating_desc"
   }
 }
 ```
@@ -79,16 +77,15 @@ Response metadata:
 
 Email is returned only to the current user.
 
-### Public Owner
+### Public Owner Metadata
 
 ```json
 {
-  "id": "user_123",
-  "displayName": "Sara"
+  "ownerDisplayName": "Sara"
 }
 ```
 
-Public list responses never expose owner email.
+Public list responses expose owner display name only. They never expose owner email, internal user ID, or private account data.
 
 ### List
 
@@ -97,6 +94,7 @@ Public list responses never expose owner email.
   "id": "list_123",
   "name": "Burgers",
   "visibility": "private",
+  "ownerDisplayName": "Sara",
   "placeCount": 3,
   "createdAt": "2026-06-18T10:00:00Z",
   "updatedAt": "2026-06-18T10:00:00Z"
@@ -369,19 +367,19 @@ Public list responses never expose owner email.
     }
   ],
   "meta": {
-    "page": 1,
-    "pageSize": 20,
-    "totalItems": 1,
-    "totalPages": 1
+    "limit": 100,
+    "offset": 0,
+    "total": 1,
+    "sort": "created_at_desc"
   }
 }
 ```
 
 **Validation rules:**
 
-- `page` positive integer.
-- `pageSize` 1 to 50.
-- `sort` must be `updated_at_desc` or `name_asc`.
+- `limit` 1 to 100.
+- `offset` 0 or greater.
+- `sort` is currently `created_at_desc`.
 
 **Error responses:**
 
@@ -412,21 +410,22 @@ Public list responses never expose owner email.
 
 ```json
 {
-  "data": {
-    "id": "list_123",
-    "name": "Burgers",
-    "visibility": "private",
-    "placeCount": 0,
-    "createdAt": "2026-06-18T10:00:00Z",
-    "updatedAt": "2026-06-18T10:00:00Z"
-  }
+  "id": "list_123",
+  "userId": "current_user_id",
+  "name": "Burgers",
+  "visibility": "private",
+  "ownerDisplayName": "Sara",
+  "placeCount": 0,
+  "createdAt": "2026-06-18T10:00:00Z",
+  "updatedAt": "2026-06-18T10:00:00Z"
 }
 ```
 
 **Validation rules:**
 
 - Name required, 1 to 80 characters after trimming.
-- Visibility must be `public` or `private`.
+- `visibility` is optional and must be `private` or `public`; omitted value defaults to `private`.
+- Use `PATCH /api/v1/lists/{listId}/visibility` to change visibility after creation.
 - Client-supplied owner ID is ignored or rejected.
 
 **Error responses:**
@@ -440,45 +439,38 @@ Public list responses never expose owner email.
 | --- | --- |
 | Endpoint | `GET /api/v1/lists/{listId}` |
 | Authentication | JWT required |
-| Authorization | Owner can view any owned list; authenticated non-owner can view only public list |
-| Pagination | Places may be paginated with `page` and `pageSize` |
-| Sorting | Places sorted by `name_asc` |
+| Authorization | Owner can view owned list through this endpoint |
+| Pagination | List items are returned in the detail payload |
+| Sorting | Items use persisted list item order/current service order |
 | Idempotency | Safe read |
 
 **Response schema:**
 
 ```json
 {
-  "data": {
-    "id": "list_123",
-    "name": "Burgers",
-    "visibility": "public",
-    "owner": {
-      "id": "user_123",
-      "displayName": "Sara"
-    },
-    "permissions": {
-      "canEdit": false,
-      "canDelete": false,
-      "canModifyPlaces": false
-    },
-    "places": [
-      {
+  "id": "list_123",
+  "userId": "current_user_id",
+  "name": "Burgers",
+  "visibility": "public",
+  "ownerDisplayName": "Sara",
+  "placeCount": 1,
+  "createdAt": "2026-06-18T10:00:00Z",
+  "updatedAt": "2026-06-18T10:00:00Z",
+  "items": [
+    {
+      "id": "item_123",
+      "createdAt": "2026-06-18T10:00:00Z",
+      "place": {
         "id": "place_123",
         "name": "Example Restaurant",
         "type": "restaurant",
+        "subtype": "burger",
         "averageRating": 8.3,
         "ratingCount": 12,
         "currentUserTried": true
       }
-    ]
-  },
-  "meta": {
-    "page": 1,
-    "pageSize": 20,
-    "totalItems": 1,
-    "totalPages": 1
-  }
+    }
+  ]
 }
 ```
 
@@ -849,15 +841,15 @@ Exactly one of `placeId` or `place` is required. One request targets one list on
 **Validation rules:**
 
 - Rating required.
-- Rating integer from 1 to 10.
-- Notes optional, max 2000 characters.
+- Rating from 1 to 10 in 0.5 increments.
+- Notes optional, max 1000 characters.
 - Blank or whitespace-only notes stored as null.
 - Place must exist.
 
 **Behavior:**
 
-- If no rating exists for current user/place, create rating and remove the place from all current user's lists transactionally.
-- If a rating already exists for current user/place, update rating and notes.
+- If no rating exists for current user/place, create rating, return `201`, and remove the place from all current user's lists transactionally.
+- If a rating already exists for current user/place, update rating and notes and return `200`.
 - Updating an existing rating does not remove later re-added list memberships.
 - Recalculates average rating and rating count from ratings table for response.
 
@@ -907,7 +899,7 @@ Exactly one of `placeId` or `place` is required. One request targets one list on
 
 ## Profile Endpoints
 
-### Get My Profile Summary
+### Get My Profile
 
 | Item | Contract |
 | --- | --- |
@@ -915,42 +907,68 @@ Exactly one of `placeId` or `place` is required. One request targets one list on
 | Authentication | JWT required |
 | Authorization | Current user only |
 | Pagination | None |
-| Sorting | None |
+| Sorting | Rating archive entries sort by most recently updated first |
 | Idempotency | Safe read |
 
 **Response schema:**
 
 ```json
 {
-  "data": {
-    "listsCount": 4,
-    "restaurantsTriedCount": 12,
-    "cafesTriedCount": 7
-  }
+  "listCount": 4,
+  "triedRestaurantCount": 12,
+  "triedCafeCount": 7,
+  "triedIceCreamCount": 2,
+  "ratingsCreatedCount": 21,
+  "userRatings": [
+    {
+      "id": "rating_123",
+      "rating": 8.5,
+      "notes": "Private note.",
+      "createdAt": "2026-06-18T10:00:00Z",
+      "updatedAt": "2026-06-18T10:00:00Z",
+      "place": {
+        "id": "place_123",
+        "name": "Example Cafe",
+        "type": "cafe",
+        "subtype": "coffee",
+        "description": null,
+        "createdByUserId": "user_123",
+        "createdAt": "2026-06-18T10:00:00Z",
+        "updatedAt": "2026-06-18T10:00:00Z",
+        "averageRating": 8.5,
+        "ratingCount": 1,
+        "currentUserRating": 8.5,
+        "currentUserTried": true,
+        "currentUserListIds": [],
+        "currentUserListNames": [],
+        "currentUserListCount": 0
+      }
+    }
+  ]
 }
 ```
+
+**Privacy:**
+
+- Returns only current user's own notes.
+- Does not return a separate `triedPlaces` collection. `userRatings` is the canonical rating/tried archive.
 
 **Error responses:**
 
 - `401 UNAUTHENTICATED`.
 
-### Get My Tried Places
+## Public List Endpoint
+
+### Get Public Lists
 
 | Item | Contract |
 | --- | --- |
-| Endpoint | `GET /api/v1/profile/tried-places` |
+| Endpoint | `GET /api/v1/lists/public` |
 | Authentication | JWT required |
-| Authorization | Current user only |
-| Pagination | Yes |
-| Sorting | `updated_at_desc` default; `name_asc` allowed |
+| Authorization | Authenticated users only |
+| Pagination | `limit` and `offset` |
+| Sorting | `created_at_desc` |
 | Idempotency | Safe read |
-
-**Query parameters:**
-
-- `type`: optional `restaurant` or `cafe`.
-- `page`.
-- `pageSize`.
-- `sort`: `updated_at_desc` or `name_asc`.
 
 **Response schema:**
 
@@ -958,85 +976,66 @@ Exactly one of `placeId` or `place` is required. One request targets one list on
 {
   "data": [
     {
-      "place": {
-        "id": "place_123",
-        "name": "Example Cafe",
-        "type": "cafe",
-        "averageRating": 8.3,
-        "ratingCount": 12,
-        "currentUserTried": true
-      },
-      "rating": 9,
-      "notes": "Private note.",
+      "id": "list_123",
+      "name": "Burgers",
+      "visibility": "public",
+      "ownerDisplayName": "Sara",
+      "placeCount": 1,
       "createdAt": "2026-06-18T10:00:00Z",
       "updatedAt": "2026-06-18T10:00:00Z"
     }
   ],
   "meta": {
-    "page": 1,
-    "pageSize": 20,
-    "totalItems": 1,
-    "totalPages": 1
+    "limit": 100,
+    "offset": 0,
+    "total": 1,
+    "sort": "created_at_desc"
   }
 }
 ```
 
-**Validation rules:**
-
-- Type must be `restaurant` or `cafe` when supplied.
-- Pagination and sort values must be valid.
-
 **Privacy:**
 
-- Returns only current user's own notes.
+- Public responses include `ownerDisplayName` only.
+- Public responses do not expose owner email or internal user id.
 
-**Error responses:**
-
-- `401 UNAUTHENTICATED`.
-- `400 VALIDATION_ERROR`.
-
-## Public List Endpoint
-
-### Get Public List
+### Get Public List Detail
 
 | Item | Contract |
 | --- | --- |
-| Endpoint | `GET /api/v1/public/lists/{listId}` |
+| Endpoint | `GET /api/v1/lists/public/{listId}` |
 | Authentication | JWT required |
-| Authorization | Authenticated users only; list must be public or owned by current user |
-| Pagination | Places may be paginated with `page` and `pageSize` |
-| Sorting | Places sorted by `name_asc` |
+| Authorization | Authenticated users only; list must be public |
+| Pagination | List items are returned in the detail payload |
+| Sorting | Items use persisted list item order/current service order |
 | Idempotency | Safe read |
 
 **Response schema:**
 
 ```json
 {
-  "data": {
-    "id": "list_123",
-    "name": "Burgers",
-    "visibility": "public",
-    "owner": {
-      "id": "user_123",
-      "displayName": "Sara"
-    },
-    "places": [
-      {
+  "id": "list_123",
+  "name": "Burgers",
+  "visibility": "public",
+  "ownerDisplayName": "Sara",
+  "placeCount": 1,
+  "createdAt": "2026-06-18T10:00:00Z",
+  "updatedAt": "2026-06-18T10:00:00Z",
+  "items": [
+    {
+      "id": "item_123",
+      "createdAt": "2026-06-18T10:00:00Z",
+      "place": {
         "id": "place_123",
         "name": "Example Restaurant",
         "type": "restaurant",
+        "subtype": "burger",
         "averageRating": 8.3,
         "ratingCount": 12,
         "currentUserTried": false
       }
-    ]
-  },
-  "meta": {
-    "page": 1,
-    "pageSize": 20,
-    "totalItems": 1,
-    "totalPages": 1
-  }
+    }
+  ]
 }
 ```
 
@@ -1047,7 +1046,7 @@ Exactly one of `placeId` or `place` is required. One request targets one list on
 
 **Privacy:**
 
-- Owner email is not returned.
+- Owner email and internal owner id are not returned.
 - Rating notes are not returned.
 - Current viewer's tried indicator may be returned.
 

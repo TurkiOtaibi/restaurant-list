@@ -1,20 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   BidiText,
   BottomSheet,
   Button,
   EmptyState,
+  LoadingState,
   Modal,
   SearchField,
   StatusMessage,
   VisualArtwork
 } from "@/components/ui";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { ApiError, ListDetail, Place, apiRequest } from "@/lib/api";
+import { ApiError, ListDetail, Place, apiCollection, apiRequest } from "@/lib/api";
 import { placeSubtypeLabel, placeTypeLabel } from "@/features/places/taxonomy";
 
 type AddPlaceDialogProps = {
@@ -22,7 +23,6 @@ type AddPlaceDialogProps = {
   onAdded: (list: ListDetail) => void;
   onClose: () => void;
   open: boolean;
-  places: Place[];
   savedPlaceIds?: string[];
 };
 
@@ -31,23 +31,61 @@ export function AddPlaceDialog({
   onAdded,
   onClose,
   open,
-  places,
   savedPlaceIds = []
 }: AddPlaceDialogProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const Dialog = isDesktop ? Modal : BottomSheet;
   const [query, setQuery] = useState("");
+  const [results, setResults] = useState<Place[]>([]);
+  const [loadingResults, setLoadingResults] = useState(false);
   const [addingPlaceId, setAddingPlaceId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const requestIdRef = useRef(0);
   const normalizedQuery = query.trim().toLowerCase();
-  const results = useMemo(() => {
-    if (!normalizedQuery) {
-      return [];
+
+  useEffect(() => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+
+    if (!open) {
+      setLoadingResults(false);
+      return;
     }
 
-    return places.filter((place) => place.name.toLowerCase().includes(normalizedQuery));
-  }, [normalizedQuery, places]);
+    if (!normalizedQuery) {
+      setResults([]);
+      setLoadingResults(false);
+      return;
+    }
+
+    setLoadingResults(true);
+    setError("");
+
+    const params = new URLSearchParams({
+      limit: "20",
+      q: normalizedQuery,
+      sort: "rating_desc"
+    });
+
+    apiCollection<Place>(`/places?${params.toString()}`)
+      .then((response) => {
+        if (requestId === requestIdRef.current) {
+          setResults(response.data);
+        }
+      })
+      .catch((caught) => {
+        if (requestId === requestIdRef.current) {
+          setResults([]);
+          setError(caught instanceof ApiError ? caught.message : "تعذر البحث عن الأماكن.");
+        }
+      })
+      .finally(() => {
+        if (requestId === requestIdRef.current) {
+          setLoadingResults(false);
+        }
+      });
+  }, [normalizedQuery, open]);
 
   async function addPlace(placeId: string) {
     setError("");
@@ -62,11 +100,7 @@ export function AddPlaceDialog({
       onAdded(refreshed);
       setMessage("تمت إضافة المكان إلى القائمة.");
     } catch (caught) {
-      if (caught instanceof ApiError && caught.status === 409) {
-        setMessage("المكان موجود في هذه القائمة.");
-      } else {
-        setError(caught instanceof ApiError ? caught.message : "تعذر إضافة المكان.");
-      }
+      setError(caught instanceof ApiError ? caught.message : "تعذر إضافة المكان.");
     } finally {
       setAddingPlaceId(null);
     }
@@ -90,7 +124,7 @@ export function AddPlaceDialog({
             setMessage("");
           }}
           onClear={query ? () => setQuery("") : undefined}
-          resultCount={normalizedQuery ? results.length : undefined}
+          resultCount={normalizedQuery && !loadingResults ? results.length : undefined}
           value={query}
         />
 
@@ -103,14 +137,16 @@ export function AddPlaceDialog({
           />
         ) : null}
 
-        {normalizedQuery && results.length === 0 ? (
+        {loadingResults ? <LoadingState count={2} delayMs={0} label="جاري البحث عن الأماكن" /> : null}
+
+        {normalizedQuery && !loadingResults && results.length === 0 ? (
           <EmptyState
             action={<Link href="/places/new">أضف مكانًا</Link>}
             title="لا يوجد مكان بهذا الاسم"
           />
         ) : null}
 
-        {results.length > 0 ? (
+        {!loadingResults && results.length > 0 ? (
           <div className="stack" aria-label="نتائج الأماكن">
             {results.map((place) => {
               const alreadySaved = savedPlaceIds.includes(place.id);

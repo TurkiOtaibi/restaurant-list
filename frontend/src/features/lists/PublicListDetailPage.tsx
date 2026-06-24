@@ -74,6 +74,7 @@ export function PublicListDetailPage({ listId }: PublicListDetailPageProps) {
           {list ? (
             <div className="collection-hero__meta">
               <Badge variant="public">عامة</Badge>
+              <span>بواسطة: <BidiText>{list.ownerDisplayName}</BidiText></span>
               <span>{placeCountLabel(placeCount)}</span>
               <span>عرض فقط</span>
             </div>

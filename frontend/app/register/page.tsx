@@ -8,14 +8,17 @@ import { Button, StatusMessage, TasteMarkIcon, TextInput } from "@/components/ui
 import { ApiError, AuthResponse, apiRequest, saveAccessToken } from "@/lib/api";
 
 type FieldErrors = {
+  displayName?: string;
   email?: string;
   password?: string;
 };
 
 export default function RegisterPage() {
   const router = useRouter();
+  const displayNameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
+  const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -23,17 +26,26 @@ export default function RegisterPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    emailRef.current?.focus();
+    displayNameRef.current?.focus();
   }, []);
+
+  function currentValues() {
+    return {
+      displayName: displayNameRef.current?.value ?? displayName,
+      email: emailRef.current?.value ?? email,
+      password: passwordRef.current?.value ?? password
+    };
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError("");
 
-    const validation = validateAuthFields(email, password);
+    const values = currentValues();
+    const validation = validateAuthFields(values.displayName, values.email, values.password);
     setErrors(validation);
-    if (validation.email || validation.password) {
-      (validation.email ? emailRef : passwordRef).current?.focus();
+    if (validation.displayName || validation.email || validation.password) {
+      (validation.displayName ? displayNameRef : validation.email ? emailRef : passwordRef).current?.focus();
       return;
     }
 
@@ -43,7 +55,11 @@ export default function RegisterPage() {
       const response = await apiRequest<AuthResponse>("/auth/register", {
         method: "POST",
         auth: false,
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({
+          displayName: values.displayName.trim(),
+          email: values.email,
+          password: values.password
+        })
       });
       saveAccessToken(response.accessToken);
       router.push("/lists");
@@ -72,6 +88,20 @@ export default function RegisterPage() {
         </div>
 
         <form className="auth-form" noValidate onSubmit={handleSubmit}>
+          <TextInput
+            autoComplete="name"
+            error={errors.displayName}
+            id="register-display-name"
+            label="اسم العرض"
+            name="displayName"
+            onChange={(event) => {
+              setDisplayName(event.target.value);
+              setErrors((current) => ({ ...current, displayName: undefined }));
+              setFormError("");
+            }}
+            ref={displayNameRef}
+            value={displayName}
+          />
           <TextInput
             autoComplete="email"
             error={errors.email}
@@ -116,8 +146,11 @@ export default function RegisterPage() {
   );
 }
 
-function validateAuthFields(email: string, password: string): FieldErrors {
+function validateAuthFields(displayName: string, email: string, password: string): FieldErrors {
   return {
+    displayName: displayName.trim()
+      ? undefined
+      : "اسم العرض مطلوب.",
     email: validEmail(email)
       ? undefined
       : "أدخل بريدًا صحيحًا.",

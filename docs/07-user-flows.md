@@ -14,7 +14,7 @@
 4. System returns a JWT access token and refresh token.
 5. User enters the authenticated app shell.
 
-**Success State:** User can access My Lists, Restaurants, Cafes, and My Profile.
+**Success State:** User can access My Lists, Places, and My Profile.
 
 **Failure States:**
 
@@ -119,19 +119,21 @@
 
 **Actor:** List Owner
 
-**Entry Point:** List Detail, Place Detail, Restaurants, or Cafes
+**Entry Point:** List Detail, Place Detail, or Places
 
 **Steps:**
 
-1. User selects Add To List for one place.
-2. System displays owned target lists.
-3. User selects exactly one target list.
-4. System validates list ownership.
-5. System validates the place exists.
-6. System checks whether the place is already in the list.
-7. If already present, system returns idempotent success and creates no duplicate.
-8. If not present, system adds the place to the selected list.
-9. If the place is already tried by the user, system preserves tried status and displays Tried indicator.
+1. User selects Add Place from an owned list or Add To List from Place Detail.
+2. System displays a search dialog/sheet.
+3. User searches existing places by name.
+4. System searches the server-side catalog using bounded pagination.
+5. User selects one place.
+6. System validates list ownership.
+7. System validates the place exists.
+8. System checks whether the place is already in the list.
+9. If already present, system returns idempotent success and creates no duplicate.
+10. If not present, system adds the place to the selected list.
+11. If the place is already tried by the user, system preserves tried status and displays Tried indicator where applicable.
 
 **Success State:** Place appears once in the selected list.
 
@@ -152,75 +154,73 @@
 1. User opens a list they own.
 2. User selects Add Place.
 3. User chooses Create New Place.
-4. User enters name, type, and optional description.
+4. User enters name, primary type, and required subtype when applicable.
 5. System validates required fields and duplicate place name.
 6. System creates the place.
 7. System adds the new place to the current list.
 
-**Success State:** New place appears in the list and in Restaurants or Cafes according to type.
+**Success State:** New place appears in the list and in Places under the correct type filter.
 
 **Failure States:**
 
 - Name is blank.
-- Type is missing or invalid.
+- Type or required subtype is missing or invalid.
 - Duplicate place name exists.
 - List no longer exists.
 
-## Flow 8: Browse Restaurants
+## Flow 8: Browse Places
 
 **Actor:** Authenticated User
 
-**Entry Point:** Restaurants main navigation
+**Entry Point:** Places main navigation
 
 **Steps:**
 
-1. User opens Restaurants.
-2. System retrieves places where type is restaurant.
-3. System displays name, average rating, rating count, and Tried indicator when applicable.
-4. User may add a place to one list.
-5. User may open Place Detail.
-6. User may mark a place as tried or edit rating.
+1. User opens Places.
+2. System retrieves places with bounded pagination.
+3. System defaults to the restaurant filter unless a saved URL parameter selects another type.
+4. User may filter by restaurants, cafes, or ice cream.
+5. User may filter restaurant/cafe subtype when applicable.
+6. System displays compact rows with name, type, subtype, and community rating when available.
+7. User opens Place Detail from a row.
 
-**Success State:** User can scan restaurants and take allowed actions.
+**Success State:** User can scan places and open a place detail.
 
 **Failure States:**
 
-- No restaurants exist.
+- No places exist.
+- No places match the selected filters.
 - Place list request fails.
 
-## Flow 9: Browse Cafes
+## Flow 9: Browse Legacy Restaurant/Cafe URLs
 
 **Actor:** Authenticated User
 
-**Entry Point:** Cafes main navigation
+**Entry Point:** Existing `/restaurants` or `/cafes` link
 
 **Steps:**
 
-1. User opens Cafes.
-2. System retrieves places where type is cafe.
-3. System displays name, average rating, rating count, and Tried indicator when applicable.
-4. User may add a place to one list.
-5. User may open Place Detail.
-6. User may mark a place as tried or edit rating.
+1. User opens `/restaurants` or `/cafes`.
+2. System redirects to `/places?type=restaurant` or `/places?type=cafe`.
+3. Places page applies the appropriate filter.
 
-**Success State:** User can scan cafes and take allowed actions.
+**Success State:** Old links remain usable without restoring separate primary navigation tabs.
 
 **Failure States:**
 
-- No cafes exist.
-- Place list request fails.
+- User is not authenticated and is redirected through the protected-route flow.
 
 ## Flow 10: Search Places By Name
 
 **Actor:** Authenticated User
 
-**Entry Point:** Restaurants, Cafes, Add Existing Place, or Place Search UI
+**Entry Point:** Places, Add Existing Place, or Place Search UI
 
 **Steps:**
 
 1. User enters a place-name search query.
 2. System searches place names only.
-3. System returns deterministic name-sorted results.
+3. System returns bounded results sorted by rating-desc behavior, with unrated places last.
 4. System excludes recommendations, trending, popularity sorting, location results, and category exploration.
 
 **Success State:** User sees matching existing places by name.
@@ -234,7 +234,7 @@
 
 **Actor:** Authenticated User
 
-**Entry Point:** Place row in list, Restaurants, Cafes, search, or profile
+**Entry Point:** Place row in list, Places, search, or profile
 
 **Steps:**
 
@@ -261,7 +261,7 @@
 
 1. User selects Mark As Tried or submits a rating for an unrated place.
 2. System displays rating form.
-3. User selects rating from 1 to 10.
+3. User selects rating from 1 to 10 in 0.5 increments.
 4. User optionally enters notes.
 5. User submits.
 6. System validates rating and normalizes blank notes to null.
@@ -270,12 +270,12 @@
 9. System recalculates average rating and rating count from the ratings table.
 10. System confirms success.
 
-**Success State:** Place no longer appears in the user's lists, appears in Tried Places, and shows Tried indicator.
+**Success State:** Place no longer appears in the user's lists, appears in `تقييماتك`, and shows Tried indicator.
 
 **Failure States:**
 
 - Rating is missing.
-- Rating is outside 1 to 10.
+- Rating is outside 1 to 10 or not aligned to a 0.5 step.
 - Place no longer exists.
 
 ## Flow 13: Update Existing Rating
@@ -308,7 +308,7 @@
 
 **Actor:** Authenticated User
 
-**Entry Point:** Place Detail, Restaurants, Cafes, or My Profile
+**Entry Point:** Place Detail, Places, or My Profile
 
 **Steps:**
 
@@ -337,10 +337,10 @@
 2. System calculates lists count.
 3. System calculates restaurants tried count.
 4. System calculates cafes tried count.
-5. System retrieves tried places with current user's rating and private notes.
-6. System displays profile summary and tried places.
+5. System retrieves rating archive entries with current user's rating and private notes.
+6. System displays profile summary and `تقييماتك`.
 
-**Success State:** User sees their counts, tried places, ratings, and private notes.
+**Success State:** User sees their counts, ratings archive, and private notes.
 
 **Failure States:**
 

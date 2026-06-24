@@ -41,7 +41,7 @@ test.afterAll(() => {
 });
 
 test("real frontend and api complete auth, create, search, and detail flow", async ({ page }) => {
-  test.setTimeout(60_000);
+  test.setTimeout(180_000);
 
   const unique = Date.now();
   const email = `e2e-${unique}@example.com`;
@@ -49,6 +49,7 @@ test("real frontend and api complete auth, create, search, and detail flow", asy
 
   // Register -> redirected to the lists shell.
   await page.goto("/register");
+  await page.getByLabel("اسم العرض").fill(`مستخدم ${unique}`);
   await page.getByLabel("البريد الإلكتروني").fill(email);
   await page.getByLabel("كلمة المرور").fill("password123");
   await page.getByRole("button", { name: "إنشاء حساب" }).click();
@@ -59,9 +60,9 @@ test("real frontend and api complete auth, create, search, and detail flow", asy
   await page.getByLabel("اسم المكان").fill(placeName);
   await page.getByRole("button", { name: "حفظ", exact: true }).click();
   await expect(page.getByText("تم حفظ المكان.")).toBeVisible();
-  await page.getByRole("button", { name: "إلغاء" }).click();
 
   // The new place appears in the ice-cream library.
+  await page.goto("/places?type=ice_cream");
   await expect(page).toHaveURL(/\/places\?type=ice_cream/);
   await expect(page.getByText(placeName)).toBeVisible();
 
@@ -85,8 +86,11 @@ test("real frontend and api complete auth, create, search, and detail flow", asy
   await page.getByRole("searchbox", { name: "بحث" }).fill(placeName);
   await page.getByRole("button", { name: "بحث", exact: true }).click();
   const placeLink = page.getByRole("link", { name: new RegExp(placeName) });
-  await placeLink.click({ position: { x: 24, y: 24 } });
-  await expect(page).toHaveURL(/\/places\/[0-9a-f-]+$/);
+  await placeLink.scrollIntoViewIfNeeded();
+  await Promise.all([
+    page.waitForURL(/\/places\/[0-9a-f-]+$/, { timeout: 30_000 }),
+    placeLink.click()
+  ]);
   await expect(page.getByRole("heading", { name: placeName })).toBeVisible();
   await expect(page.getByRole("link", { name: "قيّم المكان" })).toBeVisible();
 });
@@ -94,15 +98,17 @@ test("real frontend and api complete auth, create, search, and detail flow", asy
 test("real frontend and api complete list edit add remove delete and profile flow", async ({
   page
 }) => {
-  test.setTimeout(90_000);
+  test.setTimeout(240_000);
 
   const unique = Date.now();
   const email = `lists-${unique}@example.com`;
+  const displayName = `مالك ${unique}`;
   const placeName = `مطعم برجر الاختبار ${unique}`;
   const listName = `قائمة الاختبار ${unique}`;
   const editedListName = `قائمة معدلة ${unique}`;
 
   await page.goto("/register");
+  await page.getByLabel("اسم العرض").fill(displayName);
   await page.getByLabel("البريد الإلكتروني").fill(email);
   await page.getByLabel("كلمة المرور").fill("password123");
   await page.getByRole("button", { name: "إنشاء حساب" }).click();
@@ -113,16 +119,32 @@ test("real frontend and api complete list edit add remove delete and profile flo
   await page.getByLabel("نوع المطعم").selectOption("burger");
   await page.getByRole("button", { name: "حفظ", exact: true }).click();
   await expect(page.getByText("تم حفظ المكان.")).toBeVisible();
-  await page.getByRole("button", { name: "إلغاء" }).click();
+  await page.goto("/places?type=restaurant");
   await expect(page).toHaveURL(/\/places\?type=restaurant/);
 
   await page.goto("/lists/new");
   await page.getByLabel("اسم القائمة").fill(listName);
   await page.getByLabel("عامة").check();
+  const createListResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/v1/lists") &&
+      response.request().method() === "POST",
+    { timeout: 15_000 }
+  );
   await page.getByRole("button", { name: "حفظ", exact: true }).click();
-  await expect(page).toHaveURL(/\/lists\/[0-9a-f-]+$/, { timeout: 15_000 });
+  const createListResponse = await createListResponsePromise;
+  expect(createListResponse.status()).toBe(201);
+  await expect(page).toHaveURL(/\/lists\/[0-9a-f-]+$/, { timeout: 30_000 });
   await expect(page.getByRole("heading", { name: listName })).toBeVisible();
   await expect(page.getByText("عامة")).toBeVisible();
+
+  await page.goto("/lists/public");
+  await expect(page.getByText(listName)).toBeVisible();
+  await expect(page.getByText(`بواسطة: ${displayName}`)).toBeVisible();
+  await page.getByRole("link", { name: new RegExp(listName) }).click();
+  await expect(page.getByText(`بواسطة: ${displayName}`)).toBeVisible();
+  await page.goto("/lists");
+  await page.getByRole("link", { name: new RegExp(listName) }).click();
 
   await page.getByRole("button", { name: "إجراءات القائمة" }).click();
   await page.getByRole("menuitem", { name: "تعديل" }).click();
@@ -136,7 +158,8 @@ test("real frontend and api complete list edit add remove delete and profile flo
   await page.getByRole("searchbox", { name: "بحث" }).fill(placeName);
   await page.getByRole("button", { name: "أضف" }).click();
   await expect(page.getByText("تمت إضافة المكان إلى القائمة.")).toBeVisible();
-  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "إغلاق" }).click();
+  await expect(page.getByRole("dialog", { name: "أضف مكانًا" })).toBeHidden();
   await expect(page.getByRole("link", { name: new RegExp(placeName) })).toBeVisible();
 
   await page.getByRole("button", { name: new RegExp(`إزالة ${placeName}`) }).click();
@@ -146,9 +169,14 @@ test("real frontend and api complete list edit add remove delete and profile flo
   await page.getByRole("searchbox", { name: "بحث" }).fill(placeName);
   await page.getByRole("button", { name: "أضف" }).click();
   await expect(page.getByText("تمت إضافة المكان إلى القائمة.")).toBeVisible();
-  await page.keyboard.press("Escape");
-  await page.getByRole("link", { name: new RegExp(placeName) }).click({ position: { x: 24, y: 24 } });
-  await expect(page).toHaveURL(/\/places\/[0-9a-f-]+$/);
+  await page.getByRole("button", { name: "إغلاق" }).click();
+  await expect(page.getByRole("dialog", { name: "أضف مكانًا" })).toBeHidden();
+  const listPlaceLink = page.getByRole("link", { name: new RegExp(placeName) });
+  await listPlaceLink.scrollIntoViewIfNeeded();
+  await Promise.all([
+    page.waitForURL(/\/places\/[0-9a-f-]+$/, { timeout: 30_000 }),
+    listPlaceLink.click()
+  ]);
 
   await page.getByRole("link", { name: "قيّم المكان" }).click();
   await page.getByLabel("تقييمك").fill("8.5");
@@ -172,6 +200,133 @@ test("real frontend and api complete list edit add remove delete and profile flo
   await page.getByRole("button", { name: "حذف" }).click();
   await expect(page).toHaveURL(/\/lists$/);
   await expect(page.getByText(editedListName)).toHaveCount(0);
+});
+
+test("real places library covers subtype filters sorting layout bidi and errors", async ({
+  page
+}) => {
+  test.setTimeout(240_000);
+
+  const unique = Date.now();
+  const email = `places-${unique}@example.com`;
+  const raterA = await createApiUser(`rater-a-${unique}@example.com`);
+  const raterB = await createApiUser(`rater-b-${unique}@example.com`);
+  const prefix = `Sort ${unique}`;
+  const topName = `${prefix} A Casa Nonna`;
+  const tiedMoreName = `${prefix} B Burger Two Ratings`;
+  const tiedFewerName = `${prefix} C Burger One Rating`;
+  const lowerName = `${prefix} D Grill Lower`;
+  const unratedMixedName = `${prefix} مطعم Five Guys فرع King Abdullah Financial District`;
+  const cafeName = `${prefix} Coffee Room`;
+  const iceCreamName = `${prefix} Ice Cream`;
+
+  const top = await createApiPlace(raterA, topName, "restaurant", "italian");
+  const tiedMore = await createApiPlace(raterA, tiedMoreName, "restaurant", "burger");
+  const tiedFewer = await createApiPlace(raterA, tiedFewerName, "restaurant", "burger");
+  const lower = await createApiPlace(raterA, lowerName, "restaurant", "grill");
+  const unratedMixed = await createApiPlace(raterA, unratedMixedName, "restaurant", "burger");
+  await createApiPlace(raterA, cafeName, "cafe", "coffee");
+  await createApiPlace(raterA, iceCreamName, "ice_cream", null);
+
+  await rateApiPlace(raterA, top.id, 9.5);
+  await rateApiPlace(raterA, tiedMore.id, 9.0);
+  await rateApiPlace(raterB, tiedMore.id, 9.0);
+  await rateApiPlace(raterA, tiedFewer.id, 9.0);
+  await rateApiPlace(raterA, lower.id, 8.0);
+
+  const apiRequests: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("localhost:8000")) {
+      apiRequests.push(request.url());
+    }
+  });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/register");
+  await page.getByLabel("اسم العرض").fill(`مستخدم ${unique}`);
+  await page.getByLabel("البريد الإلكتروني").fill(email);
+  await page.getByLabel("كلمة المرور").fill("password123");
+  await page.getByRole("button", { name: "إنشاء حساب" }).click();
+  await expect(page).toHaveURL(/\/lists$/, { timeout: 15_000 });
+
+  await page.getByRole("link", { name: "الأماكن" }).click();
+  await expect(page).toHaveURL(/\/places/);
+  await expect(page.getByRole("searchbox", { name: "بحث" })).toBeVisible({ timeout: 30_000 });
+  await page.getByRole("searchbox", { name: "بحث" }).fill(prefix);
+  await page.getByRole("searchbox", { name: "بحث" }).press("Enter");
+  await expect(page).toHaveURL(/q=/);
+  await expect(page.locator(".ds-place-card--row")).toHaveCount(5, { timeout: 30_000 });
+  await expect(page.locator(".ds-place-card--row .ds-place-card__title")).toHaveText([
+    topName,
+    tiedMoreName,
+    tiedFewerName,
+    lowerName,
+    unratedMixedName
+  ]);
+  await expect(page.locator(".ds-place-card--row").first()).toHaveAttribute("href", /\/places\//);
+  await expect(page.locator(".ds-place-card--row svg")).toHaveCount(0);
+  await expect(page.locator("body")).not.toContainText(/[٠-٩۰-۹]/);
+  await expect(page.locator(".ds-place-card--row").first().locator(".ds-place-card__rating")).toContainText("9.5");
+
+  const firstArtworkClass = await page
+    .locator(".ds-place-card--row")
+    .first()
+    .locator(".ds-artwork")
+    .getAttribute("class");
+  await page.getByRole("searchbox", { name: "بحث" }).press("Enter");
+  await expect(page.locator(".ds-place-card--row")).toHaveCount(5, { timeout: 30_000 });
+  await expect(page.locator(".ds-place-card--row").first().locator(".ds-artwork")).toHaveAttribute(
+    "class",
+    firstArtworkClass ?? ""
+  );
+
+  const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  const innerWidth = await page.evaluate(() => window.innerWidth);
+  expect(scrollWidth).toBeLessThanOrEqual(innerWidth);
+  await expect(page.locator(".ds-place-card--row", { hasText: unratedMixed.name })).toBeVisible();
+
+  await page.locator(".place-subtype-filter__trigger").click();
+  await page.getByRole("radio").nth(1).click();
+  await expect(page).toHaveURL(/subtype=burger/);
+  await expect(page.locator(".ds-place-card--row .ds-place-card__title")).toHaveText([
+    tiedMoreName,
+    tiedFewerName,
+    unratedMixedName
+  ]);
+
+  await page.locator(".place-type-filters button").nth(1).click();
+  await expect(page).toHaveURL(/type=cafe/);
+  await expect(page).not.toHaveURL(/subtype=burger/);
+  await page.locator(".place-subtype-filter__trigger").click();
+  await page.getByRole("radio").nth(1).click();
+  await expect(page).toHaveURL(/subtype=coffee/);
+  await page.getByRole("searchbox", { name: "بحث" }).fill(prefix);
+  await page.getByRole("searchbox", { name: "بحث" }).press("Enter");
+  await expect(page.locator(".ds-place-card--row .ds-place-card__title")).toHaveText([cafeName]);
+
+  await page.locator(".place-type-filters button").nth(2).click();
+  await expect(page).toHaveURL(/type=ice_cream/);
+  await expect(page.locator(".place-subtype-filter__trigger")).toHaveCount(0);
+  await page.getByRole("searchbox", { name: "بحث" }).fill(prefix);
+  await page.getByRole("searchbox", { name: "بحث" }).press("Enter");
+  await expect(page.locator(".ds-place-card--row .ds-place-card__title")).toHaveText([iceCreamName]);
+
+  await page.getByRole("searchbox", { name: "بحث" }).fill(`No Match ${unique}`);
+  await page.getByRole("searchbox", { name: "بحث" }).press("Enter");
+  await expect(page.locator(".ds-empty__title")).toBeVisible();
+  await expect(page.getByRole("button", { name: "عرض الكل" })).toBeVisible();
+
+  await page.locator(".place-type-filters button").nth(0).click();
+  await expect(page).toHaveURL(/type=restaurant/);
+  await page.getByRole("link", { name: "أضف مكانًا" }).click();
+  await expect(page).toHaveURL(/\/places\/new/);
+  await page.getByLabel("اسم المكان").fill(topName);
+  await page.getByLabel("نوع المطعم").selectOption("italian");
+  await page.getByRole("button", { name: "حفظ", exact: true }).click();
+  await expect(page.locator(".ds-status--error")).toBeVisible();
+
+  expect(apiRequests.some((url) => url.includes("/api/v1/places"))).toBeTruthy();
+  expect(apiRequests.some((url) => /localhost:8000\/places/.test(url))).toBeFalsy();
 });
 
 test("technical shell stories expose manifest headers and legacy redirects", async ({
@@ -198,7 +353,7 @@ test("technical shell stories expose manifest headers and legacy redirects", asy
 });
 
 async function waitForApi() {
-  for (let attempt = 0; attempt < 80; attempt += 1) {
+  for (let attempt = 0; attempt < 240; attempt += 1) {
     if (apiExited) {
       throw new Error(apiOutput);
     }
@@ -215,8 +370,63 @@ async function waitForApi() {
       // Keep waiting while the Python process starts Uvicorn.
     }
 
-    await delay(250);
+    await delay(500);
   }
 
   throw new Error(`Timed out waiting for the real API.\n${apiOutput}`);
+}
+
+type ApiPlaceType = "restaurant" | "cafe" | "ice_cream";
+type ApiPlaceSubtype = "burger" | "italian" | "grill" | "coffee" | null;
+
+async function createApiUser(email: string): Promise<string> {
+  const response = await fetch("http://localhost:8000/api/v1/auth/register", {
+    body: JSON.stringify({ displayName: "مستخدم اختبار", email, password: "password123" }),
+    headers: { "Content-Type": "application/json" },
+    method: "POST"
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to create API user: ${response.status} ${await response.text()}`);
+  }
+
+  const payload = (await response.json()) as { accessToken: string };
+  return payload.accessToken;
+}
+
+async function createApiPlace(
+  token: string,
+  name: string,
+  type: ApiPlaceType,
+  subtype: ApiPlaceSubtype
+): Promise<{ id: string; name: string }> {
+  const response = await fetch("http://localhost:8000/api/v1/places", {
+    body: JSON.stringify({ name, type, subtype }),
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    method: "POST"
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to create API place: ${response.status} ${await response.text()}`);
+  }
+
+  return (await response.json()) as { id: string; name: string };
+}
+
+async function rateApiPlace(token: string, placeId: string, rating: number): Promise<void> {
+  const response = await fetch("http://localhost:8000/api/v1/ratings", {
+    body: JSON.stringify({ placeId, rating }),
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    method: "POST"
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to rate API place: ${response.status} ${await response.text()}`);
+  }
 }

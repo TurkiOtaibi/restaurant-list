@@ -59,7 +59,7 @@ Business rules use the prefix `BR`.
 | ID | Rule | Enforcement |
 | --- | --- | --- |
 | BR-040 | Rating is required when marking a place as tried. | API validation. |
-| BR-041 | Rating must be an integer from 1 to 10. | API validation and database check constraint. |
+| BR-041 | Rating must be from 1 to 10 in 0.5 increments. | API validation and database check constraint. |
 | BR-042 | Notes are optional. | Notes may be null. |
 | BR-043 | Blank or whitespace-only notes are stored as null. | API normalization. |
 | BR-044 | Rating notes are private to the rating owner. | Authorization and response shaping. |
@@ -98,4 +98,4 @@ Business rules use the prefix `BR`.
 | BR-073 | A user cannot modify another user's list. | Authorization policy. |
 | BR-074 | An authenticated user can view another user's public list in read-only mode. | Authorization policy. |
 | BR-075 | A user cannot view another user's private list. | Authorization policy. |
-| BR-076 | Public list responses may expose owner display name only. | Public list response schema. |
+| BR-076 | Public list responses may expose owner display name only and must never expose owner email or internal user ID. | Public list response schema. |

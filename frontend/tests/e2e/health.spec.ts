@@ -11,6 +11,6 @@ test("frontend health endpoint returns ok", async ({ request }) => {
   expect(response.ok()).toBeTruthy();
   await expect(response.json()).resolves.toEqual({
     status: "ok",
-    service: "restaurant-wishlist-frontend"
+    service: "sijil-frontend"
   });
 });

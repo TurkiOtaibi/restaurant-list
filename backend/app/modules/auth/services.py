@@ -16,7 +16,13 @@ from app.core.security import (
     verify_password,
 )
 from app.db.utils import new_id, utc_now
-from app.modules.auth.models import RefreshToken, User, email_filter, normalize_email
+from app.modules.auth.models import (
+    RefreshToken,
+    User,
+    email_filter,
+    normalize_display_name,
+    normalize_email,
+)
 from app.modules.auth.schemas import (
     LoginRequest,
     RefreshResponse,
@@ -114,7 +120,11 @@ async def register_user_account(
     if existing_user is not None:
         conflict("EMAIL_ALREADY_EXISTS", "Email already registered.")
 
-    user = User(email=email, password_hash=hash_password(payload.password))
+    user = User(
+        email=email,
+        display_name=normalize_display_name(payload.display_name),
+        password_hash=hash_password(payload.password),
+    )
     db.add(user)
     await db.commit()
     await db.refresh(user)

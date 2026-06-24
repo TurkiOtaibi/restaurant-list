@@ -8,10 +8,15 @@ from app.core.config import get_settings
 async def register_user(
     client: AsyncClient,
     email: str = "user@example.com",
+    display_name: str | None = None,
 ) -> dict[str, Any]:
+    payload: dict[str, Any] = {"email": email, "password": "password123"}
+    if display_name is not None:
+        payload["displayName"] = display_name
+
     response = await client.post(
         "/api/v1/auth/register",
-        json={"email": email, "password": "password123"},
+        json=payload,
     )
     assert response.status_code == 201
     return cast(dict[str, Any], response.json())
@@ -26,6 +31,7 @@ async def test_register_login_refresh_and_logout(client: AsyncClient) -> None:
 
     registered = await register_user(client)
     assert registered["user"]["email"] == "user@example.com"
+    assert registered["user"]["displayName"] == "مستخدم سجل"
     assert registered["accessToken"]
     assert "refreshToken" not in registered
     assert client.cookies.get(refresh_cookie_name)
@@ -37,6 +43,7 @@ async def test_register_login_refresh_and_logout(client: AsyncClient) -> None:
     assert login.status_code == 200
     assert login.json()["accessToken"]
     assert "refreshToken" not in login.json()
+    assert login.json()["user"]["displayName"] == "مستخدم سجل"
     set_cookie = login.headers["set-cookie"]
     assert refresh_cookie_name in set_cookie
     assert "HttpOnly" in set_cookie
@@ -79,6 +86,12 @@ async def test_register_rejects_weak_password(client: AsyncClient) -> None:
         json={"email": "weak@example.com", "password": "short"},
     )
     assert response.status_code == 422
+
+
+async def test_register_accepts_public_safe_display_name(client: AsyncClient) -> None:
+    registered = await register_user(client, email="named@example.com", display_name="  تركي  ")
+
+    assert registered["user"]["displayName"] == "تركي"
 
 
 async def test_register_rejects_overlong_password(client: AsyncClient) -> None:

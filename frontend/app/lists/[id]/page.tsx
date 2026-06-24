@@ -22,8 +22,6 @@ import { ListLoadingState } from "@/features/lists/ListLoadingState";
 import {
   ApiError,
   ListDetail,
-  Place,
-  apiCollection,
   apiRequest,
   clearTokens,
   ensureSession
@@ -34,7 +32,6 @@ export default function ListDetailPage() {
   const params = useParams<{ id: string }>();
   const listId = params.id;
   const [list, setList] = useState<ListDetail | null>(null);
-  const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [needsAuth, setNeedsAuth] = useState(false);
@@ -54,12 +51,8 @@ export default function ListDetailPage() {
     }
 
     try {
-      const [listResponse, placesResponse] = await Promise.all([
-        apiRequest<ListDetail>(`/lists/${listId}`),
-        apiCollection<Place>("/places")
-      ]);
+      const listResponse = await apiRequest<ListDetail>(`/lists/${listId}`);
       setList(listResponse);
-      setPlaces(placesResponse.data);
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 401) {
         clearTokens();
@@ -212,7 +205,6 @@ export default function ListDetailPage() {
             onAdded={(updatedList) => setList(updatedList)}
             onClose={() => setAddPlaceOpen(false)}
             open={addPlaceOpen}
-            places={places}
             savedPlaceIds={list.items.map((item) => item.place.id)}
           />
         </>

@@ -9,7 +9,7 @@ Non-functional requirements use the prefix `NFR`.
 | ID | Requirement | Target |
 | --- | --- | --- |
 | NFR-001 | Main navigation pages should load quickly for MVP load. | P95 server response under 500 ms with 10,000 users, 25,000 places, 250,000 list items, 100,000 ratings, and 50 concurrent requests. |
-| NFR-002 | Place listing pages should support pagination. | API returns bounded result sets with page size limits. |
+| NFR-002 | Place listing pages should support pagination. | API returns bounded `limit`/`offset` result sets with collection metadata. |
 | NFR-003 | Community rating aggregates should be correct and simple for MVP. | Average rating and rating count are calculated from the ratings table using indexed rating queries. |
 
 ## Availability and Reliability

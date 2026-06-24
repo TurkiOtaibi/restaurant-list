@@ -2,14 +2,13 @@
 
 ## Navigation Shell
 
-**Purpose:** Provide persistent access to the four required product areas.
+**Purpose:** Provide persistent access to the three required product areas.
 
 **Navigation Items:**
 
-- My Lists.
-- Restaurants.
-- Cafes.
-- My Profile.
+- قوائمي / My Lists.
+- الأماكن / Places.
+- صفحتي / My Profile.
 
 **Common Elements:**
 
@@ -27,7 +26,6 @@
 - Display name.
 - Email.
 - Password.
-- Password confirmation.
 
 **Actions:**
 
@@ -157,8 +155,9 @@
 **Fields:**
 
 - Name.
-- Type: Restaurant or Cafe.
-- Description optional.
+- Primary type: Restaurant, Cafe, or Ice Cream.
+- Restaurant subtype when type is Restaurant.
+- Cafe subtype when type is Cafe.
 
 **Actions:**
 
@@ -170,6 +169,9 @@
 
 - Name required.
 - Type required.
+- Restaurant subtype required for restaurants.
+- Cafe subtype required for cafes.
+- Ice cream must not include subtype.
 - Name must be globally unique.
 
 **Excluded:**
@@ -179,52 +181,34 @@
 - Location.
 - Neighborhood.
 
-## Screen 8: Restaurants
+## Screen 8: Places
 
-**Purpose:** Show all restaurant places.
-
-**Primary Content:**
-
-- Restaurant name.
-- Average rating displayed with one decimal place.
-- Rating count.
-- Tried indicator when current user has rated the place.
-
-**Actions:**
-
-- Add To List.
-- Mark As Tried.
-- Edit Rating when already tried.
-- Open Place Detail.
-- Search by place name.
-
-## Screen 9: Cafes
-
-**Purpose:** Show all cafe places.
+**Purpose:** Browse/search places through one canonical Places screen.
 
 **Primary Content:**
 
-- Cafe name.
+- Primary type filters: restaurants, cafes, ice cream.
+- Restaurant/cafe subtype filter.
+- Place name search.
+- Place name.
+- Place type and subtype.
 - Average rating displayed with one decimal place.
-- Rating count.
-- Tried indicator when current user has rated the place.
+- Rating count when useful.
 
 **Actions:**
 
-- Add To List.
-- Mark As Tried.
-- Edit Rating when already tried.
 - Open Place Detail.
 - Search by place name.
 
-## Screen 10: Place Detail
+## Screen 9: Place Detail
 
-**Purpose:** Show details for one restaurant or cafe.
+**Purpose:** Show details for one place.
 
 **Primary Content:**
 
 - Name.
 - Type.
+- Subtype when applicable.
 - Description if present.
 - Average rating displayed with one decimal place.
 - Rating count.
@@ -241,13 +225,13 @@
 
 - Never display another user's rating notes.
 
-## Screen 11: Mark As Tried
+## Screen 10: Rate Place
 
 **Purpose:** Capture a user's rating and optional private notes.
 
 **Fields:**
 
-- Rating from 1 to 10.
+- Rating from 1 to 10 in 0.5 increments.
 - Notes optional.
 
 **Actions:**
@@ -258,7 +242,7 @@
 **Validation:**
 
 - Rating required.
-- Rating must be an integer from 1 to 10.
+- Rating must be from 1 to 10 in 0.5 increments.
 - Blank notes are stored as null.
 
 **Post-Save Behavior:**
@@ -267,26 +251,27 @@
 - Existing rating update preserves later re-added list memberships.
 - Place shows Tried indicator.
 
-## Screen 12: My Profile
+## Screen 11: My Profile
 
-**Purpose:** Show personal summary and tried places.
+**Purpose:** Show personal summary and rating archive.
 
 **Primary Content:**
 
 - Lists count.
 - Restaurants tried count.
 - Cafes tried count.
-- Tried places list.
+- Ice cream tried count.
+- `تقييماتك` rating archive.
 - User's rating.
 - User's private notes if present.
 - Last updated date.
 
 **Actions:**
 
-- Edit Rating from tried place row.
+- Edit Rating from rating archive row.
 - Open Place Detail.
 
-## Screen 13: Public List View
+## Screen 12: Public List View
 
 **Purpose:** Let authenticated non-owners view a public list in read-only mode.
 

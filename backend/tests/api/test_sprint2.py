@@ -1,6 +1,6 @@
 from typing import Any, cast
 
-from httpx import AsyncClient
+from httpx import AsyncClient, Response
 
 from tests.api.test_auth import auth_header, register_user
 from tests.api.test_places_and_lists import _create_list, _create_place, collection_data
@@ -8,6 +8,18 @@ from tests.api.test_places_and_lists import _create_list, _create_place, collect
 
 async def _token(client: AsyncClient, email: str) -> str:
     return str((await register_user(client, email=email))["accessToken"])
+
+
+async def _token_with_display_name(client: AsyncClient, email: str, display_name: str) -> str:
+    return str(
+        (
+            await register_user(
+                client,
+                email=email,
+                display_name=display_name,
+            )
+        )["accessToken"]
+    )
 
 
 async def _add_place_to_list(
@@ -39,6 +51,20 @@ async def _rate_place(
     )
     assert response.status_code == 201
     return cast(dict[str, Any], response.json())
+
+
+async def _post_rating(
+    client: AsyncClient,
+    token: str,
+    place_id: str,
+    rating: float,
+    notes: str | None = None,
+) -> Response:
+    return await client.post(
+        "/api/v1/ratings",
+        json={"placeId": place_id, "rating": rating, "notes": notes},
+        headers=auth_header(token),
+    )
 
 
 async def test_rating_creates_tried_status_and_removes_place_from_all_user_lists(
@@ -95,7 +121,8 @@ async def test_rating_upsert_and_patch_update_existing_rating(client: AsyncClien
     place = await _create_place(client, token, name="Nara Cafe", place_type="cafe")
 
     created = await _rate_place(client, token, place["id"], 6, "")
-    upserted = await _rate_place(client, token, place["id"], 9, "updated")
+    upsert_response = await _post_rating(client, token, place["id"], 9, "updated")
+    upserted = upsert_response.json()
     patched = await client.patch(
         f"/api/v1/ratings/{place['id']}",
         json={"rating": 7, "notes": "   "},
@@ -105,6 +132,7 @@ async def test_rating_upsert_and_patch_update_existing_rating(client: AsyncClien
     place_detail = await client.get(f"/api/v1/places/{place['id']}", headers=auth_header(token))
 
     assert created["notes"] is None
+    assert upsert_response.status_code == 200
     assert upserted["id"] == created["id"]
     assert upserted["rating"] == 9
     assert patched.status_code == 200
@@ -152,7 +180,7 @@ async def test_notes_privacy_and_community_rating_aggregates(client: AsyncClient
 
 
 async def test_public_private_list_visibility_and_guest_denial(client: AsyncClient) -> None:
-    owner_token = await _token(client, "owner@example.com")
+    owner_token = await _token_with_display_name(client, "owner@example.com", "تركي")
     other_token = await _token(client, "other@example.com")
     owner_list = await _create_list(client, owner_token, name="Owner list")
 
@@ -189,9 +217,16 @@ async def test_public_private_list_visibility_and_guest_denial(client: AsyncClie
     assert visibility.status_code == 200
     assert visibility.json()["visibility"] == "public"
     assert public_collection.status_code == 200
-    assert collection_data(public_collection)[0]["id"] == owner_list["id"]
+    public_summary = collection_data(public_collection)[0]
+    assert public_summary["id"] == owner_list["id"]
+    assert public_summary["ownerDisplayName"] == "تركي"
+    assert "userId" not in public_summary
+    assert "owner@example.com" not in str(public_summary)
     assert public_detail.status_code == 200
     assert public_detail.json()["id"] == owner_list["id"]
+    assert public_detail.json()["ownerDisplayName"] == "تركي"
+    assert "userId" not in public_detail.json()
+    assert "owner@example.com" not in str(public_detail.json())
     assert private_again.status_code == 200
     assert private_again.json()["visibility"] == "private"
     assert private_again_detail.status_code == 404
@@ -215,7 +250,7 @@ async def test_profile_statistics_are_calculated_from_user_data(client: AsyncCli
     assert body["triedCafeCount"] == 1
     assert body["ratingsCreatedCount"] == 2
     assert len(body["userRatings"]) == 2
-    assert len(body["triedPlaces"]) == 2
+    assert "triedPlaces" not in body
 
 
 async def test_profile_counts_ice_cream_places(client: AsyncClient) -> None:

@@ -58,5 +58,4 @@ async def get_profile_for_user(db: AsyncSession, user: User) -> ProfileResponse:
         tried_ice_cream_count=counts_by_type.get("ice_cream", 0),
         ratings_created_count=ratings_created_count,
         user_ratings=user_ratings,
-        tried_places=[place_by_id[place_id] for place_id in place_ids],
     )

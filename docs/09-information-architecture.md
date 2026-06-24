@@ -87,8 +87,11 @@ Routes are illustrative and should be adjusted to the final frontend framework.
 | `/lists/:listId` | List Detail or Public List View | Owner or authenticated public viewer if list is public |
 | `/lists/:listId/edit` | Edit List | List owner |
 | `/places/:placeId` | Place Detail | Authenticated user |
-| `/restaurants` | Restaurants | Authenticated user |
-| `/cafes` | Cafes | Authenticated user |
+| `/places?type=restaurant` | Places filtered to restaurants | Authenticated user |
+| `/places?type=cafe` | Places filtered to cafes | Authenticated user |
+| `/places?type=ice_cream` | Places filtered to ice cream | Authenticated user |
+| `/restaurants` | Legacy compatibility redirect to `/places?type=restaurant` | Authenticated user |
+| `/cafes` | Legacy compatibility redirect to `/places?type=cafe` | Authenticated user |
 | `/profile` | My Profile | Authenticated user |
 
 ## Content Relationships

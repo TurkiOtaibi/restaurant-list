@@ -26,6 +26,10 @@ export function CreateListDialog({ onClose, open }: CreateListDialogProps) {
   const [submitting, setSubmitting] = useState(false);
   const hasUnsavedChanges = Boolean(name.trim()) || visibility !== "private";
 
+  function currentName() {
+    return (nameRef.current?.value ?? name).trim();
+  }
+
   function showNameRequired(shouldFocus = true) {
     setNameError("الاسم مطلوب.");
     if (shouldFocus) {
@@ -37,7 +41,9 @@ export function CreateListDialog({ onClose, open }: CreateListDialogProps) {
     setNameError("");
     setFormError("");
 
-    if (!name.trim()) {
+    const trimmedName = currentName();
+
+    if (!trimmedName) {
       showNameRequired();
       return;
     }
@@ -46,15 +52,8 @@ export function CreateListDialog({ onClose, open }: CreateListDialogProps) {
     try {
       const response = await apiRequest<UserList>("/lists", {
         method: "POST",
-        body: JSON.stringify({ name: name.trim() })
+        body: JSON.stringify({ name: trimmedName, visibility })
       });
-
-      if (visibility === "public") {
-        await apiRequest<UserList>(`/lists/${response.id}/visibility`, {
-          method: "PATCH",
-          body: JSON.stringify({ visibility })
-        });
-      }
 
       router.replace(`/lists/${response.id}`);
     } catch (caught) {
@@ -108,21 +107,7 @@ export function CreateListDialog({ onClose, open }: CreateListDialogProps) {
           <Button
             className="ds-button--full"
             isLoading={submitting}
-            onPointerDown={(event) => {
-              if (!name.trim()) {
-                event.preventDefault();
-                showNameRequired();
-              }
-            }}
-            onClick={() => {
-              if (!name.trim()) {
-                showNameRequired();
-                return;
-              }
-
-              void submitList();
-            }}
-            type="button"
+            type="submit"
           >
             حفظ
           </Button>

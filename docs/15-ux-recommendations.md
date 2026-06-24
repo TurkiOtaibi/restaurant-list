@@ -6,7 +6,7 @@ The MVP should feel like a calm personal tracker, not a discovery marketplace. T
 
 ## Navigation
 
-- Use the required four-item main navigation exactly: My Lists, Restaurants, Cafes, My Profile.
+- Use the required three-item main navigation exactly: `قوائمي`, `الأماكن`, `صفحتي`.
 - Keep authentication screens outside the main app shell.
 - Keep navigation persistent on desktop.
 - Use a compact bottom navigation or top navigation on mobile.
@@ -29,23 +29,21 @@ The MVP should feel like a calm personal tracker, not a discovery marketplace. T
 ## List Detail UX
 
 - Put Add Place near the list title.
-- Let users choose between Add Existing Place and Create New Place.
+- Let users search existing places server-side and create a new place only from the no-result/create-place path.
 - One Add To List action targets one list only.
 - Show place type, average rating, rating count, and Tried indicator for each saved place.
-- Include Mark As Tried or Edit Rating directly on each place row.
+- Keep rating and add-to-list actions on Place Detail or focused dialogs rather than crowding every browse row.
 - After first rating succeeds, remove the place from the list immediately and show a short confirmation.
 - If a tried place is later re-added, show the Tried indicator.
 
-## Restaurants and Cafes UX
+## Places UX
 
-- Keep Restaurants and Cafes visually parallel.
+- Keep one Places screen with compact primary filters for restaurants, cafes, and ice cream.
 - Each place row should show:
   - Name.
+  - Type and subtype when applicable.
   - Average rating with one decimal place, or unrated state.
   - Rating count.
-  - Tried indicator when applicable.
-  - Add To List.
-  - Mark As Tried or Edit Rating.
   - Open Place Detail.
 - Avoid map-like UI, distance sorting, location filters, popularity ranking, trending, and recommendations.
 - Provide simple name search only.
@@ -66,17 +64,17 @@ The MVP should feel like a calm personal tracker, not a discovery marketplace. T
 
 ## Rating UX
 
-- Use a clear 1 to 10 control with visible numeric values.
+- Use a clear 1 to 10 control with 0.5 increments and visible numeric values.
 - Do not hide the requirement that rating is mandatory.
 - Keep notes visibly optional and private.
 - On edit, prefill the previous rating and private notes.
 - Store blank notes as null.
 - After first save, confirm the result and update nearby tried indicator and aggregate data.
 
-## Tried Places UX
+## Profile Archive UX
 
-- My Profile should make tried places easy to scan.
-- Use one tried places list that includes:
+- My Profile should make ratings/tried history easy to scan.
+- Use `تقييماتك` as the single archive that includes:
   - Place name.
   - Type.
   - User's rating.
@@ -109,9 +107,8 @@ The MVP should feel like a calm personal tracker, not a discovery marketplace. T
 | --- | --- |
 | My Lists | Prompt user to create a first list. |
 | List Detail | Prompt owner to add or create a place. |
-| Restaurants | Explain that no restaurants have been added yet. |
-| Cafes | Explain that no cafes have been added yet. |
-| My Profile | Explain that tried places appear after rating a place. |
+| Places | Explain that no places match the current filter/search. |
+| My Profile | Explain that ratings appear after rating a place. |
 | Search | Explain that no places matched the name search. |
 
 ## Error States
@@ -136,9 +133,8 @@ The MVP should feel like a calm personal tracker, not a discovery marketplace. T
 Use direct tracker language:
 
 - "Add To List"
-- "Mark As Tried"
 - "Edit Rating"
-- "Tried Places"
+- "Ratings"
 - "Search by place name"
 
 Avoid discovery/review language:
