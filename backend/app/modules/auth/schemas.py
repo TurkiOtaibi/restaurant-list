@@ -8,13 +8,17 @@ MAX_PASSWORD_BYTES = 72
 class UserResponse(BaseModel):
     id: str
     email: EmailStr
+    display_name: str = Field(serialization_alias="displayName")
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class RegisterRequest(BaseModel):
     email: EmailStr
+    display_name: str | None = Field(default=None, alias="displayName", min_length=1, max_length=80)
     password: str = Field(min_length=8, max_length=128)
+
+    model_config = ConfigDict(populate_by_name=True)
 
     @field_validator("password")
     @classmethod

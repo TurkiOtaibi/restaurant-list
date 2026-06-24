@@ -2,7 +2,7 @@
 
 ## MVP Goal
 
-Deliver a production-ready first version that supports personal restaurant and cafe lists, tried-place tracking through ratings, authenticated public/private list visibility, and place-name search.
+Deliver a production-ready first version that supports personal restaurant, cafe, and ice cream lists, tried-place tracking through ratings, authenticated public/private list visibility, and place-name search.
 
 ## MVP Must-Haves
 
@@ -19,10 +19,9 @@ Deliver a production-ready first version that supports personal restaurant and c
 
 ### Core Navigation
 
-- My Lists.
-- Restaurants.
-- Cafes.
-- My Profile.
+- قوائمي / My Lists.
+- الأماكن / Places.
+- صفحتي / My Profile.
 
 ### Lists
 
@@ -46,10 +45,13 @@ Deliver a production-ready first version that supports personal restaurant and c
 - Create place.
 - Place Detail screen.
 - Place Detail API.
-- Place type: Restaurant or Cafe.
+- Place type: Restaurant, Cafe, or Ice Cream.
 - Required place name.
 - Required place type.
-- Optional description.
+- Restaurant subtype required for restaurants.
+- Cafe subtype required for cafes.
+- Ice cream has no subtype.
+- Description is reserved backend metadata and not user-facing in the current create flow.
 - Unique place name.
 - No place editing.
 - No operational correction workflow.
@@ -57,28 +59,19 @@ Deliver a production-ready first version that supports personal restaurant and c
 - No location.
 - No neighborhoods.
 
-### Restaurants
+### Places
 
-- List all restaurant places.
+- Browse all places through one Places screen.
+- Filter by restaurant, cafe, or ice cream.
+- Filter restaurants and cafes by approved subtype.
 - Show name, average rating with one decimal place, rating count, and Tried indicator.
-- Add To List.
-- Mark As Tried or Edit Rating.
-- Open Place Detail.
-- Search by place name only.
-
-### Cafes
-
-- List all cafe places.
-- Show name, average rating with one decimal place, rating count, and Tried indicator.
-- Add To List.
-- Mark As Tried or Edit Rating.
 - Open Place Detail.
 - Search by place name only.
 
 ### Ratings and Tried Places
 
 - Mark As Tried.
-- Required rating from 1 to 10.
+- Required rating from 1 to 10 in 0.5 increments.
 - Optional private notes.
 - Blank notes stored as null.
 - One rating per user per place.
@@ -87,7 +80,7 @@ Deliver a production-ready first version that supports personal restaurant and c
 - Existing rating update preserves re-added list memberships.
 - Tried places may be re-added later.
 - Tried places show Tried indicator.
-- Tried places shown in profile.
+- Tried places shown through the `تقييماتك` rating archive in profile.
 - Average rating calculated from ratings table.
 - Rating count calculated from ratings table.
 
@@ -96,7 +89,8 @@ Deliver a production-ready first version that supports personal restaurant and c
 - Lists count.
 - Restaurants tried count.
 - Cafes tried count.
-- Tried places list.
+- Ice cream tried count.
+- Rating archive (`تقييماتك`).
 - User's rating.
 - User's private notes.
 - Edit rating.

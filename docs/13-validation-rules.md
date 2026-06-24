@@ -72,11 +72,11 @@ MVP uniqueness is normalized exact-name uniqueness, not fuzzy duplicate detectio
 | Field | Rule | Error Condition |
 | --- | --- | --- |
 | rating | Required. | Missing rating. |
-| rating | Must be an integer. | Decimal or non-numeric value. |
+| rating | Must be numeric in 0.5 increments. | Non-numeric value or unsupported decimal step such as 7.25. |
 | rating | Must be between 1 and 10 inclusive. | Less than 1 or greater than 10. |
 | notes | Optional. | No error if blank. |
 | notes | Blank or whitespace-only notes are stored as null. | No error. |
-| notes | Maximum 2000 characters. | Too long. |
+| notes | Maximum 1000 characters. | Too long. |
 
 ## Rating Ownership Validation
 

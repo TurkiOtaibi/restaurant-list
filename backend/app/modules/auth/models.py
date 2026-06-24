@@ -13,6 +13,7 @@ class User(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     email: Mapped[str] = mapped_column(String(320), nullable=False, unique=True, index=True)
+    display_name: Mapped[str] = mapped_column(String(80), nullable=False, default="مستخدم سجل")
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -66,6 +67,11 @@ class RefreshToken(Base):
 
 def normalize_email(email: str) -> str:
     return email.strip().lower()
+
+
+def normalize_display_name(display_name: str | None) -> str:
+    normalized = " ".join((display_name or "").split())
+    return normalized if normalized else "مستخدم سجل"
 
 
 def email_filter(email: str) -> ColumnElement[bool]:

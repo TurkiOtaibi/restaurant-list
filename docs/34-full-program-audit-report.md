@@ -1,5 +1,7 @@
 # 34. Full Program Audit Report
 
+> Canonical status note (2026-06-24): This report is historical audit evidence. It may mention outdated navigation, pagination, naming, or design states. Use current implementation and `docs/feature-map/` documents for the active capability map and resolved-gap status.
+
 ## 1. Executive Audit Summary
 
 This program is a strong MVP engineering foundation, but it is not a world-class product yet.

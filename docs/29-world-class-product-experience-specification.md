@@ -1,5 +1,7 @@
 # 29. World-Class Product Experience Specification
 
+> Canonical status note (2026-06-24): This document is historical design context, not the current implementation contract where it conflicts with later approved product decisions. Current canonical decisions are: product name `سجل`; primary navigation `قوائمي`, `الأماكن`, `صفحتي`; restaurants/cafes/ice cream are filters inside Places; ratings support 1-10 in 0.5 increments; profile uses `تقييماتك` as the single rating/tried archive.
+
 ## Document Purpose
 
 This document defines the UI, UX, interaction, accessibility, and design system foundation for the Restaurant & Cafe Wishlist Tracker as a premium production product.

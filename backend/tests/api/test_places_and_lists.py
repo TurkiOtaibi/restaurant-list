@@ -46,10 +46,11 @@ async def _create_list(
     token: str,
     *,
     name: str = "Weekend picks",
+    visibility: str = "private",
 ) -> dict[str, Any]:
     response = await client.post(
         "/api/v1/lists",
-        json={"name": name},
+        json={"name": name, "visibility": visibility},
         headers=auth_header(token),
     )
     assert response.status_code == 201
@@ -173,7 +174,9 @@ async def test_places_listing_is_bounded_and_offset_paginated(client: AsyncClien
 async def test_create_list_and_add_place_to_list(client: AsyncClient) -> None:
     token = await _token(client)
     place = await _create_place(client, token)
-    user_list = await _create_list(client, token)
+    user_list = await _create_list(client, token, visibility="public")
+
+    assert user_list["visibility"] == "public"
 
     response = await client.post(
         f"/api/v1/lists/{user_list['id']}/items",

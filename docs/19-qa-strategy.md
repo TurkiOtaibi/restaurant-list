@@ -27,7 +27,7 @@
 | AUTH-004 | Logout revokes refresh token idempotently. | Logout twice with same refresh token and verify safe success/no active session. |
 | AUTH-005 | Google, Apple, and social login do not exist. | Verify no UI actions or API routes exist for social login. |
 | AUTH-006 | Guest access to MVP data is rejected. | Request lists, places, restaurants, cafes, profile, place detail, search, and public list without token; expect `401`. |
-| NAV-001 | Main navigation contains My Lists, Restaurants, Cafes, My Profile. | Authenticated UI shows all four and routes correctly. |
+| NAV-001 | Main navigation contains My Lists, Places, My Profile. | Authenticated UI shows `قوائمي`, `الأماكن`, and `صفحتي`; legacy restaurant/cafe routes redirect only. |
 | LIST-001 | User can create public and private lists. | Create one public and one private list; verify persisted visibility. |
 | LIST-002 | Duplicate list names are allowed. | Create two lists with same name for same user; both succeed. |
 | LIST-003 | User can edit owned list. | Update owned list name and visibility; verify changes. |
@@ -49,23 +49,23 @@
 | PLACE-003 | Duplicate place names are rejected globally. | Create name variants differing by case/spacing; second create returns conflict. |
 | PLACE-004 | User-facing place editing is unavailable. | Verify no edit UI and no update endpoint. |
 | PLACE-005 | Place detail screen/API returns required fields. | Open place detail and verify metadata, rating aggregate, tried state, and current user's own rating. |
-| PLACE-006 | Place list filters by restaurant/cafe type. | Verify restaurant page excludes cafes and cafe page excludes restaurants. |
+| PLACE-006 | Places page filters by restaurant, cafe, and ice cream type. | Verify one Places page exposes internal filters and legacy restaurant/cafe routes only redirect. |
 | SEARCH-001 | Search matches place name only. | Search by name and verify results match names. |
 | SEARCH-002 | Search rejects discovery parameters. | Submit location, neighborhood, distance, category, trending, popularity, recommendation params; expect validation error. |
-| SEARCH-003 | Search results sort by name ascending. | Create multiple matching places and verify deterministic name order. |
-| REST-001 | Restaurants display required row data. | Verify name, average rating one decimal, count, Tried indicator, and actions. |
-| CAFE-001 | Cafes display required row data. | Verify name, average rating one decimal, count, Tried indicator, and actions. |
+| SEARCH-003 | Search results use rating-desc default sorting. | Create multiple matching places and verify average rating desc, rating count desc, normalized name asc, and unrated last. |
+| PLACE-007 | Places list displays required row data. | Verify name, type, subtype, average rating one decimal when available, and row opens Place Detail. |
+| PLACE-008 | Legacy restaurant/cafe routes remain compatibility-only. | Verify `/restaurants` and `/cafes` redirect to Places filters and are hidden from primary navigation. |
 | RATING-001 | Rating is required. | Submit missing rating; expect validation error. |
-| RATING-002 | Rating must be integer 1 to 10. | Submit 0, 11, decimal, and text; expect validation errors. |
+| RATING-002 | Rating must be 1 to 10 in 0.5 increments. | Submit 0, 11, 7.25, and text; expect validation errors; submit 8.5 and expect success. |
 | RATING-003 | Blank notes are stored as null. | Submit whitespace notes and verify stored/returned as null for owner. |
 | RATING-004 | One rating per user/place is enforced. | Submit rating twice and verify one rating row. |
 | RATING-005 | Rating POST performs upsert. | Rate place, submit second rating, verify existing row updated. |
 | RATING-006 | First rating removes place from all user's lists. | Add place to multiple lists, rate it, verify all memberships removed. |
 | RATING-007 | Existing rating update preserves re-added list memberships. | Rate place, re-add to list, update rating, verify membership remains. |
 | RATING-008 | Rating notes are private. | User A adds notes; User B cannot see notes via public list, place detail, search, or profile. |
-| RATING-009 | Tried indicator updates after rating and re-add. | Rate place and verify Tried indicator across list, restaurant/cafe, place detail, profile. |
+| RATING-009 | Tried indicator updates after rating and re-add. | Rate place and verify Tried indicator across list, Places, place detail, and profile. |
 | PROFILE-001 | Profile summary counts are correct. | Verify lists count, restaurants tried count, and cafes tried count. |
-| PROFILE-002 | Profile tried places show user's rating and private notes. | Rate places and verify profile list fields. |
+| PROFILE-002 | Profile rating archive is the canonical tried-place archive. | Rate places and verify `تقييماتك` includes place, rating, and private notes; do not expect a separate tried-places section. |
 | PROFILE-003 | Rating can be edited from profile. | Edit rating from profile and verify update. |
 | AGG-001 | Average rating calculates from ratings table. | Two users rate same place and verify arithmetic average. |
 | AGG-002 | Rating count calculates from ratings table. | Create/update ratings and verify count changes only on first rating per user/place. |

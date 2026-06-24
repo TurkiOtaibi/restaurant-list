@@ -15,6 +15,8 @@ from app.modules.lists.schemas import (
     ListResponse,
     ListUpdateRequest,
     ListVisibilityUpdateRequest,
+    PublicListDetailResponse,
+    PublicListResponse,
 )
 from app.modules.lists.services import (
     add_place_to_list,
@@ -26,6 +28,7 @@ from app.modules.lists.services import (
     list_detail_response,
     list_item_response,
     list_owned_lists,
+    public_list_detail_response,
     update_owned_list_name,
     update_owned_list_visibility,
 )
@@ -55,13 +58,13 @@ async def list_lists(
     )
 
 
-@router.get("/public", response_model=CollectionResponse[ListResponse])
+@router.get("/public", response_model=CollectionResponse[PublicListResponse])
 async def list_public_lists(
     _: CurrentUser,
     db: DatabaseSession,
     limit: Annotated[int, Query(ge=1, le=100)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
-) -> CollectionResponse[ListResponse]:
+) -> CollectionResponse[PublicListResponse]:
     result = await list_public_list_summaries(db, limit=limit, offset=offset)
     return collection_response(
         result.items,
@@ -72,14 +75,18 @@ async def list_public_lists(
     )
 
 
-@router.get("/public/{list_id}", response_model=ListDetailResponse)
+@router.get("/public/{list_id}", response_model=PublicListDetailResponse)
 async def get_public_list(
     list_id: str,
     current_user: CurrentUser,
     db: DatabaseSession,
-) -> ListDetailResponse:
+) -> PublicListDetailResponse:
     user_list = await get_public_user_list(db, list_id=list_id)
-    return await list_detail_response(db, user_list=user_list, current_user_id=current_user.id)
+    return await public_list_detail_response(
+        db,
+        user_list=user_list,
+        current_user_id=current_user.id,
+    )
 
 
 @router.get("/{list_id}", response_model=ListDetailResponse)

@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -18,10 +18,14 @@ DatabaseSession = Annotated[AsyncSession, Depends(get_db)]
 @router.post("", response_model=RatingResponse, status_code=status.HTTP_201_CREATED)
 async def create_rating(
     payload: RatingCreateRequest,
+    response: Response,
     current_user: CurrentUser,
     db: DatabaseSession,
 ) -> Rating:
-    return await create_or_update_rating(db, payload=payload, user_id=current_user.id)
+    rating, created = await create_or_update_rating(db, payload=payload, user_id=current_user.id)
+    if not created:
+        response.status_code = status.HTTP_200_OK
+    return rating
 
 
 @router.patch("/{place_id}", response_model=RatingResponse)

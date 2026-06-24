@@ -47,7 +47,7 @@
 | Edge Case | Expected Handling |
 | --- | --- |
 | User submits Mark As Tried without rating. | Reject with rating required. |
-| User submits rating 0, 11, decimal, or text. | Reject with rating range/integer validation. |
+| User submits rating 0, 11, 7.25, or text. | Reject with rating range/half-step validation. |
 | User rates a place that exists in several of their lists for the first time. | Create rating and remove the place from all of their lists in one transaction. |
 | User rates a place that is not in any of their lists. | Allow rating and mark as tried. |
 | User double-clicks Save while rating. | Unique constraint and upsert behavior produce one rating row. |

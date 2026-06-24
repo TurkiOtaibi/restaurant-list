@@ -35,21 +35,21 @@ This RTM maps every Must functional requirement to business rules, API/screen co
 | FR-042 Duplicate add idempotent | BR-027, BR-028 | Add To List API | ADD-003 | Success with one membership. | Add same place twice. |
 | FR-043 Re-add tried place | BR-032 to BR-035 | Add To List, Tried indicator | ADD-004, RATING-007, RATING-009 | Tried status preserved; no second rating. | Rate, re-add, update rating. |
 | FR-044 Same place multiple lists | BR-029 | Add To List API | ADD-005 | Same place appears in multiple owned lists. | Add through separate actions. |
-| FR-050 Create place | BR-010, BR-011 | Create Place, `POST /places` | PLACE-001 | Valid restaurant/cafe created. | Submit valid and invalid place data. |
+| FR-050 Create place | BR-010, BR-011 | Create Place, `POST /places` | PLACE-001 | Valid restaurant/cafe/ice cream created. | Submit valid and invalid place data. |
 | FR-051 Optional description | BR-014 | Create Place | PLACE-002 | Description optional. | Create with/without description. |
 | FR-052 Unique place names | BR-012, BR-013 | Database unique index | PLACE-003 | Duplicate normalized name rejected. | Case/space duplicate. |
 | FR-053 No place editing | BR-015, BR-016 | Unsupported endpoints, UI | PLACE-004, SCOPE-001 | No edit UI/API. | Inspect routes and UI. |
 | FR-054 Place detail | BR-050 to BR-054, BR-044 | Place Detail, `GET /places/{id}` | PLACE-005, RATING-008 | Detail fields returned; note privacy enforced. | Open detail as owner and other user. |
-| FR-055 List places by type | BR-010 | Restaurants/Cafes, `GET /places?type=` | PLACE-006 | Type filter correct. | Verify restaurant/cafe pages. |
+| FR-055 List places by type/subtype | BR-010 | Places filters, `GET /places?type=&subtype=` | PLACE-006 | Type and subtype filters correct. | Verify Places page filters. |
 | FR-056 Place-name search | BR-060 to BR-063 | Search UI/API | SEARCH-001, SEARCH-002, SEARCH-003 | Name-only deterministic search. | Search by name and reject discovery params. |
-| FR-060 Restaurants page | BR-010 | Restaurants | REST-001, PLACE-006 | Only restaurants shown. | Seed both types and verify. |
-| FR-061 Restaurant row data | BR-050 to BR-054 | Restaurants | REST-001, AGG-003, RATING-009 | Name, avg, count, Tried indicator. | Verify row rendering. |
-| FR-062 Restaurant Add To List | BR-029 | Restaurants | ADD-001, ADD-003 | Add to one owned list. | Add restaurant to list. |
-| FR-063 Restaurant Mark/Edit Rating | BR-040 to BR-048 | Restaurants | RATING-001 to RATING-009 | Correct rating action by state. | Rate and edit restaurant. |
-| FR-070 Cafes page | BR-010 | Cafes | CAFE-001, PLACE-006 | Only cafes shown. | Seed both types and verify. |
-| FR-071 Cafe row data | BR-050 to BR-054 | Cafes | CAFE-001, AGG-003, RATING-009 | Name, avg, count, Tried indicator. | Verify row rendering. |
-| FR-072 Cafe Add To List | BR-029 | Cafes | ADD-001, ADD-003 | Add to one owned list. | Add cafe to list. |
-| FR-073 Cafe Mark/Edit Rating | BR-040 to BR-048 | Cafes | RATING-001 to RATING-009 | Correct rating action by state. | Rate and edit cafe. |
+| FR-060 Restaurant filter | BR-010 | Places filtered to restaurants | REST-001, PLACE-006 | Only restaurants shown under Places filter. | Seed all types and verify. |
+| FR-060 Restaurant filter | BR-010 | Places restaurant filter | PLACE-006 | Restaurant places display only under restaurant filter. | Verify restaurant filter. |
+| FR-061 Cafe filter | BR-010 | Places cafe filter | PLACE-006 | Cafe places display only under cafe filter. | Verify cafe filter. |
+| FR-062 Ice cream filter | BR-010 | Places ice cream filter | PLACE-006 | Ice cream places display only under ice cream filter. | Verify ice cream filter. |
+| FR-063 Place row data | BR-050 to BR-054 | Places | PLACE-007, AGG-003 | Name, type, subtype, avg/count when available. | Verify row rendering. |
+| FR-070 Cafe filter | BR-010 | Places filtered to cafes | CAFE-001, PLACE-006 | Only cafes shown under Places filter. | Seed all types and verify. |
+| FR-071 Compatibility restaurant route | BR-010 | `/restaurants` redirect | PLACE-008 | Redirects to `/places?type=restaurant`. | Verify route redirect. |
+| FR-072 Compatibility cafe route | BR-010 | `/cafes` redirect | PLACE-008 | Redirects to `/places?type=cafe`. | Verify route redirect. |
 | FR-080 Rating required | BR-040 | Rating form/API | RATING-001 | Missing rating rejected. | Submit without rating. |
 | FR-081 Rating 1 to 10 | BR-041 | Rating form/API | RATING-002 | Invalid values rejected. | Submit 0/11/decimal/text. |
 | FR-082 Optional notes | BR-042 | Rating form/API | RATING-003 | Rating can save without notes. | Submit null/blank notes. |
@@ -60,10 +60,11 @@ This RTM maps every Must functional requirement to business rules, API/screen co
 | FR-087 Update preserves lists | BR-035 | Rating update | RATING-007 | Re-added membership remains. | Re-add then update rating. |
 | FR-088 Notes privacy | BR-044, BR-045, BR-072 | Place/public/profile APIs | RATING-008 | Other users cannot see notes. | User B checks User A notes surfaces. |
 | FR-089 Tried places in profile | BR-030 | My Profile | PROFILE-002 | Rated places appear. | Rate place and open profile. |
-| FR-090 Tried indicators | BR-033 | All place surfaces | RATING-009 | Tried indicator appears. | Verify list/restaurant/cafe/detail/profile. |
+| FR-090 Tried indicators | BR-033 | All place surfaces | RATING-009 | Tried indicator appears. | Verify list/Places/detail/profile. |
 | FR-100 Lists count | BR-020 | Profile | PROFILE-001 | Count matches owned lists. | Compare DB/API count. |
 | FR-101 Restaurants tried count | BR-030 | Profile | PROFILE-001 | Count matches restaurant ratings. | Rate restaurants and verify. |
 | FR-102 Cafes tried count | BR-030 | Profile | PROFILE-001 | Count matches cafe ratings. | Rate cafes and verify. |
+| FR-103 Ice cream tried count | BR-030 | Profile | PROFILE-001 | Count matches ice cream ratings. | Rate ice cream places and verify. |
 | FR-103 Tried places with rating/notes | BR-044 | Profile | PROFILE-002, RATING-008 | Current user's notes shown only to owner. | Verify profile rows. |
 | FR-104 Edit rating from profile | BR-047, BR-048 | Profile | PROFILE-003, RATING-005 | Existing rating updates. | Edit from profile. |
 | FR-110 Average rating | BR-050 | Place/list rows | AGG-001 | Arithmetic average from ratings table. | Two-user rating test. |

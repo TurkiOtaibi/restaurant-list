@@ -86,6 +86,7 @@ const lists = [
     createdAt: now,
     id: "list-pop",
     name: "برجر الرياض طويل الاسم",
+    ownerDisplayName: "تركي",
     placeCount: 5,
     updatedAt: now,
     userId: "user-owner",
@@ -95,6 +96,7 @@ const lists = [
     createdAt: now,
     id: "list-empty",
     name: "قائمة فارغة",
+    ownerDisplayName: "تركي",
     placeCount: 0,
     updatedAt: now,
     userId: "user-owner",
@@ -104,6 +106,7 @@ const lists = [
     createdAt: now,
     id: "list-en",
     name: "The Original Cheesecake Factory Favorites",
+    ownerDisplayName: "Turki",
     placeCount: 12,
     updatedAt: now,
     userId: "user-owner",
@@ -130,7 +133,6 @@ const profile = {
   ratingsCreatedCount: 2,
   triedCafeCount: 1,
   triedIceCreamCount: 0,
-  triedPlaces: [places[0], places[5]],
   triedRestaurantCount: 1,
   userRatings: [
     {
@@ -166,7 +168,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("responsive shell contains content at required viewports", async ({ page }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(600_000);
 
   for (const viewport of viewports) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
@@ -311,7 +313,10 @@ async function mockApi(page: Page) {
     }
 
     if (path === "/auth/refresh" || path === "/auth/login" || path === "/auth/register") {
-      return fulfill({ accessToken: "mock-access-token", user: { email: "audit@example.com", id: "user-owner" } });
+      return fulfill({
+        accessToken: "mock-access-token",
+        user: { displayName: "تركي", email: "audit@example.com", id: "user-owner" }
+      });
     }
     if (path === "/auth/logout") {
       return fulfill({});

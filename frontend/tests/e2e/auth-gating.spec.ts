@@ -13,7 +13,7 @@ test("primary navigation is present on the app shell", async ({ page }) => {
 
 test("places library prompts unauthenticated users to sign in", async ({ page }) => {
   await page.goto("/places");
-  await expect(page.getByText("سجل الدخول لعرض الأماكن")).toBeVisible();
+  await expect(page.getByText(/سجل الدخول لعرض الأماكن/)).toBeVisible();
   await expect(page.getByRole("link", { name: "تسجيل الدخول" })).toBeVisible();
 });
 

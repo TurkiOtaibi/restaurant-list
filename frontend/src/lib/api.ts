@@ -4,6 +4,7 @@ const API_VERSION_PREFIX = "/api/v1";
 
 export type User = {
   id: string;
+  displayName: string;
   email: string;
 };
 
@@ -53,7 +54,8 @@ export type Place = {
 
 export type UserList = {
   id: string;
-  userId: string;
+  ownerDisplayName: string;
+  userId?: string;
   name: string;
   visibility: "public" | "private";
   placeCount: number;
@@ -97,7 +99,6 @@ export type Profile = {
   triedIceCreamCount: number;
   ratingsCreatedCount: number;
   userRatings: ProfileRating[];
-  triedPlaces: Place[];
 };
 
 type ApiRequestOptions = RequestInit & {

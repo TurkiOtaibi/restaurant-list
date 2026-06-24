@@ -2,7 +2,7 @@
 
 ## Scope Summary
 
-The MVP includes a user-owned wishlist and rating system for restaurants and cafes. Places are shared catalog records, while lists and ratings are user-specific.
+The MVP includes a user-owned list and rating system for restaurants, cafes, and ice cream places. Places are shared catalog records, while lists and ratings are user-specific.
 
 ## In Scope
 
@@ -19,10 +19,9 @@ The MVP includes a user-owned wishlist and rating system for restaurants and caf
 
 ### Main Navigation
 
-- My Lists.
-- Restaurants.
-- Cafes.
-- My Profile.
+- قوائمي / My Lists.
+- الأماكن / Places.
+- صفحتي / My Profile.
 
 ### My Lists
 
@@ -50,11 +49,13 @@ A place can be one of:
 
 - Restaurant.
 - Cafe.
+- Ice cream.
 
 Required fields:
 
 - Name.
-- Type.
+- Primary type.
+- Restaurant or cafe subtype when applicable.
 
 Optional fields:
 
@@ -64,40 +65,38 @@ Place names are globally unique across all place types in the MVP.
 
 Users can create places. Users cannot edit places in MVP. Operational correction workflows are out of scope.
 
-### Restaurants Section
+### Places Page
 
-Displays all places where `type = restaurant`.
+Displays places through one canonical Places screen.
 
 Each place displays:
 
 - Name.
+- Primary type.
+- Subtype when applicable.
 - Average rating.
 - Rating count.
 
-Each place supports:
+Places can be filtered by:
 
-- Add To List.
-- Mark As Tried.
+- Restaurants.
+- Cafes.
+- Ice cream.
+- Restaurant/cafe subtype when applicable.
 
-If the current user already rated the place, the Mark As Tried action becomes Edit Rating and the place displays a Tried indicator.
-
-### Cafes Section
-
-Displays all places where `type = cafe`.
-
-The behavior matches the Restaurants section.
+Place actions happen from Place Detail rather than listing rows.
 
 ### Mark As Tried
 
 When a user marks a place as tried, the system requires:
 
-- Rating from 1 to 10.
+- Rating from 1 to 10 in 0.5 increments.
 - Optional notes.
 
 After a successful first rating for a user/place:
 
 - The place is removed from all of that user's lists.
-- The place appears in that user's tried places.
+- The place appears in that user's rating archive (`تقييماتك`), which is the canonical tried-place history.
 - The place contributes to community average rating and rating count.
 
 If the user later re-adds the tried place to a list, the place keeps its Tried status and no second rating is created.
@@ -109,8 +108,9 @@ The profile displays:
 - Lists count.
 - Restaurants tried count.
 - Cafes tried count.
+- Ice cream tried count.
 - User ratings.
-- Tried places.
+- Private notes in the rating archive.
 
 ### Public and Private Lists
 
@@ -153,7 +153,7 @@ The MVP excludes:
 - Opening hours.
 - Price range.
 - Dietary tags.
-- Cuisine taxonomy.
+- Cuisine taxonomy beyond approved restaurant/cafe subtypes.
 - Multi-branch chains.
 - Business owner accounts.
 
@@ -180,4 +180,4 @@ The MVP must remain small enough for a first release while still production-read
 - Number of ratings created.
 - Number of rating edits.
 - Ratio of private to public lists.
-- Repeat usage rate for returning to My Lists and My Profile.
+- Repeat usage rate for returning to My Lists, Places, and My Profile.

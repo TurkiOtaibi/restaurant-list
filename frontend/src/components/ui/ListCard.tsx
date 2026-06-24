@@ -14,7 +14,7 @@ type ListCardProps = {
   context?: "owner" | "viewer";
   href?: string;
   isEmpty?: boolean;
-  list: Pick<UserList, "id" | "name" | "visibility" | "updatedAt">;
+  list: Pick<UserList, "id" | "name" | "ownerDisplayName" | "visibility" | "updatedAt">;
   placeCount?: number;
 };
 
@@ -28,8 +28,9 @@ export function ListCard({
 }: ListCardProps) {
   const visibility = visibilityLabel(list.visibility);
   const count = placeCountLabel(placeCount);
+  const owner = context === "viewer" ? `بواسطة: ${list.ownerDisplayName}` : "";
   const accessibleName = `${list.name}، ${count}، ${visibility}${
-    context === "viewer" ? "، عرض فقط" : ""
+    context === "viewer" ? `، ${owner}، عرض فقط` : ""
   }${isEmpty ? "، فارغة" : ""}`;
 
   const content = (
@@ -48,6 +49,7 @@ export function ListCard({
         <div className="ds-list-card__meta" aria-hidden="true">
           <span>{count}</span>
           <span>{visibility}</span>
+          {owner ? <span>{owner}</span> : null}
           {context === "viewer" ? <span>عرض فقط</span> : null}
         </div>
       </div>
