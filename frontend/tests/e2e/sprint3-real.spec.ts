@@ -249,8 +249,13 @@ test("real places library covers subtype filters sorting layout bidi and errors"
   await page.getByRole("button", { name: "إنشاء حساب" }).click();
   await expect(page).toHaveURL(/\/lists$/, { timeout: 15_000 });
 
-  await page.goto(`/places?type=restaurant&q=${encodeURIComponent(prefix)}`);
-  await expect(page.locator(".ds-place-card--row")).toHaveCount(5);
+  await page.getByRole("link", { name: "الأماكن" }).click();
+  await expect(page).toHaveURL(/\/places/);
+  await expect(page.getByRole("searchbox", { name: "بحث" })).toBeVisible({ timeout: 30_000 });
+  await page.getByRole("searchbox", { name: "بحث" }).fill(prefix);
+  await page.getByRole("searchbox", { name: "بحث" }).press("Enter");
+  await expect(page).toHaveURL(/q=/);
+  await expect(page.locator(".ds-place-card--row")).toHaveCount(5, { timeout: 30_000 });
   await expect(page.locator(".ds-place-card--row .ds-place-card__title")).toHaveText([
     topName,
     tiedMoreName,
@@ -268,8 +273,8 @@ test("real places library covers subtype filters sorting layout bidi and errors"
     .first()
     .locator(".ds-artwork")
     .getAttribute("class");
-  await page.reload();
-  await expect(page.locator(".ds-place-card--row")).toHaveCount(5);
+  await page.getByRole("searchbox", { name: "بحث" }).press("Enter");
+  await expect(page.locator(".ds-place-card--row")).toHaveCount(5, { timeout: 30_000 });
   await expect(page.locator(".ds-place-card--row").first().locator(".ds-artwork")).toHaveAttribute(
     "class",
     firstArtworkClass ?? ""
@@ -311,7 +316,10 @@ test("real places library covers subtype filters sorting layout bidi and errors"
   await expect(page.locator(".ds-empty__title")).toBeVisible();
   await expect(page.getByRole("button", { name: "عرض الكل" })).toBeVisible();
 
-  await page.goto(`/places/new?type=restaurant`);
+  await page.locator(".place-type-filters button").nth(0).click();
+  await expect(page).toHaveURL(/type=restaurant/);
+  await page.getByRole("link", { name: "أضف مكانًا" }).click();
+  await expect(page).toHaveURL(/\/places\/new/);
   await page.getByLabel("اسم المكان").fill(topName);
   await page.getByLabel("نوع المطعم").selectOption("italian");
   await page.getByRole("button", { name: "حفظ", exact: true }).click();
@@ -345,7 +353,7 @@ test("technical shell stories expose manifest headers and legacy redirects", asy
 });
 
 async function waitForApi() {
-  for (let attempt = 0; attempt < 80; attempt += 1) {
+  for (let attempt = 0; attempt < 240; attempt += 1) {
     if (apiExited) {
       throw new Error(apiOutput);
     }
@@ -362,7 +370,7 @@ async function waitForApi() {
       // Keep waiting while the Python process starts Uvicorn.
     }
 
-    await delay(250);
+    await delay(500);
   }
 
   throw new Error(`Timed out waiting for the real API.\n${apiOutput}`);

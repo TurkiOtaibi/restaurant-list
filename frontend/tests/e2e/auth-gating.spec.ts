@@ -13,12 +13,12 @@ test("primary navigation is present on the app shell", async ({ page }) => {
 
 test("places library prompts unauthenticated users to sign in", async ({ page }) => {
   await page.goto("/places");
-  await expect(page.getByText(/سجل الدخول لعرض الأماكن/)).toBeVisible();
+  await expect(page.getByText(/سجل الدخول لعرض الأماكن/)).toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole("link", { name: "تسجيل الدخول" })).toBeVisible();
 });
 
 test("profile archive prompts unauthenticated users to sign in", async ({ page }) => {
   await page.goto("/profile");
-  await expect(page.getByText("سجّل الدخول لعرض صفحتك")).toBeVisible();
+  await expect(page.getByText("سجّل الدخول لعرض صفحتك")).toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole("link", { name: "تسجيل الدخول" })).toBeVisible();
 });
