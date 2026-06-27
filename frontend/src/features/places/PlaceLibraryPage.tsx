@@ -441,7 +441,7 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
         </section>
       ) : null}
 
-      <div aria-live="polite" className="sr-only" role="status">
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
         {liveMessage}
       </div>
     </main>
