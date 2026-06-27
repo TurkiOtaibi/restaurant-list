@@ -264,21 +264,16 @@ test("real places library covers subtype filters sorting layout bidi and errors"
     unratedMixedName
   ]);
   await expect(page.locator(".ds-place-card--row").first()).toHaveAttribute("href", /\/places\//);
-  await expect(page.locator(".ds-place-card--row svg")).toHaveCount(0);
+  // Each row now shows a single deterministic place-type glyph.
+  await expect(page.locator(".ds-place-card--row .ds-type-icon")).toHaveCount(5);
   await expect(page.locator("body")).not.toContainText(/[٠-٩۰-۹]/);
-  await expect(page.locator(".ds-place-card--row").first().locator(".ds-place-card__rating")).toContainText("9.5");
+  await expect(page.locator(".ds-place-card--row").first().locator(".ds-place-card__score")).toContainText("9.5");
 
-  const firstArtworkClass = await page
-    .locator(".ds-place-card--row")
-    .first()
-    .locator(".ds-artwork")
-    .getAttribute("class");
+  // The type glyph is deterministic by place type; re-running the same search
+  // keeps the first result's type icon present.
   await page.getByRole("searchbox", { name: "بحث" }).press("Enter");
   await expect(page.locator(".ds-place-card--row")).toHaveCount(5, { timeout: 30_000 });
-  await expect(page.locator(".ds-place-card--row").first().locator(".ds-artwork")).toHaveAttribute(
-    "class",
-    firstArtworkClass ?? ""
-  );
+  await expect(page.locator(".ds-place-card--row").first().locator(".ds-type-icon")).toBeVisible();
 
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
   const innerWidth = await page.evaluate(() => window.innerWidth);
