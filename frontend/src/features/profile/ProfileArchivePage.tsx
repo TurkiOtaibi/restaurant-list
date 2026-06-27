@@ -12,8 +12,8 @@ import {
   EmptyState,
   ListCard,
   LoadingState,
-  StatusMessage,
-  VisualArtwork
+  PlaceTypeIcon,
+  StatusMessage
 } from "@/components/ui";
 import {
   ApiError,
@@ -203,7 +203,7 @@ function RatingArchiveCard({ rating }: { rating: ProfileRating }) {
       }`}
       className="profile-rating-card"
     >
-      <VisualArtwork id={rating.place.id} label={rating.place.name} type={rating.place.type} variant="mini" />
+      <PlaceTypeIcon type={rating.place.type} />
       <div className="profile-rating-card__main">
         <h3>
           <BidiText>{rating.place.name}</BidiText>

@@ -7,7 +7,7 @@ import { cx } from "@/lib/ui";
 
 import { BidiText } from "./BidiText";
 import { Card, CardLink } from "./Card";
-import { VisualArtwork } from "./VisualArtwork";
+import { ShelfIcon } from "./Icon";
 
 type ListCardProps = {
   actions?: ReactNode;
@@ -35,7 +35,9 @@ export function ListCard({
 
   const content = (
     <>
-      <VisualArtwork id={list.id} label={list.name} variant="list" />
+      <span className="ds-type-icon" aria-hidden="true">
+        <ShelfIcon />
+      </span>
       <div className="ds-list-card__main">
         <h2 className="ds-list-card__title">
           {href && actions ? (

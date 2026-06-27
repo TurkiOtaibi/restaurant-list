@@ -465,7 +465,7 @@ async function assertNoCriticalInlineClipping(page: Page) {
   const clipped = await page.evaluate(() =>
     Array.from(
       document.querySelectorAll<HTMLElement>(
-        ".ds-bidi,.ds-number,.ds-place-card__rating,.ds-place-card__title,.profile-rating-card h3"
+        ".ds-bidi,.ds-number,.ds-place-card__score,.ds-place-card__title,.profile-rating-card h3"
       )
     )
       .filter((element) => {

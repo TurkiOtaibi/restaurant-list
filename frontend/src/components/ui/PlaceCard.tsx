@@ -1,6 +1,6 @@
 import type { Place } from "@/lib/api";
 import { formatAverageRating } from "@/lib/format";
-import { formatNumber, ratingCountLabel } from "@/lib/numerals";
+import { ratingCountLabel } from "@/lib/numerals";
 import { placeSubtypeLabel, placeTypeLabel } from "@/features/places/taxonomy";
 import { cx } from "@/lib/ui";
 
@@ -8,7 +8,7 @@ import { BidiText } from "./BidiText";
 import { Card, CardLink } from "./Card";
 import { CheckIcon } from "./Icon";
 import { NumberText } from "./NumberText";
-import { VisualArtwork } from "./VisualArtwork";
+import { PlaceTypeIcon } from "./PlaceTypeIcon";
 
 type PlaceCardProps = {
   compact?: boolean;
@@ -42,12 +42,17 @@ function PlaceCardContent({ place }: { place: Place }) {
 
   return (
     <>
-      <VisualArtwork id={place.id} label={place.name} type={place.type} variant="place" />
+      <PlaceTypeIcon type={place.type} />
       <div className="ds-place-card__main">
         <h2 className="ds-place-card__title">
           <BidiText>{place.name}</BidiText>
         </h2>
         <p className="ds-place-card__meta">
+          {hasRating ? (
+            <span className="ds-place-card__score" aria-label={ratingCountLabel(place.ratingCount)}>
+              <NumberText>{formatAverageRating(place.averageRating)}</NumberText>
+            </span>
+          ) : null}
           {place.currentUserTried ? (
             <span className="ds-place-card__tried">
               <CheckIcon aria-hidden="true" />
@@ -58,16 +63,6 @@ function PlaceCardContent({ place }: { place: Place }) {
           {subtype ? <span>{subtype}</span> : null}
         </p>
       </div>
-      {hasRating ? (
-        <p className="ds-place-card__rating" aria-label={ratingCountLabel(place.ratingCount)}>
-          <NumberText>{formatAverageRating(place.averageRating)}</NumberText>
-          {place.ratingCount > 1 ? (
-            <span className="ds-place-card__rating-count">
-              <NumberText>{formatNumber(place.ratingCount)}</NumberText>
-            </span>
-          ) : null}
-        </p>
-      ) : null}
     </>
   );
 }
