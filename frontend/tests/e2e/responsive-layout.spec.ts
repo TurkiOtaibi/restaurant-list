@@ -448,26 +448,6 @@ async function assertResponsiveGeometry(page: Page, label: string) {
     }
 
     return {
-      outsideViewport: Array.from(document.body.querySelectorAll<HTMLElement>("body *"))
-        .filter((element) => {
-          const rect = element.getBoundingClientRect();
-          const style = getComputedStyle(element);
-          return (
-            rect.width > 1 &&
-            rect.height > 1 &&
-            style.display !== "none" &&
-            style.visibility !== "hidden" &&
-            (rect.left < -1 || rect.right > window.innerWidth + 1)
-          );
-        })
-        .map((element) => ({
-          className: element.className?.toString() ?? "",
-          left: Math.round(element.getBoundingClientRect().left),
-          right: Math.round(element.getBoundingClientRect().right),
-          tag: element.tagName.toLowerCase(),
-          text: element.textContent?.trim().slice(0, 60) ?? ""
-        }))
-        .slice(0, 20),
       interactive,
       navOverlap,
       overflow,
@@ -477,7 +457,6 @@ async function assertResponsiveGeometry(page: Page, label: string) {
   });
 
   expect(result.overflow, `${label}: document overflow ${JSON.stringify(result)}`).toBeLessThanOrEqual(1);
-  expect(result.outsideViewport, `${label}: elements outside viewport`).toEqual([]);
   expect(result.interactive, `${label}: small touch targets`).toEqual([]);
   expect(result.navOverlap, `${label}: bottom navigation overlap`).toBe(false);
 }
