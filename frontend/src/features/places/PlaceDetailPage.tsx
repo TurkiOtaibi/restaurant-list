@@ -14,8 +14,8 @@ import {
   LoadingState,
   Modal,
   NumberText,
-  StatusMessage,
-  VisualArtwork
+  PlaceTypeIcon,
+  StatusMessage
 } from "@/components/ui";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { ApiError, Place, UserList, apiCollection, apiRequest, clearTokens, ensureSession } from "@/lib/api";
@@ -109,13 +109,7 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
   return (
     <main className="content place-detail-page">
       <section aria-labelledby="place-detail-title" className="place-detail-hero">
-        <VisualArtwork
-          className="place-detail-hero__art"
-          id={place.id}
-          label={place.name}
-          type={place.type}
-          variant="place"
-        />
+        <PlaceTypeIcon className="place-detail-hero__art" type={place.type} />
         <div className="place-detail-hero__content">
           <h1 id="place-detail-title">
             <BidiText>{place.name}</BidiText>

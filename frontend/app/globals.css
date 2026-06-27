@@ -432,10 +432,10 @@ textarea:disabled {
   display: grid;
   gap: 10px;
   place-items: start;
-  padding: 14px;
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-md);
-  background: rgba(16, 24, 34, 0.62);
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
 }
 
 .ds-empty__title {
@@ -1040,8 +1040,7 @@ textarea:disabled {
   white-space: nowrap;
 }
 
-.ds-place-card__meta,
-.ds-place-card__rating {
+.ds-place-card__meta {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -1080,71 +1079,65 @@ textarea:disabled {
   margin-inline: 0;
 }
 
-.ds-place-card__rating {
-  color: var(--color-rating);
-  direction: ltr;
-  justify-content: flex-end;
-  min-inline-size: 0;
-  white-space: nowrap;
+.ds-type-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-accent);
 }
 
-.ds-place-card__rating-count {
+.ds-type-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.ds-place-card__score {
   display: inline-flex;
   align-items: center;
-  color: var(--color-text-2);
-}
-
-.ds-place-card__rating-count::before {
-  content: "·";
-  margin-inline: 5px;
-  color: var(--color-muted);
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--color-accent-surface);
+  color: var(--color-rating);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
 
 .ds-place-card--compact {
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   min-height: 48px;
-  padding: 3px 0;
+  padding: 4px 0;
   overflow: visible;
 }
 
-.ds-place-card--compact .ds-artwork {
-  width: 46px;
-  height: 34px;
+.ds-place-card--compact .ds-type-icon {
+  width: 38px;
+  height: 38px;
+}
+
+.ds-place-card--compact .ds-type-icon svg {
+  width: 18px;
+  height: 18px;
 }
 
 .ds-place-card--compact .ds-place-card__main {
   min-inline-size: 0;
 }
 
-.ds-place-card--compact .ds-place-card__rating {
-  grid-column: 3;
-  grid-row: 1;
-  justify-self: end;
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.ds-place-card--compact .ds-place-card__rating-count {
-  font-size: 11px;
-}
-
 .ds-place-card--row {
-  grid-template-columns: 54px minmax(0, 1fr) max-content;
+  grid-template-columns: 44px minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
-  min-height: 72px;
-  padding: 8px 0;
+  gap: 14px;
+  min-height: 68px;
+  padding: 12px 0;
   border-bottom: 1px solid rgba(40, 53, 68, 0.54);
   border-radius: 0;
   overflow: visible;
-}
-
-.ds-place-card--row .ds-artwork {
-  width: 54px;
-  height: 46px;
-  aspect-ratio: auto;
 }
 
 .ds-place-card--row .ds-place-card__main {
@@ -1175,22 +1168,6 @@ textarea:disabled {
   font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.ds-place-card--row .ds-place-card__rating {
-  grid-column: 3;
-  grid-row: 1;
-  align-self: center;
-  justify-self: end;
-  min-width: 34px;
-  justify-content: flex-end;
-  font-size: 15px;
-  font-weight: 800;
-  text-align: end;
-}
-
-.ds-place-card--row .ds-place-card__rating-count {
-  display: none;
 }
 
 .place-library-loading,
@@ -1270,15 +1247,21 @@ textarea:disabled {
 /* Place detail */
 .place-detail-hero {
   display: grid;
-  grid-template-columns: 122px minmax(0, 1fr);
+  grid-template-columns: 104px minmax(0, 1fr);
   gap: 16px;
-  align-items: end;
+  align-items: center;
   padding-bottom: 2px;
 }
 
 .place-detail-hero__art {
-  width: 122px;
-  height: 96px;
+  width: 104px;
+  height: 104px;
+  border-radius: var(--radius-lg);
+}
+
+.place-detail-hero__art svg {
+  width: 48px;
+  height: 48px;
 }
 
 .place-detail-hero__content {
@@ -1673,9 +1656,9 @@ textarea:disabled {
   gap: 6px;
 }
 
-.profile-rating-card .ds-artwork {
-  width: 46px;
-  height: 34px;
+.profile-rating-card .ds-type-icon {
+  width: 44px;
+  height: 44px;
 }
 
 .profile-rating-card .ds-badge {
@@ -1768,16 +1751,16 @@ textarea:disabled {
   .place-library-page {
     width: min(100% - 32px, 440px);
     min-height: 100dvh;
-    padding-top: calc(env(safe-area-inset-top) + 14px);
+    padding-top: calc(env(safe-area-inset-top) + 20px);
     padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 44px);
   }
 
   .app-nav {
     position: fixed;
-    inset-inline: 12px;
+    inset-inline: 0;
     top: auto;
-    bottom: calc(6px + env(safe-area-inset-bottom));
-    width: auto;
+    bottom: 0;
+    width: 100%;
     padding: 0;
   }
 
@@ -1788,10 +1771,15 @@ textarea:disabled {
   .app-nav__links {
     width: 100%;
     min-width: 0;
-    min-height: 50px;
-    padding: 3px;
-    border-radius: 16px;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.26);
+    min-height: 56px;
+    padding: 6px 12px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom));
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    border-radius: 0;
+    background: var(--color-app-bg);
+    box-shadow: 0 -2px 14px rgba(0, 0, 0, 0.32);
+    backdrop-filter: none;
   }
 
   .app-nav__link {
@@ -1917,11 +1905,6 @@ textarea:disabled {
     grid-template-columns: 44px minmax(0, 1fr);
   }
 
-  .ds-list-card .ds-artwork {
-    width: 44px;
-    height: 34px;
-  }
-
   .ds-list-card__more,
   .ds-list-card__actions {
     grid-column: 1 / -1;
@@ -1929,36 +1912,9 @@ textarea:disabled {
   }
 
   .ds-place-card--row {
-    grid-template-columns: 42px minmax(0, 1fr);
-    gap: 8px;
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 12px;
     min-height: 68px;
-  }
-
-  .ds-place-card--row .ds-artwork {
-    width: 42px;
-    height: 34px;
-  }
-
-  .ds-place-card--row .ds-place-card__rating {
-    grid-column: 2;
-    grid-row: 2;
-    justify-self: start;
-    font-size: 13px;
-  }
-
-  .ds-place-card--compact {
-    grid-template-columns: 42px minmax(0, 1fr);
-  }
-
-  .ds-place-card--compact .ds-artwork {
-    width: 42px;
-    height: 32px;
-  }
-
-  .ds-place-card--compact .ds-place-card__rating {
-    grid-column: 2;
-    grid-row: 2;
-    justify-self: start;
   }
 
   .place-detail-hero {
@@ -1966,17 +1922,17 @@ textarea:disabled {
   }
 
   .place-detail-hero__art {
-    width: min(100%, 96px);
-    height: 76px;
+    width: 88px;
+    height: 88px;
   }
 
   .profile-rating-card {
     grid-template-columns: 42px minmax(0, 1fr);
   }
 
-  .profile-rating-card .ds-artwork {
-    width: 42px;
-    height: 32px;
+  .profile-rating-card .ds-type-icon {
+    width: 40px;
+    height: 40px;
   }
 
   .profile-rating-card .actions,
@@ -2000,7 +1956,7 @@ textarea:disabled {
   }
 
   .app-nav {
-    inset-inline: 8px;
+    inset-inline: 0;
   }
 }
 

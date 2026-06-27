@@ -10,9 +10,9 @@ import {
   EmptyState,
   LoadingState,
   Modal,
+  PlaceTypeIcon,
   SearchField,
-  StatusMessage,
-  VisualArtwork
+  StatusMessage
 } from "@/components/ui";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { ApiError, ListDetail, Place, apiCollection, apiRequest } from "@/lib/api";
@@ -157,7 +157,7 @@ export function AddPlaceDialog({
 
               return (
                 <article className="place-save-dialog__list" key={place.id}>
-                  <VisualArtwork id={place.id} label={place.name} type={place.type} variant="mini" />
+                  <PlaceTypeIcon type={place.type} />
                   <div>
                     <h3>
                       <BidiText>{place.name}</BidiText>
