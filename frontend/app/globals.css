@@ -33,6 +33,7 @@
 html {
   background: var(--color-app-bg);
   -webkit-text-size-adjust: 100%;
+  overflow-x: clip;
 }
 
 body {
@@ -49,6 +50,7 @@ body {
   line-height: 1.5;
   letter-spacing: 0;
   text-rendering: optimizeLegibility;
+  overflow-x: clip;
 }
 
 button,
