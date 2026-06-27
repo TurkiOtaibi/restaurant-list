@@ -1009,10 +1009,13 @@ textarea:disabled {
 .place-memory-list {
   display: grid;
   gap: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .ds-place-card {
   display: grid;
+  width: 100%;
   gap: 8px;
   min-inline-size: 0;
   padding: 0;
@@ -1146,18 +1149,22 @@ textarea:disabled {
   padding: 12px 0;
   border-bottom: 1px solid rgba(40, 53, 68, 0.54);
   border-radius: 0;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .ds-place-card--row .ds-place-card__main {
   min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   gap: 4px;
 }
 
 .ds-place-card--row .ds-place-card__title {
   display: -webkit-box;
+  max-width: 100%;
   font-size: 17px;
   line-height: 1.22;
+  overflow: hidden;
   text-overflow: initial;
   white-space: normal;
   -webkit-box-orient: vertical;
@@ -1166,6 +1173,8 @@ textarea:disabled {
 
 .ds-place-card--row .ds-place-card__title .ds-bidi {
   display: -webkit-box;
+  width: 100%;
+  max-width: 100%;
   overflow: hidden;
   white-space: normal;
   -webkit-box-orient: vertical;
@@ -1173,6 +1182,7 @@ textarea:disabled {
 }
 
 .ds-place-card--row .ds-place-card__meta {
+  max-width: 100%;
   overflow: hidden;
   font-size: 13px;
   text-overflow: ellipsis;
