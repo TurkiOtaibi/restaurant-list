@@ -1752,17 +1752,17 @@ textarea:disabled {
 
 @media (max-width: 767px) {
   .content {
-    width: min(100%, 440px);
-    padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right));
-    padding-top: max(26px, calc(env(safe-area-inset-top) + 18px));
+    width: min(calc(100% - 40px), 420px);
+    padding-inline: 0;
+    padding-top: max(34px, calc(env(safe-area-inset-top) + 22px));
     padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 36px);
   }
 
   .place-library-page {
-    width: min(100%, 440px);
+    width: min(calc(100% - 40px), 420px);
     min-height: 100dvh;
-    padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right));
-    padding-top: max(28px, calc(env(safe-area-inset-top) + 20px));
+    padding-inline: 0;
+    padding-top: max(34px, calc(env(safe-area-inset-top) + 22px));
     padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 48px);
   }
 
@@ -1770,9 +1770,9 @@ textarea:disabled {
     position: fixed;
     inset-inline: 0;
     top: auto;
-    bottom: max(10px, env(safe-area-inset-bottom));
+    bottom: max(14px, env(safe-area-inset-bottom));
     width: 100%;
-    padding: 0 max(10px, env(safe-area-inset-right)) 0 max(10px, env(safe-area-inset-left));
+    padding: 0;
     border-top: 0;
     background: transparent;
     box-shadow: none;
@@ -1784,8 +1784,8 @@ textarea:disabled {
   }
 
   .app-nav__links {
-    width: 100%;
-    max-width: 440px;
+    width: min(calc(100% - 32px), 420px);
+    max-width: none;
     min-width: 0;
     min-height: 66px;
     margin: 0 auto;
@@ -1839,7 +1839,7 @@ textarea:disabled {
   .profile-hero h1,
   .public-lists-hero h1,
   .public-list-detail-hero h1 {
-    font-size: 28px;
+    font-size: 26px;
     max-width: 100%;
     overflow-wrap: anywhere;
   }
@@ -1889,17 +1889,17 @@ textarea:disabled {
 @media (max-width: 359px) {
   .content,
   .place-library-page {
-    width: min(100%, 440px);
-    padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
+    width: min(calc(100% - 40px), 420px);
+    padding-inline: 0;
   }
 
   .content {
-    padding-top: max(22px, calc(12px + env(safe-area-inset-top)));
+    padding-top: max(30px, calc(18px + env(safe-area-inset-top)));
     padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 32px);
   }
 
   .place-library-page {
-    padding-top: max(22px, calc(12px + env(safe-area-inset-top)));
+    padding-top: max(30px, calc(18px + env(safe-area-inset-top)));
     padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 42px);
   }
 
@@ -2007,7 +2007,11 @@ textarea:disabled {
   }
 
   .app-nav {
-    padding-inline: max(8px, env(safe-area-inset-left)) max(8px, env(safe-area-inset-right));
+    bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .app-nav__links {
+    width: min(calc(100% - 24px), 420px);
   }
 }
 
