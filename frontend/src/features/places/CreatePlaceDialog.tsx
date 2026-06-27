@@ -16,15 +16,21 @@ import {
 
 type CreatePlaceDialogProps = {
   initialType: PlaceType;
+  initialName?: string;
   onClose: (type: PlaceType) => void;
   open: boolean;
 };
 
-export function CreatePlaceDialog({ initialType, onClose, open }: CreatePlaceDialogProps) {
+export function CreatePlaceDialog({
+  initialType,
+  initialName = "",
+  onClose,
+  open
+}: CreatePlaceDialogProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const Dialog = isDesktop ? Modal : BottomSheet;
   const nameRef = useRef<HTMLInputElement>(null);
-  const [name, setName] = useState("");
+  const [name, setName] = useState(initialName);
   const [type, setType] = useState<PlaceType>(initialType);
   const [subtype, setSubtype] = useState<PlaceSubtype | "">("");
   const [nameError, setNameError] = useState("");
@@ -32,12 +38,18 @@ export function CreatePlaceDialog({ initialType, onClose, open }: CreatePlaceDia
   const [formError, setFormError] = useState("");
   const [createdPlace, setCreatedPlace] = useState<Place | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const hasUnsavedChanges = Boolean(name.trim()) || type !== initialType || Boolean(subtype);
+  const hasUnsavedChanges =
+    name.trim() !== initialName.trim() || type !== initialType || Boolean(subtype);
 
+  // Seed the form when the dialog opens, including any place-name draft carried
+  // over from a failed add-to-list search (LIST-008-US-018).
   useEffect(() => {
-    setType(initialType);
-    setSubtype("");
-  }, [initialType, open]);
+    if (open) {
+      setName(initialName);
+      setType(initialType);
+      setSubtype("");
+    }
+  }, [initialName, initialType, open]);
 
   function showNameRequired(shouldFocus = true) {
     setNameError("اسم المكان مطلوب.");

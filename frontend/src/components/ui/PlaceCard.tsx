@@ -6,6 +6,7 @@ import { cx } from "@/lib/ui";
 
 import { BidiText } from "./BidiText";
 import { Card, CardLink } from "./Card";
+import { CheckIcon } from "./Icon";
 import { NumberText } from "./NumberText";
 import { VisualArtwork } from "./VisualArtwork";
 
@@ -47,6 +48,12 @@ function PlaceCardContent({ place }: { place: Place }) {
           <BidiText>{place.name}</BidiText>
         </h2>
         <p className="ds-place-card__meta">
+          {place.currentUserTried ? (
+            <span className="ds-place-card__tried">
+              <CheckIcon aria-hidden="true" />
+              <span>جربته</span>
+            </span>
+          ) : null}
           <span>{placeTypeLabel(place.type)}</span>
           {subtype ? <span>{subtype}</span> : null}
         </p>
