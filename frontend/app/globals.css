@@ -23,7 +23,7 @@
   --radius-lg: 18px;
   --shadow-elevated: 0 18px 48px rgba(0, 0, 0, 0.34);
   --content-max: 1040px;
-  --mobile-nav-height: 88px;
+  --mobile-nav-height: 100px;
 }
 
 * {
@@ -33,9 +33,11 @@
 html {
   background: var(--color-app-bg);
   -webkit-text-size-adjust: 100%;
+  overflow-x: clip;
 }
 
 body {
+  width: 100%;
   min-height: 100svh;
   margin: 0;
   background:
@@ -48,6 +50,7 @@ body {
   line-height: 1.5;
   letter-spacing: 0;
   text-rendering: optimizeLegibility;
+  overflow-x: clip;
 }
 
 button,
@@ -693,9 +696,15 @@ textarea:disabled {
 .profile-hero__copy,
 .public-lists-hero__copy,
 .public-list-detail-hero__copy {
+  flex: 1 1 auto;
   min-width: 0;
   display: grid;
   gap: 3px;
+}
+
+.lists-topbar__add {
+  flex: 0 0 44px;
+  margin-inline-start: 8px;
 }
 
 .library-grid,
@@ -1743,29 +1752,31 @@ textarea:disabled {
 
 @media (max-width: 767px) {
   .content {
-    width: min(100% - 24px, 440px);
-    padding-top: calc(16px + env(safe-area-inset-top));
-    padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 24px);
+    width: min(100%, 440px);
+    padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right));
+    padding-top: max(26px, calc(env(safe-area-inset-top) + 18px));
+    padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 36px);
   }
 
   .place-library-page {
-    width: min(100% - 32px, 440px);
+    width: min(100%, 440px);
     min-height: 100dvh;
-    padding-top: calc(env(safe-area-inset-top) + 20px);
-    padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 44px);
+    padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right));
+    padding-top: max(28px, calc(env(safe-area-inset-top) + 20px));
+    padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 48px);
   }
 
   .app-nav {
     position: fixed;
     inset-inline: 0;
     top: auto;
-    bottom: 0;
+    bottom: max(10px, env(safe-area-inset-bottom));
     width: 100%;
-    padding: 6px 20px calc(8px + env(safe-area-inset-bottom));
-    border-top: 1px solid rgba(40, 53, 68, 0.82);
-    background: rgba(16, 24, 34, 0.94);
-    box-shadow: 0 -10px 26px rgba(0, 0, 0, 0.18);
-    backdrop-filter: blur(18px);
+    padding: 0 max(10px, env(safe-area-inset-right)) 0 max(10px, env(safe-area-inset-left));
+    border-top: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
   }
 
   .app-nav__brand {
@@ -1774,14 +1785,16 @@ textarea:disabled {
 
   .app-nav__links {
     width: 100%;
+    max-width: 440px;
     min-width: 0;
     min-height: 66px;
-    padding: 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-    backdrop-filter: none;
+    margin: 0 auto;
+    padding: 6px;
+    border: 1px solid rgba(40, 53, 68, 0.82);
+    border-radius: 20px;
+    background: rgba(16, 24, 34, 0.94);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(18px);
   }
 
   .app-nav__link {
@@ -1827,6 +1840,18 @@ textarea:disabled {
   .public-lists-hero h1,
   .public-list-detail-hero h1 {
     font-size: 28px;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .lists-topbar,
+  .collection-topbar,
+  .place-library-hero,
+  .profile-hero,
+  .public-lists-hero,
+  .public-list-detail-hero {
+    width: 100%;
+    overflow: visible;
   }
 
   .place-library-search {
@@ -1864,17 +1889,18 @@ textarea:disabled {
 @media (max-width: 359px) {
   .content,
   .place-library-page {
-    width: min(100% - 16px, 440px);
+    width: min(100%, 440px);
+    padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
   }
 
   .content {
-    padding-top: calc(12px + env(safe-area-inset-top));
-    padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 24px);
+    padding-top: max(22px, calc(12px + env(safe-area-inset-top)));
+    padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 32px);
   }
 
   .place-library-page {
-    padding-top: calc(12px + env(safe-area-inset-top));
-    padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 36px);
+    padding-top: max(22px, calc(12px + env(safe-area-inset-top)));
+    padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 42px);
   }
 
   .auth-shell {
@@ -1981,7 +2007,7 @@ textarea:disabled {
   }
 
   .app-nav {
-    padding-inline: 14px;
+    padding-inline: max(8px, env(safe-area-inset-left)) max(8px, env(safe-area-inset-right));
   }
 }
 
