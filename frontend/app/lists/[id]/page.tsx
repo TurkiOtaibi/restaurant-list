@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   AddIcon,
@@ -13,7 +13,9 @@ import {
   DeleteIcon,
   EmptyState,
   PlaceCard,
-  StatusMessage
+  StatusMessage,
+  Toast,
+  VirtualList
 } from "@/components/ui";
 import { AddPlaceDialog } from "@/features/lists/AddPlaceDialog";
 import { DeleteListDialog } from "@/features/lists/DeleteListDialog";
@@ -22,11 +24,22 @@ import { ListLoadingState } from "@/features/lists/ListLoadingState";
 import {
   ApiError,
   ListDetail,
+  ListItem,
   apiRequest,
   clearTokens,
   ensureSession
 } from "@/lib/api";
 import { placeCountLabel } from "@/lib/numerals";
+
+// How long the undo affordance stays available after a removal. This is a
+// product/implementation-owned value (LIST-010-XC-005); after it elapses the
+// removal is final.
+const UNDO_WINDOW_MS = 7000;
+
+type PendingUndo = {
+  placeId: string;
+  placeName: string;
+};
 
 export default function ListDetailPage() {
   const params = useParams<{ id: string }>();
@@ -38,6 +51,10 @@ export default function ListDetailPage() {
   const [addPlaceOpen, setAddPlaceOpen] = useState(false);
   const [editListOpen, setEditListOpen] = useState(false);
   const [deleteListOpen, setDeleteListOpen] = useState(false);
+  const [undo, setUndo] = useState<PendingUndo | null>(null);
+  const [undoError, setUndoError] = useState("");
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const undoBarRef = useRef<HTMLDivElement>(null);
 
   const loadDetail = useCallback(async () => {
     setError("");
@@ -71,20 +88,67 @@ export default function ListDetailPage() {
     void loadDetail();
   }, [loadDetail]);
 
+  const clearUndoTimer = useCallback(() => {
+    if (undoTimerRef.current) {
+      clearTimeout(undoTimerRef.current);
+      undoTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => clearUndoTimer, [clearUndoTimer]);
+
+  // Move focus to the undo control when it appears so a keyboard user who just
+  // removed a row is not dropped to the document body (LIST-010-US-014-TC-003).
+  useEffect(() => {
+    if (undo) {
+      undoBarRef.current?.querySelector<HTMLButtonElement>(".list-undo-toast__action")?.focus();
+    }
+  }, [undo]);
+
   async function refreshList() {
     const refreshed = await apiRequest<ListDetail>(`/lists/${listId}`);
     setList(refreshed);
   }
 
-  async function handleRemovePlace(placeId: string) {
+  async function handleRemovePlace(item: ListItem) {
     setError("");
+    setUndoError("");
     try {
-      await apiRequest(`/lists/${listId}/items/${placeId}`, {
-        method: "DELETE"
-      });
-      await refreshList();
+      await apiRequest(`/lists/${listId}/items/${item.place.id}`, { method: "DELETE" });
+      // Non-optimistic removal: the row stays until the server confirms, then we
+      // drop it locally and offer undo. placeCount derives from items length.
+      setList((previous) =>
+        previous
+          ? { ...previous, items: previous.items.filter((entry) => entry.id !== item.id) }
+          : previous
+      );
+      clearUndoTimer();
+      setUndo({ placeId: item.place.id, placeName: item.place.name });
+      undoTimerRef.current = setTimeout(() => {
+        undoTimerRef.current = null;
+        setUndo(null);
+      }, UNDO_WINDOW_MS);
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : "تعذر إزالة المكان.");
+    }
+  }
+
+  async function handleUndo() {
+    if (!undo) {
+      return;
+    }
+    const { placeId } = undo;
+    clearUndoTimer();
+    setUndoError("");
+    try {
+      await apiRequest(`/lists/${listId}/items`, {
+        method: "POST",
+        body: JSON.stringify({ placeId })
+      });
+      await refreshList();
+      setUndo(null);
+    } catch (caught) {
+      setUndoError(caught instanceof ApiError ? caught.message : "تعذر التراجع عن الإزالة.");
     }
   }
 
@@ -181,22 +245,27 @@ export default function ListDetailPage() {
                 title="لا توجد أماكن"
               />
             ) : (
-              <div className="collection-list" aria-label="أماكن القائمة">
-                {list.items.map((item) => (
-                  <article className="collection-list__row" key={item.id}>
+              <VirtualList
+                ariaLabel="أماكن القائمة"
+                className="collection-list"
+                gap={8}
+                getKey={(item) => item.id}
+                items={list.items}
+                renderItem={(item) => (
+                  <article className="collection-list__row">
                     <PlaceCard compact href={`/places/${item.place.id}`} place={item.place} />
                     <Button
                       aria-label={`إزالة ${item.place.name} من القائمة`}
                       className="collection-list__remove list-action list-action--danger"
-                      onClick={() => void handleRemovePlace(item.place.id)}
+                      onClick={() => void handleRemovePlace(item)}
                       type="button"
                       variant="icon"
                     >
                       <DeleteIcon />
                     </Button>
                   </article>
-                ))}
-              </div>
+                )}
+              />
             )}
           </section>
 
@@ -208,6 +277,25 @@ export default function ListDetailPage() {
             savedPlaceIds={list.items.map((item) => item.place.id)}
           />
         </>
+      ) : null}
+
+      {undo ? (
+        <div className="list-undo-toast" ref={undoBarRef}>
+          <div className="list-undo-toast__bar">
+            <Toast tone={undoError ? "error" : "success"}>
+              <span>{undoError ? undoError : `تمت إزالة ${undo.placeName} من القائمة.`}</span>
+            </Toast>
+            <Button
+              aria-label={`تراجع عن إزالة ${undo.placeName}`}
+              className="list-undo-toast__action"
+              onClick={() => void handleUndo()}
+              type="button"
+              variant="secondary"
+            >
+              تراجع
+            </Button>
+          </div>
+        </div>
       ) : null}
     </main>
   );

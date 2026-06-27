@@ -69,6 +69,24 @@ export function ArchiveIcon(props: IconProps) {
   );
 }
 
+export function CheckIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M5 12.5l4.5 4.5L19 7" />
+    </BaseIcon>
+  );
+}
+
+export function IceCreamIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M8 11a4 4 0 0 1 8 0" />
+      <path d="M7.5 11h9" />
+      <path d="M9 11l3 9 3-9" />
+    </BaseIcon>
+  );
+}
+
 export function TasteMarkIcon(props: IconProps) {
   return (
     <BaseIcon {...props}>

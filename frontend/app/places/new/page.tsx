@@ -10,6 +10,7 @@ import { ensureSession } from "@/lib/api";
 export default function CreatePlacePage() {
   const router = useRouter();
   const [initialType] = useState<PlaceType>(initialTypeFromUrl);
+  const [initialName] = useState<string>(initialNameFromUrl);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
@@ -36,6 +37,7 @@ export default function CreatePlacePage() {
   return (
     <main className="dialog-route-shell">
       <CreatePlaceDialog
+        initialName={initialName}
         initialType={initialType}
         onClose={closeDialog}
         open={isAuthenticated}
@@ -55,4 +57,12 @@ function initialTypeFromUrl(): PlaceType {
   }
 
   return "restaurant";
+}
+
+function initialNameFromUrl(): string {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return new URLSearchParams(window.location.search).get("name")?.slice(0, 120) ?? "";
 }

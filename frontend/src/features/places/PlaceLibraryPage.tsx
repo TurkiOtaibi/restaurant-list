@@ -12,7 +12,8 @@ import {
   FilterIcon,
   PlaceCard,
   SearchField,
-  StatusMessage
+  StatusMessage,
+  VirtualList
 } from "@/components/ui";
 import { ApiError, Place, apiCollection, clearTokens, ensureSession } from "@/lib/api";
 import { cx } from "@/lib/ui";
@@ -26,18 +27,34 @@ import {
   subtypeOptionsForType
 } from "./taxonomy";
 
+// Bounded page size so the catalog loads incrementally as the user scrolls,
+// never downloading the whole catalog at once (PLACE-001-US-006/US-015).
+const PAGE_SIZE = 20;
+
 export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
   const [activeType, setActiveType] = useState<PlaceType>(initialType);
   const [places, setPlaces] = useState<Place[]>([]);
+  const [total, setTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [reachedEnd, setReachedEnd] = useState(false);
   const [error, setError] = useState("");
+  const [pageError, setPageError] = useState(false);
   const [needsAuth, setNeedsAuth] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [submittedSearch, setSubmittedSearch] = useState("");
   const [activeSubtype, setActiveSubtype] = useState<SubtypeFilterValue>("all");
   const [subtypeFilterOpen, setSubtypeFilterOpen] = useState(false);
   const createLinkRef = useRef<HTMLAnchorElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  // The active load generation. Switching type/filter/search increments it so a
+  // late page response from a previous filter is ignored (no out-of-order rows).
   const requestIdRef = useRef(0);
+  // Number of rows fetched from the server (the next offset). Tracked separately
+  // from places.length because client-side de-duplication may drop overlapping
+  // rows while the server offset must keep advancing.
+  const loadedCountRef = useRef(0);
+  const loadingMoreRef = useRef(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -61,9 +78,25 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
     }
   }, [initialType]);
 
-  const loadPlaces = useCallback(async () => {
-    // Guard against out-of-order responses (e.g. a fast type switch): only the
-    // most recently started load is allowed to apply its result.
+  const buildQuery = useCallback(
+    (offset: number) => {
+      const params = new URLSearchParams({ type: activeType });
+      const normalizedSearch = submittedSearch.trim();
+      if (normalizedSearch) {
+        params.set("q", normalizedSearch);
+      }
+      if (activeSubtype !== "all" && activeType !== "ice_cream") {
+        params.set("subtype", activeSubtype);
+      }
+      params.set("sort", "rating_desc");
+      params.set("limit", String(PAGE_SIZE));
+      params.set("offset", String(offset));
+      return params.toString();
+    },
+    [activeSubtype, activeType, submittedSearch]
+  );
+
+  const loadFirstPage = useCallback(async () => {
     const requestId = requestIdRef.current + 1;
     requestIdRef.current = requestId;
     const isCurrent = () => requestId === requestIdRef.current;
@@ -76,23 +109,23 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
       return;
     }
 
+    setNeedsAuth(false);
     setLoading(true);
     setError("");
-    try {
-      const params = new URLSearchParams({ type: activeType });
-      const normalizedSearch = submittedSearch.trim();
-      if (normalizedSearch) {
-        params.set("q", normalizedSearch);
-      }
-      if (activeSubtype !== "all" && activeType !== "ice_cream") {
-        params.set("subtype", activeSubtype);
-      }
-      params.set("sort", "rating_desc");
+    setPageError(false);
+    setReachedEnd(false);
+    loadingMoreRef.current = false;
+    setLoadingMore(false);
 
-      const response = await apiCollection<Place>(`/places?${params.toString()}`);
-      if (isCurrent()) {
-        setPlaces(response.data);
+    try {
+      const response = await apiCollection<Place>(`/places?${buildQuery(0)}`);
+      if (!isCurrent()) {
+        return;
       }
+      setPlaces(response.data);
+      setTotal(response.meta.total);
+      loadedCountRef.current = response.data.length;
+      setReachedEnd(response.data.length === 0 || response.data.length >= response.meta.total);
     } catch (caught) {
       if (!isCurrent()) {
         return;
@@ -108,11 +141,81 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
         setLoading(false);
       }
     }
-  }, [activeSubtype, activeType, submittedSearch]);
+  }, [buildQuery]);
+
+  const loadNextPage = useCallback(async () => {
+    if (loadingMoreRef.current || reachedEnd) {
+      return;
+    }
+    const requestId = requestIdRef.current;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    setPageError(false);
+
+    try {
+      const response = await apiCollection<Place>(`/places?${buildQuery(loadedCountRef.current)}`);
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+      loadedCountRef.current += response.data.length;
+      setPlaces((previous) => {
+        const seen = new Set(previous.map((place) => place.id));
+        const merged = [...previous];
+        for (const place of response.data) {
+          if (!seen.has(place.id)) {
+            seen.add(place.id);
+            merged.push(place);
+          }
+        }
+        return merged;
+      });
+      setTotal(response.meta.total);
+      if (response.data.length === 0 || loadedCountRef.current >= response.meta.total) {
+        setReachedEnd(true);
+      }
+    } catch (caught) {
+      if (requestId === requestIdRef.current) {
+        if (caught instanceof ApiError && caught.status === 401) {
+          clearTokens();
+          setNeedsAuth(true);
+        } else {
+          setPageError(true);
+        }
+      }
+    } finally {
+      loadingMoreRef.current = false;
+      if (requestId === requestIdRef.current) {
+        setLoadingMore(false);
+      }
+    }
+  }, [buildQuery, reachedEnd]);
 
   useEffect(() => {
-    void loadPlaces();
-  }, [loadPlaces]);
+    void loadFirstPage();
+  }, [loadFirstPage]);
+
+  // Continuous scrolling: when the end sentinel approaches the viewport, fetch
+  // the next page. Serialized via loadingMoreRef so rapid scrolling cannot create
+  // duplicate in-flight requests (PLACE-001-US-015).
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) {
+      return;
+    }
+    if (loading || needsAuth || reachedEnd || pageError) {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          void loadNextPage();
+        }
+      },
+      { rootMargin: "600px 0px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadNextPage, loading, needsAuth, pageError, reachedEnd, places.length]);
 
   function selectType(type: PlaceType) {
     setActiveType(type);
@@ -172,6 +275,12 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
   const selectedSubtypeLabel =
     activeSubtype === "all" ? "الكل" : placeSubtypeLabel(activeSubtype) ?? "الكل";
   const hasActiveFilter = isSearching || activeSubtype !== "all";
+  const hasResults = places.length > 0;
+  const liveMessage = loadingMore
+    ? "جارٍ تحميل المزيد من الأماكن"
+    : reachedEnd && hasResults
+      ? "تم عرض كل الأماكن"
+      : "";
 
   return (
     <main className="content place-library-page">
@@ -218,7 +327,7 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
               onChange={(event) => setSearchTerm(event.target.value)}
               onClear={searchTerm || submittedSearch ? handleClearSearch : undefined}
               placeholder="ابحث عن مكان"
-              resultCount={!loading && isSearching ? places.length : undefined}
+              resultCount={!loading && isSearching ? total ?? places.length : undefined}
               value={searchTerm}
             />
             <Button isLoading={loading && isSearching} type="submit" variant="secondary">
@@ -276,9 +385,18 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
       ) : null}
 
       {loading ? <PlaceLibraryLoading label="جاري تحميل الأماكن" /> : null}
-      {error ? <StatusMessage tone="error">{error}</StatusMessage> : null}
+      {error ? (
+        <section className="retry-panel" aria-labelledby="places-error-title">
+          <StatusMessage tone="error">
+            <span id="places-error-title">{error}</span>
+          </StatusMessage>
+          <Button onClick={() => void loadFirstPage()} type="button" variant="secondary">
+            حاول مرة أخرى
+          </Button>
+        </section>
+      ) : null}
 
-      {!loading && !needsAuth && places.length === 0 ? (
+      {!loading && !error && !needsAuth && !hasResults ? (
         <EmptyState
           action={
             hasActiveFilter ? (
@@ -294,15 +412,38 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
         />
       ) : null}
 
-      {!loading && !needsAuth && places.length > 0 ? (
+      {!loading && !needsAuth && hasResults ? (
         <section className="place-memory-section" aria-label="قائمة الأماكن">
-          <div className="place-memory-list">
-            {places.map((place) => (
-              <PlaceCard href={`/places/${place.id}`} key={place.id} place={place} view="row" />
-            ))}
-          </div>
+          <VirtualList
+            ariaLabel="قائمة الأماكن"
+            className="place-memory-list"
+            getKey={(place) => place.id}
+            items={places}
+            renderItem={(place) => (
+              <PlaceCard href={`/places/${place.id}`} place={place} view="row" />
+            )}
+          />
+
+          {pageError ? (
+            <div className="place-library-more-error">
+              <StatusMessage tone="error">تعذر تحميل المزيد من الأماكن.</StatusMessage>
+              <Button onClick={() => void loadNextPage()} type="button" variant="secondary">
+                إعادة المحاولة
+              </Button>
+            </div>
+          ) : null}
+
+          {loadingMore ? (
+            <PlaceLibraryLoading label="جارٍ تحميل المزيد من الأماكن" />
+          ) : null}
+
+          {!reachedEnd && !pageError ? <div ref={sentinelRef} aria-hidden="true" /> : null}
         </section>
       ) : null}
+
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {liveMessage}
+      </div>
     </main>
   );
 }

@@ -10,9 +10,9 @@ import {
   EmptyState,
   LoadingState,
   Modal,
+  PlaceTypeIcon,
   SearchField,
-  StatusMessage,
-  VisualArtwork
+  StatusMessage
 } from "@/components/ui";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { ApiError, ListDetail, Place, apiCollection, apiRequest } from "@/lib/api";
@@ -141,8 +141,12 @@ export function AddPlaceDialog({
 
         {normalizedQuery && !loadingResults && results.length === 0 ? (
           <EmptyState
-            action={<Link href="/places/new">أضف مكانًا</Link>}
-            title="لا يوجد مكان بهذا الاسم"
+            action={
+              <Link className="ds-button" href={`/places/new?name=${encodeURIComponent(query.trim())}`}>
+                إضافة مكان جديد
+              </Link>
+            }
+            title="لم تجد المكان؟"
           />
         ) : null}
 
@@ -153,7 +157,7 @@ export function AddPlaceDialog({
 
               return (
                 <article className="place-save-dialog__list" key={place.id}>
-                  <VisualArtwork id={place.id} label={place.name} type={place.type} variant="mini" />
+                  <PlaceTypeIcon type={place.type} />
                   <div>
                     <h3>
                       <BidiText>{place.name}</BidiText>
