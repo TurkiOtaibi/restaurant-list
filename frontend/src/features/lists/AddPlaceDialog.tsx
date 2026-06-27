@@ -141,8 +141,12 @@ export function AddPlaceDialog({
 
         {normalizedQuery && !loadingResults && results.length === 0 ? (
           <EmptyState
-            action={<Link href="/places/new">أضف مكانًا</Link>}
-            title="لا يوجد مكان بهذا الاسم"
+            action={
+              <Link className="ds-button" href={`/places/new?name=${encodeURIComponent(query.trim())}`}>
+                إضافة مكان جديد
+              </Link>
+            }
+            title="لم تجد المكان؟"
           />
         ) : null}
 

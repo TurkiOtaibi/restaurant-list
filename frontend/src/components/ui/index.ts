@@ -11,6 +11,7 @@ export {
   AddIcon,
   ArchiveIcon,
   CafeIcon,
+  CheckIcon,
   ClearIcon,
   CloseIcon,
   DeleteIcon,
@@ -28,4 +29,5 @@ export { RatingControl } from "./RatingControl";
 export { SearchField } from "./SearchField";
 export { StatusMessage } from "./StatusMessage";
 export { Toast } from "./Toast";
+export { VirtualList } from "./VirtualList";
 export { VisualArtwork } from "./VisualArtwork";
