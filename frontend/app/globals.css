@@ -33,7 +33,6 @@
 html {
   background: var(--color-app-bg);
   -webkit-text-size-adjust: 100%;
-  overflow-x: clip;
 }
 
 body {
@@ -50,7 +49,6 @@ body {
   line-height: 1.5;
   letter-spacing: 0;
   text-rendering: optimizeLegibility;
-  overflow-x: clip;
 }
 
 button,
@@ -1876,6 +1874,38 @@ textarea:disabled {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .place-memory-list {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .ds-place-card--row {
+    direction: ltr;
+    grid-template-columns: minmax(0, 1fr) 52px;
+    gap: 10px;
+    padding: 12px 10px 12px 14px;
+  }
+
+  .ds-place-card--row .ds-type-icon {
+    grid-column: 2;
+    justify-self: end;
+  }
+
+  .ds-place-card--row .ds-place-card__main {
+    grid-column: 1;
+    direction: rtl;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    overflow: hidden;
+  }
+
+  .ds-place-card--row .ds-place-card__title,
+  .ds-place-card--row .ds-place-card__title .ds-bidi,
+  .ds-place-card--row .ds-place-card__meta {
+    max-inline-size: 100%;
+    overflow: hidden;
+  }
+
   .place-detail-hero {
     grid-template-columns: 98px minmax(0, 1fr);
     gap: 12px;
@@ -1973,9 +2003,10 @@ textarea:disabled {
   }
 
   .ds-place-card--row {
-    grid-template-columns: 44px minmax(0, 1fr);
-    gap: 12px;
+    grid-template-columns: minmax(0, 1fr) 48px;
+    gap: 8px;
     min-height: 68px;
+    padding-inline: 8px 6px;
   }
 
   .place-detail-hero {
