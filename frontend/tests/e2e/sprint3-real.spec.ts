@@ -4,6 +4,8 @@ import { setTimeout as delay } from "node:timers/promises";
 
 import { expect, test } from "@playwright/test";
 
+import { PlacesAcceptanceHarness } from "./support/places-acceptance-harness";
+
 let apiProcess: ChildProcessWithoutNullStreams | undefined;
 let apiOutput = "";
 let apiExited = false;
@@ -203,12 +205,12 @@ test("real frontend and api complete list edit add remove delete and profile flo
 });
 
 test("real places library covers subtype filters sorting layout bidi and errors", async ({
+  context,
   page
 }) => {
   test.setTimeout(240_000);
 
   const unique = Date.now();
-  const email = `places-${unique}@example.com`;
   const raterA = await createApiUser(`rater-a-${unique}@example.com`);
   const raterB = await createApiUser(`rater-b-${unique}@example.com`);
   const prefix = `Sort ${unique}`;
@@ -241,15 +243,11 @@ test("real places library covers subtype filters sorting layout bidi and errors"
     }
   });
 
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/register");
-  await page.getByLabel("اسم العرض").fill(`مستخدم ${unique}`);
-  await page.getByLabel("البريد الإلكتروني").fill(email);
-  await page.getByLabel("كلمة المرور").fill("password123");
-  await page.getByRole("button", { name: "إنشاء حساب" }).click();
-  await expect(page).toHaveURL(/\/lists$/, { timeout: 15_000 });
+  const placesHarness = new PlacesAcceptanceHarness(page, context);
+  await placesHarness.resetFeature("PLACE-007");
 
-  await page.getByRole("link", { name: "الأماكن" }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/places?type=restaurant");
   await expect(page).toHaveURL(/\/places/);
   await expect(page.getByRole("searchbox", { name: "بحث" })).toBeVisible({ timeout: 30_000 });
   await page.getByRole("searchbox", { name: "بحث" }).fill(prefix);
