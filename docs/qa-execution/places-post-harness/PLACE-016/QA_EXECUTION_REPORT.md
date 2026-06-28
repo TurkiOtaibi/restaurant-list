@@ -1,0 +1,107 @@
+# PLACE-016 Post-Harness QA Execution Report
+
+Feature: `PLACE-016 - Store optional description`
+
+## Synchronization Gate
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Branch contains harness commit | PASS | HEAD contains `fee7aa0d5c674558e130dc837638fe814903edd7`. |
+| Branch contains latest `origin/main` | PASS | `origin/main` is an ancestor of HEAD. |
+| Application working tree clean | PASS | No dirty application source/config/test files; QA artifacts ignored. |
+
+## Branch SHA
+
+- Branch: `feature/places-qa-cycle`
+- Branch SHA: `fee7aa0d5c674558e130dc837638fe814903edd7`
+- Main SHA: `e35c37d2be91f6bde87d60982aca7e7a24d62998`
+- Execution date: `2026-06-28 21:15:38 UTC`
+
+## Statistics
+
+- Total test cases: 58
+- PASS: 31
+- FAIL: 0
+- BLOCKED: 27
+- NOT EXECUTED: 0
+- Developer-owned FAIL: 0
+- Developer-owned BLOCKED: 0
+- QA-owned blockers: 27
+- Tests unblocked by P0 harness: 4
+
+## Harness Impact
+
+- Before harness BLOCKED: 31
+- After harness BLOCKED: 27
+- Converted to PASS by harness: 4
+
+## Detailed Results
+
+| Test Case ID | User Story | Result | Evidence | Notes |
+| --- | --- | --- | --- | --- |
+| PLACE-016-US-001-TC-001 | PLACE-016-US-001 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-001-TC-002 | PLACE-016-US-001 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-001-TC-003 | PLACE-016-US-001 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-001-TC-004 | PLACE-016-US-001 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-001-TC-005 | PLACE-016-US-001 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-001-TC-006 | PLACE-016-US-001 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-001-TC-007 | PLACE-016-US-001 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-001-TC-008 | PLACE-016-US-001 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-001-TC-009 | PLACE-016-US-001 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-001-TC-010 | PLACE-016-US-001 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-001-TC-011 | PLACE-016-US-001 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-001-TC-012 | PLACE-016-US-001 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-001-TC-013 | PLACE-016-US-001 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-002-TC-001 | PLACE-016-US-002 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-002-TC-002 | PLACE-016-US-002 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-002-TC-003 | PLACE-016-US-002 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-002-TC-004 | PLACE-016-US-002 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-002-TC-005 | PLACE-016-US-002 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-002-TC-006 | PLACE-016-US-002 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-003-TC-001 | PLACE-016-US-003 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-003-TC-002 | PLACE-016-US-003 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-003-TC-003 | PLACE-016-US-003 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-003-TC-004 | PLACE-016-US-003 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-003-TC-005 | PLACE-016-US-003 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-003-TC-006 | PLACE-016-US-003 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-004-TC-001 | PLACE-016-US-004 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-004-TC-002 | PLACE-016-US-004 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-004-TC-003 | PLACE-016-US-004 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-004-TC-004 | PLACE-016-US-004 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-004-TC-005 | PLACE-016-US-004 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-004-TC-006 | PLACE-016-US-004 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-005-TC-001 | PLACE-016-US-005 | PASS | Focused authenticated Places UI acceptance harness executed successfully on the synchronized branch. The harness creates an authenticated browser context through API-issued refresh cookie, seeds deterministic Places/List/Rating data, and loads this feature state directly without login/register UI flow. | Unblocked by P0 harness; owner=QA; execution outcome=PASS; developer fix=NO. |
+| PLACE-016-US-005-TC-002 | PLACE-016-US-005 | PASS | Focused authenticated Places UI acceptance harness executed successfully on the synchronized branch. The harness creates an authenticated browser context through API-issued refresh cookie, seeds deterministic Places/List/Rating data, and loads this feature state directly without login/register UI flow. | Unblocked by P0 harness; owner=QA; execution outcome=PASS; developer fix=NO. |
+| PLACE-016-US-005-TC-003 | PLACE-016-US-005 | PASS | Focused authenticated Places UI acceptance harness executed successfully on the synchronized branch. The harness creates an authenticated browser context through API-issued refresh cookie, seeds deterministic Places/List/Rating data, and loads this feature state directly without login/register UI flow. | Unblocked by P0 harness; owner=QA; execution outcome=PASS; developer fix=NO. |
+| PLACE-016-US-005-TC-004 | PLACE-016-US-005 | BLOCKED | Requires focused accessibility execution for this feature state, including keyboard/accessibility-tree or assistive-technology inspection. | BLOCKED_CONFIGURATION; owner=QA; missing prerequisite: Focused accessibility harness or manual AT pass.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-005-TC-005 | PLACE-016-US-005 | BLOCKED | Generic responsive E2E passed, but this exact feature viewport/state was not executed with deterministic data. | BLOCKED_CONFIGURATION; owner=QA; missing prerequisite: Focused responsive fixture for this exact feature state.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-005-TC-006 | PLACE-016-US-005 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-005-TC-007 | PLACE-016-US-005 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-005-TC-008 | PLACE-016-US-005 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-005-TC-009 | PLACE-016-US-005 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-005-TC-010 | PLACE-016-US-005 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-005-TC-011 | PLACE-016-US-005 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-006-TC-001 | PLACE-016-US-006 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-006-TC-002 | PLACE-016-US-006 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-006-TC-003 | PLACE-016-US-006 | PASS | Focused authenticated Places UI acceptance harness executed successfully on the synchronized branch. The harness creates an authenticated browser context through API-issued refresh cookie, seeds deterministic Places/List/Rating data, and loads this feature state directly without login/register UI flow. | Unblocked by P0 harness; owner=QA; execution outcome=PASS; developer fix=NO. |
+| PLACE-016-US-006-TC-004 | PLACE-016-US-006 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-006-TC-005 | PLACE-016-US-006 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-006-TC-006 | PLACE-016-US-006 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-006-TC-007 | PLACE-016-US-006 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-007-TC-001 | PLACE-016-US-007 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-007-TC-002 | PLACE-016-US-007 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-007-TC-003 | PLACE-016-US-007 | PASS | Backend Places API suite and focused API probes passed on the synchronized branch; behavior matched the executable API contract for this category. | Executed through available Places API automation/current API behavior evidence. |
+| PLACE-016-US-007-TC-004 | PLACE-016-US-007 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-007-TC-005 | PLACE-016-US-007 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-007-TC-006 | PLACE-016-US-007 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-007-TC-007 | PLACE-016-US-007 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-007-TC-008 | PLACE-016-US-007 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+| PLACE-016-US-007-TC-009 | PLACE-016-US-007 | BLOCKED | Manual assistive-technology or real-device review is required and was not available in this execution environment. | BLOCKED_ENVIRONMENT; owner=QA; missing prerequisite: Real device/assistive-technology environment.; release blocking=NO; developer fix=NO. |
+
+## Release Recommendation
+
+CONDITIONAL PASS
+
+## PR Recommendation
+
+APPROVE WITH COMMENTS
