@@ -80,3 +80,20 @@ class PlaceResponse(BaseModel):
     current_user_list_count: int = Field(serialization_alias="currentUserListCount")
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
+class PlaceCollectionResponse(BaseModel):
+    id: str
+    name: str
+    type: PlaceType
+    subtype: PlaceSubtype | None
+    description: str | None
+    created_at: datetime = Field(serialization_alias="createdAt")
+    updated_at: datetime = Field(serialization_alias="updatedAt")
+    average_rating: float | None = Field(serialization_alias="averageRating")
+    rating_count: int = Field(serialization_alias="ratingCount")
+    current_user_rating: float | None = Field(serialization_alias="currentUserRating")
+    current_user_tried: bool = Field(serialization_alias="currentUserTried")
+    current_user_list_count: int = Field(serialization_alias="currentUserListCount")
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)

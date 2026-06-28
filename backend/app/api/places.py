@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import internal_error, not_found
@@ -11,6 +11,7 @@ from app.modules.auth.models import User
 from app.modules.places.schemas import (
     CAFE_SUBTYPES,
     RESTAURANT_SUBTYPES,
+    PlaceCollectionResponse,
     PlaceCreateRequest,
     PlaceResponse,
     PlaceSubtype,
@@ -27,8 +28,9 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 DatabaseSession = Annotated[AsyncSession, Depends(get_db)]
 
 
-@router.get("", response_model=CollectionResponse[PlaceResponse])
+@router.get("", response_model=CollectionResponse[PlaceCollectionResponse])
 async def list_places(
+    request: Request,
     current_user: CurrentUser,
     db: DatabaseSession,
     q: Annotated[str | None, Query(max_length=120)] = None,
@@ -37,7 +39,8 @@ async def list_places(
     sort: Literal["rating_desc"] = "rating_desc",
     limit: Annotated[int, Query(ge=1, le=100)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
-) -> CollectionResponse[PlaceResponse]:
+) -> CollectionResponse[PlaceCollectionResponse]:
+    validate_single_query_value(request, "type")
     validate_place_filter(type, subtype)
     result = await list_place_summaries(
         db,
@@ -49,7 +52,7 @@ async def list_places(
         offset=offset,
     )
     return collection_response(
-        result.items,
+        [PlaceCollectionResponse.model_validate(item) for item in result.items],
         limit=limit,
         offset=offset,
         total=result.total,
@@ -106,5 +109,18 @@ def validate_place_filter(place_type: PlaceType | None, subtype: PlaceSubtype | 
         detail={
             "code": "INVALID_PLACE_SUBTYPE_FILTER",
             "message": "Subtype filter is not valid for the selected place type.",
+        },
+    )
+
+
+def validate_single_query_value(request: Request, name: str) -> None:
+    if len(request.query_params.getlist(name)) <= 1:
+        return
+
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        detail={
+            "code": "VALIDATION_ERROR",
+            "message": f"Query parameter '{name}' must be provided at most once.",
         },
     )
