@@ -1,7 +1,7 @@
 # Authentication QA Blockers
 
 Branch: `feature/sprint-1-user-facing-completion`  
-SHA: `4b99b43d9a58082c8f0c47ecadd30bef2ee22fdc`
+Tested Tested SHA: `1553d430c4511e21a36a2c97dd5dfc83335d20db`
 
 ## AUTH-QA-BLOCK-001
 
