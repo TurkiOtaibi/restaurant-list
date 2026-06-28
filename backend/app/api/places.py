@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated, Literal, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,19 +35,25 @@ async def list_places(
     db: DatabaseSession,
     q: Annotated[str | None, Query(max_length=120)] = None,
     type: PlaceType | None = None,
-    subtype: PlaceSubtype | None = None,
+    subtype: Annotated[str | None, Query(max_length=64)] = None,
     sort: Literal["rating_desc"] = "rating_desc",
     limit: Annotated[int, Query(ge=1, le=100)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> CollectionResponse[PlaceCollectionResponse]:
     validate_single_query_value(request, "type")
-    validate_place_filter(type, subtype)
+    validate_single_query_value(
+        request,
+        "subtype",
+        code="INVALID_PLACE_SUBTYPE_FILTER",
+        message="Subtype filter is not valid for the selected place type.",
+    )
+    validated_subtype = validate_place_filter(type, subtype)
     result = await list_place_summaries(
         db,
         current_user.id,
         query=q,
         place_type=type,
-        place_subtype=subtype,
+        place_subtype=validated_subtype,
         limit=limit,
         offset=offset,
     )
@@ -85,9 +91,9 @@ async def create_place(
     return place_response
 
 
-def validate_place_filter(place_type: PlaceType | None, subtype: PlaceSubtype | None) -> None:
+def validate_place_filter(place_type: PlaceType | None, subtype: str | None) -> PlaceSubtype | None:
     if subtype is None:
-        return
+        return None
 
     if place_type is None:
         raise HTTPException(
@@ -99,10 +105,10 @@ def validate_place_filter(place_type: PlaceType | None, subtype: PlaceSubtype | 
         )
 
     if place_type == "restaurant" and subtype in RESTAURANT_SUBTYPES:
-        return
+        return cast(PlaceSubtype, subtype)
 
     if place_type == "cafe" and subtype in CAFE_SUBTYPES:
-        return
+        return cast(PlaceSubtype, subtype)
 
     raise HTTPException(
         status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -113,14 +119,21 @@ def validate_place_filter(place_type: PlaceType | None, subtype: PlaceSubtype | 
     )
 
 
-def validate_single_query_value(request: Request, name: str) -> None:
+def validate_single_query_value(
+    request: Request,
+    name: str,
+    *,
+    code: str = "VALIDATION_ERROR",
+    message: str | None = None,
+) -> None:
     if len(request.query_params.getlist(name)) <= 1:
         return
 
+    error_message = message or f"Query parameter '{name}' must be provided at most once."
     raise HTTPException(
         status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         detail={
-            "code": "VALIDATION_ERROR",
-            "message": f"Query parameter '{name}' must be provided at most once.",
+            "code": code,
+            "message": error_message,
         },
     )
