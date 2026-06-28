@@ -107,7 +107,12 @@ type ApiRequestOptions = RequestInit & {
 };
 
 type ApiDetail = {
+  error?: { message?: string; code?: string };
   detail?: { message?: string; code?: string } | Array<{ msg?: string }>;
+};
+
+export type LogoutResult = {
+  confirmed: boolean;
 };
 
 export type CollectionMeta = {
@@ -130,6 +135,7 @@ export type CollectionResponse<T> = {
 // detection and log everyone out).
 let accessToken: string | null = null;
 let refreshPromise: Promise<string | null> | null = null;
+let lastSessionValidationAt = 0;
 
 const authChannel: BroadcastChannel | null =
   typeof BroadcastChannel === "undefined"
@@ -188,14 +194,17 @@ export async function ensureSession(): Promise<string | null> {
  * in-memory token, broadcasting the logout to other tabs. The local session is
  * cleared even if the network call fails.
  */
-export async function logout(): Promise<void> {
+export async function logout(): Promise<LogoutResult> {
+  let confirmed = true;
   try {
     await apiRequest("/auth/logout", { method: "POST", auth: false, skipRefresh: true });
   } catch {
+    confirmed = false;
     // Ignore network/HTTP errors — clear the local session regardless.
   } finally {
     clearTokens();
   }
+  return { confirmed };
 }
 
 export async function apiRequest<T>(
@@ -254,7 +263,7 @@ async function performRequest(path: string, options: ApiRequestOptions): Promise
 
 async function refreshAccessToken(): Promise<string | null> {
   if (!refreshPromise) {
-    refreshPromise = runRefreshWithLock().finally(() => {
+    refreshPromise = runRefreshWithLock(false).finally(() => {
       refreshPromise = null;
     });
   }
@@ -265,16 +274,16 @@ async function refreshAccessToken(): Promise<string | null> {
 // Serialize refresh across tabs with the Web Locks API when available, so only
 // one tab rotates the refresh token at a time. Other tabs pick up the new token
 // via the BroadcastChannel and skip refreshing.
-async function runRefreshWithLock(): Promise<string | null> {
+async function runRefreshWithLock(force: boolean): Promise<string | null> {
   const locks = typeof navigator === "undefined" ? undefined : navigator.locks;
   if (locks?.request) {
-    return locks.request("restaurantWishlist.auth-refresh", performRefresh);
+    return locks.request("restaurantWishlist.auth-refresh", () => performRefresh(force));
   }
-  return performRefresh();
+  return performRefresh(force);
 }
 
-async function performRefresh(): Promise<string | null> {
-  if (accessToken) {
+async function performRefresh(force: boolean): Promise<string | null> {
+  if (accessToken && !force) {
     return accessToken;
   }
 
@@ -308,6 +317,10 @@ async function parseResponseBody(response: Response): Promise<unknown> {
 function extractErrorMessage(status: number, detail: unknown): string {
   const payload = detail as ApiDetail | undefined;
 
+  if (payload?.error?.message) {
+    return payload.error.message;
+  }
+
   if (Array.isArray(payload?.detail) && payload.detail[0]?.msg) {
     return payload.detail[0].msg;
   }
@@ -325,3 +338,27 @@ function versionedPath(path: string): string {
   }
   return `${API_VERSION_PREFIX}${path.startsWith("/") ? path : `/${path}`}`;
 }
+
+function installSessionRecoveryListeners(): void {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return;
+  }
+
+  const validateSession = () => {
+    if (document.visibilityState === "hidden" || !accessToken) {
+      return;
+    }
+
+    const now = Date.now();
+    if (now - lastSessionValidationAt < 30_000) {
+      return;
+    }
+    lastSessionValidationAt = now;
+    void runRefreshWithLock(true);
+  };
+
+  window.addEventListener("focus", validateSession);
+  document.addEventListener("visibilitychange", validateSession);
+}
+
+installSessionRecoveryListeners();

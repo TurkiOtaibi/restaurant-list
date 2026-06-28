@@ -13,6 +13,7 @@ import {
   clearTokens,
   ensureSession
 } from "@/lib/api";
+import { loginHrefForReturn } from "@/lib/authReturn";
 import { listCountLabel, placeCountLabel } from "@/lib/numerals";
 
 export default function ListsPage() {
@@ -82,7 +83,7 @@ export default function ListsPage() {
 
       {needsAuth ? (
         <StatusMessage tone="notice">
-          سجّل الدخول لعرض القوائم. <Link href="/login">تسجيل الدخول</Link>
+          سجّل الدخول لعرض القوائم. <Link href={loginHrefForReturn("/lists")}>تسجيل الدخول</Link>
         </StatusMessage>
       ) : null}
 

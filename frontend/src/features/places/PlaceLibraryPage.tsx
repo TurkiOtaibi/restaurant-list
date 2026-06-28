@@ -16,6 +16,7 @@ import {
   VirtualList
 } from "@/components/ui";
 import { ApiError, Place, apiCollection, clearTokens, ensureSession } from "@/lib/api";
+import { loginHrefForReturn } from "@/lib/authReturn";
 import { cx } from "@/lib/ui";
 
 import {
@@ -300,7 +301,7 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
 
       {needsAuth ? (
         <StatusMessage tone="notice">
-          سجل الدخول لعرض الأماكن. <Link href="/login">تسجيل الدخول</Link>
+          سجل الدخول لعرض الأماكن. <Link href={loginHrefForReturn(`/places?type=${activeType}`)}>تسجيل الدخول</Link>
         </StatusMessage>
       ) : null}
 

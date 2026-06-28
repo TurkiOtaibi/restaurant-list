@@ -19,6 +19,7 @@ import {
 } from "@/components/ui";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { ApiError, Place, UserList, apiCollection, apiRequest, clearTokens, ensureSession } from "@/lib/api";
+import { loginHrefForReturn } from "@/lib/authReturn";
 import { formatAverageRating } from "@/lib/format";
 import { formatOutOfTen, placeCountLabel, ratingCountLabel } from "@/lib/numerals";
 
@@ -67,7 +68,7 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
     return (
       <main className="content place-detail-page">
         <StatusMessage tone="notice">
-          سجل الدخول لعرض التفاصيل. <Link href="/login">تسجيل الدخول</Link>
+          سجل الدخول لعرض التفاصيل. <Link href={loginHrefForReturn(`/places/${placeId}`)}>تسجيل الدخول</Link>
         </StatusMessage>
       </main>
     );

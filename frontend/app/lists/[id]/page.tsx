@@ -29,6 +29,7 @@ import {
   clearTokens,
   ensureSession
 } from "@/lib/api";
+import { loginHrefForReturn } from "@/lib/authReturn";
 import { placeCountLabel } from "@/lib/numerals";
 
 // How long the undo affordance stays available after a removal. This is a
@@ -212,7 +213,7 @@ export default function ListDetailPage() {
 
       {needsAuth ? (
         <StatusMessage tone="notice">
-          سجّل الدخول لعرض هذه القائمة. <Link href="/login">تسجيل الدخول</Link>
+          سجّل الدخول لعرض هذه القائمة. <Link href={loginHrefForReturn(`/lists/${listId}`)}>تسجيل الدخول</Link>
         </StatusMessage>
       ) : null}
 

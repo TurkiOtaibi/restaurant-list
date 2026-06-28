@@ -19,6 +19,7 @@ import {
   clearTokens,
   ensureSession
 } from "@/lib/api";
+import { loginHrefForReturn } from "@/lib/authReturn";
 
 export function PublicListsPage() {
   const [lists, setLists] = useState<ListDetail[]>([]);
@@ -69,7 +70,7 @@ export function PublicListsPage() {
 
       {needsAuth ? (
         <StatusMessage tone="notice">
-          سجّل الدخول لعرض القوائم العامة. <Link href="/login">تسجيل الدخول</Link>
+          سجّل الدخول لعرض القوائم العامة. <Link href={loginHrefForReturn("/lists/public")}>تسجيل الدخول</Link>
         </StatusMessage>
       ) : null}
 

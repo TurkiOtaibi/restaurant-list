@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { CreatePlaceDialog } from "@/features/places/CreatePlaceDialog";
 import type { PlaceType } from "@/features/places/taxonomy";
 import { ensureSession } from "@/lib/api";
+import { currentReturnPath, loginHrefForReturn } from "@/lib/authReturn";
 
 export default function CreatePlacePage() {
   const router = useRouter();
@@ -22,7 +23,7 @@ export default function CreatePlacePage() {
       if (token) {
         setIsAuthenticated(true);
       } else {
-        router.replace("/login");
+        router.replace(loginHrefForReturn(currentReturnPath()));
       }
     });
     return () => {

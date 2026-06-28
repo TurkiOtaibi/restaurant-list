@@ -6,6 +6,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 
 import { Button, StatusMessage, TasteMarkIcon, TextInput } from "@/components/ui";
 import { ApiError, AuthResponse, apiRequest, saveAccessToken } from "@/lib/api";
+import { DEFAULT_AUTH_DESTINATION, safeReturnPath } from "@/lib/authReturn";
 
 type FieldErrors = {
   email?: string;
@@ -46,7 +47,11 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password })
       });
       saveAccessToken(response.accessToken);
-      router.push("/lists");
+      const returnTo =
+        typeof window === "undefined"
+          ? null
+          : safeReturnPath(new URLSearchParams(window.location.search).get("returnTo"));
+      router.push(returnTo ?? DEFAULT_AUTH_DESTINATION);
     } catch (caught) {
       setFormError(
         caught instanceof ApiError

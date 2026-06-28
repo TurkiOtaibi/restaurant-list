@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { CreateListDialog } from "@/features/lists/CreateListDialog";
 import { ensureSession } from "@/lib/api";
+import { loginHrefForReturn } from "@/lib/authReturn";
 
 export default function CreateListPage() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function CreateListPage() {
       if (token) {
         setIsAuthenticated(true);
       } else {
-        router.replace("/login");
+        router.replace(loginHrefForReturn("/lists/new"));
       }
     });
     return () => {

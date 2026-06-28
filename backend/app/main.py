@@ -1,4 +1,8 @@
+import json
+import logging
 from collections.abc import Awaitable, Callable, Sequence
+from datetime import UTC, datetime
+from time import perf_counter
 from typing import Any
 from uuid import uuid4
 
@@ -16,6 +20,8 @@ from app.api.profile import router as profile_router
 from app.api.ratings import router as ratings_router
 from app.core.config import get_settings
 
+request_logger = logging.getLogger("app.request")
+
 
 def serializable_validation_errors(errors: Sequence[Any]) -> list[dict[str, Any]]:
     normalized_errors: list[dict[str, Any]] = []
@@ -26,6 +32,31 @@ def serializable_validation_errors(errors: Sequence[Any]) -> list[dict[str, Any]
             normalized_error["ctx"] = {key: str(value) for key, value in ctx.items()}
         normalized_errors.append(normalized_error)
     return normalized_errors
+
+
+def build_error_content(
+    request: Request,
+    code: str,
+    message: str,
+    details: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    request_id = (
+        getattr(request.state, "request_id", None)
+        or request.headers.get("X-Request-ID")
+        or str(uuid4())
+    )
+    request.state.error_code = code
+    error: dict[str, Any] = {
+        "code": code,
+        "message": message,
+        "requestId": request_id,
+    }
+    if details is not None:
+        error["details"] = details
+
+    # Keep detail as a compatibility alias for existing internal tests while
+    # exposing error as the EDR-001 response envelope.
+    return {"error": error, "detail": error}
 
 
 def create_app() -> FastAPI:
@@ -43,7 +74,10 @@ def create_app() -> FastAPI:
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
         request_id = request.headers.get("X-Request-ID") or str(uuid4())
+        request.state.request_id = request_id
+        started_at = perf_counter()
         response = await call_next(request)
+        duration_ms = round((perf_counter() - started_at) * 1000, 2)
         response.headers["X-Request-ID"] = request_id
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
@@ -56,33 +90,51 @@ def create_app() -> FastAPI:
             "Content-Security-Policy",
             "default-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
         )
+        request_logger.info(
+            json.dumps(
+                {
+                    "timestamp": datetime.now(UTC).isoformat(),
+                    "level": "INFO" if response.status_code < 400 else "ERROR",
+                    "requestId": request_id,
+                    "userId": getattr(request.state, "user_id", None),
+                    "path": request.url.path,
+                    "method": request.method,
+                    "status": response.status_code,
+                    "durationMs": duration_ms,
+                    "errorCode": getattr(request.state, "error_code", None),
+                },
+                ensure_ascii=False,
+                separators=(",", ":"),
+            )
+        )
         return response
 
     @app.exception_handler(HTTPException)
-    async def http_exception_handler(_: Request, exc: HTTPException) -> JSONResponse:
+    async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
         if isinstance(exc.detail, dict) and {"code", "message"}.issubset(exc.detail):
-            detail = exc.detail
+            code = str(exc.detail["code"])
+            message = str(exc.detail["message"])
         else:
-            detail = {
-                "code": "HTTP_ERROR",
-                "message": str(exc.detail),
-            }
-        return JSONResponse(status_code=exc.status_code, content={"detail": detail})
+            code = "HTTP_ERROR"
+            message = str(exc.detail)
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=build_error_content(request, code, message),
+        )
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(
-        _: Request,
+        request: Request,
         exc: RequestValidationError,
     ) -> JSONResponse:
         return JSONResponse(
             status_code=422,
-            content={
-                "detail": {
-                    "code": "VALIDATION_ERROR",
-                    "message": "Request validation failed.",
-                    "errors": serializable_validation_errors(exc.errors()),
-                }
-            },
+            content=build_error_content(
+                request,
+                "VALIDATION_ERROR",
+                "Request validation failed.",
+                {"errors": serializable_validation_errors(exc.errors())},
+            ),
         )
 
     # Register CORS last so it becomes the outermost middleware and answers

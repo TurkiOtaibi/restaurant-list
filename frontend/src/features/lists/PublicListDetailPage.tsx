@@ -14,6 +14,7 @@ import {
   StatusMessage
 } from "@/components/ui";
 import { ApiError, ListDetail, apiRequest, clearTokens, ensureSession } from "@/lib/api";
+import { loginHrefForReturn } from "@/lib/authReturn";
 import { placeCountLabel } from "@/lib/numerals";
 
 type PublicListDetailPageProps = {
@@ -87,7 +88,7 @@ export function PublicListDetailPage({ listId }: PublicListDetailPageProps) {
 
       {needsAuth ? (
         <StatusMessage tone="notice">
-          سجّل الدخول لعرض هذه القائمة العامة. <Link href="/login">تسجيل الدخول</Link>
+          سجّل الدخول لعرض هذه القائمة العامة. <Link href={loginHrefForReturn(`/lists/public/${listId}`)}>تسجيل الدخول</Link>
         </StatusMessage>
       ) : null}
 

@@ -5,9 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 
 import { RatePlaceDialog } from "@/features/places/RatePlaceDialog";
 import { Place, ensureSession } from "@/lib/api";
+import { loginHrefForReturn } from "@/lib/authReturn";
 
 export default function RatePlacePage() {
   const params = useParams<{ id: string }>();
+  const placeId = params.id;
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -20,13 +22,13 @@ export default function RatePlacePage() {
       if (token) {
         setIsAuthenticated(true);
       } else {
-        router.replace("/login");
+        router.replace(loginHrefForReturn(`/places/${placeId}/rate`));
       }
     });
     return () => {
       active = false;
     };
-  }, [router]);
+  }, [placeId, router]);
 
   function closeDialog(place: Place | null) {
     router.push(place ? `/places/${place.id}` : "/places");
@@ -34,7 +36,7 @@ export default function RatePlacePage() {
 
   return (
     <main className="dialog-route-shell">
-      <RatePlaceDialog onClose={closeDialog} open={isAuthenticated} placeId={params.id} />
+      <RatePlaceDialog onClose={closeDialog} open={isAuthenticated} placeId={placeId} />
     </main>
   );
 }

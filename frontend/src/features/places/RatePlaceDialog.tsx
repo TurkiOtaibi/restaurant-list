@@ -15,6 +15,7 @@ import {
 } from "@/components/ui";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { ApiError, Place, Rating, apiRequest, clearTokens, ensureSession } from "@/lib/api";
+import { loginHrefForReturn } from "@/lib/authReturn";
 import { formatAverageRating } from "@/lib/format";
 import { formatOutOfTen } from "@/lib/numerals";
 
@@ -135,7 +136,7 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
       <form className="rate-place-dialog form-surface__form" noValidate onSubmit={handleSubmit}>
         {needsAuth ? (
           <StatusMessage tone="notice">
-            سجّل الدخول لتقييم هذا المكان. <Link href="/login">تسجيل الدخول</Link>
+            سجّل الدخول لتقييم هذا المكان. <Link href={loginHrefForReturn(`/places/${placeId}/rate`)}>تسجيل الدخول</Link>
           </StatusMessage>
         ) : null}
 

@@ -6,6 +6,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 
 import { Button, StatusMessage, TasteMarkIcon, TextInput } from "@/components/ui";
 import { ApiError, AuthResponse, apiRequest, saveAccessToken } from "@/lib/api";
+import { DEFAULT_AUTH_DESTINATION } from "@/lib/authReturn";
 
 type FieldErrors = {
   displayName?: string;
@@ -62,7 +63,7 @@ export default function RegisterPage() {
         })
       });
       saveAccessToken(response.accessToken);
-      router.push("/lists");
+      router.push(DEFAULT_AUTH_DESTINATION);
     } catch (caught) {
       setFormError(
         caught instanceof ApiError

@@ -27,6 +27,7 @@ import {
   ensureSession,
   logout
 } from "@/lib/api";
+import { loginHrefForReturn } from "@/lib/authReturn";
 import { formatNumber, formatOutOfTen } from "@/lib/numerals";
 
 type ProfileStat = {
@@ -45,8 +46,8 @@ export function ProfileArchivePage() {
   const router = useRouter();
 
   async function handleLogout() {
-    await logout();
-    router.push("/login");
+    const result = await logout();
+    router.push(result.confirmed ? "/" : "/?logout=unconfirmed");
   }
 
   const loadProfile = useCallback(async () => {
@@ -126,7 +127,7 @@ export function ProfileArchivePage() {
 
       {needsAuth ? (
         <StatusMessage tone="notice">
-          سجّل الدخول لعرض صفحتك. <Link href="/login">تسجيل الدخول</Link>
+          سجّل الدخول لعرض صفحتك. <Link href={loginHrefForReturn("/profile")}>تسجيل الدخول</Link>
         </StatusMessage>
       ) : null}
 
