@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   Badge,
@@ -17,11 +17,8 @@ import {
 } from "@/components/ui";
 import {
   ApiError,
-  ListDetail,
   Profile,
   ProfileRating,
-  UserList,
-  apiCollection,
   apiRequest,
   clearTokens,
   ensureSession,
@@ -36,12 +33,15 @@ type ProfileStat = {
   value: number;
 };
 
+const ARCHIVE_VIRTUALIZATION_THRESHOLD = 80;
+const ARCHIVE_ROW_HEIGHT = 104;
+const ARCHIVE_OVERSCAN = 4;
+const RATING_NOTE_SESSION_PREFIX = "restaurantWishlist.ratingNote.";
+
 export function ProfileArchivePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [publicLists, setPublicLists] = useState<ListDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [publicListsError, setPublicListsError] = useState("");
   const [needsAuth, setNeedsAuth] = useState(false);
   const router = useRouter();
 
@@ -52,7 +52,6 @@ export function ProfileArchivePage() {
 
   const loadProfile = useCallback(async () => {
     setError("");
-    setPublicListsError("");
     setNeedsAuth(false);
     setLoading(true);
 
@@ -74,17 +73,6 @@ export function ProfileArchivePage() {
       }
       setLoading(false);
       return;
-    }
-
-    try {
-      const ownedLists = await apiCollection<UserList>("/lists");
-      setPublicLists(
-        ownedLists.data
-          .filter((list) => list.visibility === "public")
-          .map((list) => ({ ...list, items: [] }))
-      );
-    } catch {
-      setPublicListsError("تعذر تحميل قوائمك العامة.");
     } finally {
       setLoading(false);
     }
@@ -96,6 +84,7 @@ export function ProfileArchivePage() {
 
   const stats = profile ? profileStats(profile) : [];
   const hasRatings = profile ? profile.userRatings.length > 0 : false;
+  const publicLists = profile?.publicListsSummary ?? [];
 
   return (
     <main className="content profile-page">
@@ -144,23 +133,19 @@ export function ProfileArchivePage() {
         </section>
       ) : null}
 
-      {!loading && profile && !hasRatings ? (
-        <EmptyState
-          action={<ButtonLink href="/places">الأماكن</ButtonLink>}
-          title="لا توجد تقييمات"
-        />
-      ) : null}
-
-      {!loading && profile && hasRatings ? (
+      {!loading && profile ? (
         <section className="profile-section" aria-labelledby="profile-ratings-title">
           <div className="library-section__header">
             <h2 id="profile-ratings-title">تقييماتك</h2>
           </div>
-          <div className="profile-rating-list" aria-label="تقييماتك الخاصة">
-            {profile.userRatings.map((rating) => (
-              <RatingArchiveCard key={rating.id} rating={rating} />
-            ))}
-          </div>
+          {hasRatings ? (
+            <RatingArchiveList ratings={profile.userRatings} />
+          ) : (
+            <EmptyState
+              action={<ButtonLink href="/places">الأماكن</ButtonLink>}
+              title="لا توجد تقييمات"
+            />
+          )}
         </section>
       ) : null}
 
@@ -174,17 +159,17 @@ export function ProfileArchivePage() {
               القوائم العامة
             </ButtonLink>
           </div>
-          {publicListsError ? <StatusMessage tone="notice">{publicListsError}</StatusMessage> : null}
           {publicLists.length === 0 ? (
             <p className="muted">لا توجد قوائم عامة حاليًا.</p>
           ) : (
             <div className="library-grid" aria-label="قوائمك العامة">
               {publicLists.map((list) => (
                 <ListCard
-                  href={`/lists/${list.id}`}
+                  context="viewer"
+                  href={`/lists/public/${list.id}`}
                   isEmpty={list.placeCount === 0}
                   key={list.id}
-                  list={list}
+                  list={{ ...list, visibility: "public" }}
                   placeCount={list.placeCount}
                 />
               ))}
@@ -196,7 +181,75 @@ export function ProfileArchivePage() {
   );
 }
 
+function RatingArchiveList({ ratings }: { ratings: ProfileRating[] }) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(520);
+
+  useEffect(() => {
+    const current = containerRef.current;
+    if (!current || ratings.length <= ARCHIVE_VIRTUALIZATION_THRESHOLD) {
+      return;
+    }
+    const updateHeight = () => setViewportHeight(current.clientHeight || 520);
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(current);
+    return () => observer.disconnect();
+  }, [ratings.length]);
+
+  if (ratings.length <= ARCHIVE_VIRTUALIZATION_THRESHOLD) {
+    return (
+      <div className="profile-rating-list" aria-label="تقييماتك الخاصة">
+        {ratings.map((rating) => (
+          <RatingArchiveCard key={rating.id} rating={rating} />
+        ))}
+      </div>
+    );
+  }
+
+  const startIndex = Math.max(0, Math.floor(scrollTop / ARCHIVE_ROW_HEIGHT) - ARCHIVE_OVERSCAN);
+  const visibleCount = Math.ceil(viewportHeight / ARCHIVE_ROW_HEIGHT) + ARCHIVE_OVERSCAN * 2;
+  const endIndex = Math.min(ratings.length, startIndex + visibleCount);
+  const visibleRatings = ratings.slice(startIndex, endIndex);
+
+  return (
+    <div
+      aria-label="تقييماتك الخاصة"
+      className="profile-rating-list profile-rating-list--virtualized"
+      onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
+      ref={containerRef}
+    >
+      <div
+        aria-hidden="true"
+        className="profile-rating-list__spacer"
+        style={{ height: ratings.length * ARCHIVE_ROW_HEIGHT }}
+      />
+      <div
+        className="profile-rating-list__window"
+        style={{ transform: `translateY(${startIndex * ARCHIVE_ROW_HEIGHT}px)` }}
+      >
+        {visibleRatings.map((rating) => (
+          <RatingArchiveCard key={rating.id} rating={rating} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function RatingArchiveCard({ rating }: { rating: ProfileRating }) {
+  const metadata = [rating.place.type, rating.place.subtype].filter(Boolean).join(" · ");
+
+  function rememberPrivateNote() {
+    if (typeof window === "undefined") {
+      return;
+    }
+    window.sessionStorage.setItem(
+      `${RATING_NOTE_SESSION_PREFIX}${rating.place.id}`,
+      rating.notes ?? ""
+    );
+  }
+
   return (
     <article
       aria-label={`${rating.place.name}، تقييمك ${formatOutOfTen(rating.rating)}${
@@ -212,6 +265,7 @@ function RatingArchiveCard({ rating }: { rating: ProfileRating }) {
         <div className="profile-rating-card__meta">
           <Badge variant="rating">تقييمك {formatOutOfTen(rating.rating)}</Badge>
           <Badge>جربته</Badge>
+          {metadata ? <span className="profile-rating-card__type-meta">{metadata}</span> : null}
         </div>
       </div>
       {rating.notes ? (
@@ -219,11 +273,13 @@ function RatingArchiveCard({ rating }: { rating: ProfileRating }) {
           <span>ملاحظتك الخاصة</span>
           <BidiText>{rating.notes}</BidiText>
         </p>
-      ) : (
-        <p className="muted">لا توجد ملاحظة خاصة لهذا التقييم.</p>
-      )}
+      ) : null}
       <div className="actions">
-        <ButtonLink href={`/places/${rating.place.id}/rate`} variant="secondary">
+        <ButtonLink
+          href={`/places/${rating.place.id}/rate`}
+          onClick={rememberPrivateNote}
+          variant="secondary"
+        >
           تعديل
         </ButtonLink>
       </div>
@@ -242,10 +298,10 @@ function ProfileLoadingState() {
 
 function profileStats(profile: Profile): ProfileStat[] {
   return [
-    { label: "قوائم", unit: "قائمة", value: profile.listCount },
+    { label: "قوائم", unit: "قائمة", value: profile.listsCount ?? profile.listCount ?? 0 },
     { label: "مطاعم مجربة", unit: "مطعم", value: profile.triedRestaurantCount },
     { label: "مقاهٍ مجربة", unit: "مقهى", value: profile.triedCafeCount },
     { label: "آيس كريم مجرب", unit: "محل", value: profile.triedIceCreamCount },
-    { label: "تقييمات", unit: "تقييم", value: profile.ratingsCreatedCount }
+    { label: "تقييمات", unit: "تقييم", value: profile.ratingsCount ?? profile.ratingsCreatedCount ?? 0 }
   ];
 }

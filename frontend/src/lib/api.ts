@@ -99,13 +99,25 @@ export type ProfileRating = {
   updatedAt: string;
 };
 
+export type ProfilePublicListSummary = {
+  id: string;
+  name: string;
+  ownerDisplayName: string;
+  placeCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type Profile = {
-  listCount: number;
+  listsCount: number;
   triedRestaurantCount: number;
   triedCafeCount: number;
   triedIceCreamCount: number;
-  ratingsCreatedCount: number;
+  ratingsCount: number;
   userRatings: ProfileRating[];
+  publicListsSummary: ProfilePublicListSummary[];
+  listCount?: number;
+  ratingsCreatedCount?: number;
 };
 
 type ApiRequestOptions = RequestInit & {

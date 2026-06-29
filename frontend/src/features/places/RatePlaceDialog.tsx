@@ -25,6 +25,8 @@ type RatePlaceDialogProps = {
   placeId: string;
 };
 
+const RATING_NOTE_SESSION_PREFIX = "restaurantWishlist.ratingNote.";
+
 export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const Dialog = isDesktop ? Modal : BottomSheet;
@@ -32,6 +34,7 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
   const [rating, setRating] = useState<number | null>(null);
   const [initialRating, setInitialRating] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
+  const [initialNotes, setInitialNotes] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [needsAuth, setNeedsAuth] = useState(false);
@@ -39,7 +42,7 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
   const [formError, setFormError] = useState("");
   const [success, setSuccess] = useState("");
   const hasUnsavedChanges =
-    !submitting && !success && (rating !== initialRating || notes.trim().length > 0);
+    !submitting && !success && (rating !== initialRating || notes !== initialNotes);
 
   useEffect(() => {
     let active = true;
@@ -61,6 +64,12 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
         setPlace(response);
         setRating(response.currentUserRating);
         setInitialRating(response.currentUserRating);
+        const storedNote =
+          response.currentUserRating && typeof window !== "undefined"
+            ? window.sessionStorage.getItem(`${RATING_NOTE_SESSION_PREFIX}${placeId}`) ?? ""
+            : "";
+        setNotes(storedNote);
+        setInitialNotes(storedNote);
       } catch (caught) {
         if (caught instanceof ApiError && caught.status === 401) {
           clearTokens();
@@ -115,6 +124,7 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
       setRating(response.rating);
       setInitialRating(response.rating);
       setNotes("");
+      setInitialNotes(response.notes ?? "");
       setSuccess("تم حفظ التقييم.");
     } catch (caught) {
       setFormError(caught instanceof ApiError ? caught.message : "تعذر حفظ التقييم.");
