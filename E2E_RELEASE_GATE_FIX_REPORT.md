@@ -41,7 +41,7 @@ Follow-up CI verification run `28401963734` proved the same root cause still exi
 
 Local repeated execution then exposed the underlying synchronization gap directly: immediately after navigation, the Places page can still be completing its initial URL-state/load cycle. If the test fills the controlled searchbox before that cycle completes, the app can legitimately reset the search value to the URL query value.
 
-CI run `28403801758` further confirmed that waiting for the spinner alone was insufficient. The searchbox can be visible during the early render before the authenticated Places result section is loaded. The helper now waits for `.place-memory-section`, the loaded authenticated library state required by this scenario, before submitting search.
+CI run `28403801758` further confirmed that waiting for the spinner alone was insufficient. The searchbox can be visible during the early render before the Places library reaches a stable result state. CI run `28405172259` then showed the stable pre-search library state may be either the result section or the empty state. The helper now waits for either `.place-memory-section` or `.ds-empty` before submitting search.
 
 Artifacts:
 
@@ -57,7 +57,7 @@ Artifacts:
 Added a test helper that:
 
 1. Locates the searchbox.
-2. Waits for the Places library loading state to finish and for the loaded result section to be visible before interaction.
+2. Waits for the Places library loading state to finish and for a stable library result state to be visible before interaction.
 3. Fills the search value when required.
 4. Asserts the value is present.
 5. Sends Enter through `page.keyboard.press("Enter")` without performing another locator-bound action after `fill()`.
@@ -66,7 +66,7 @@ This preserves Enter-key form submission coverage while avoiding Playwright hold
 
 ## Why The Fix Is Correct
 
-The root cause was the test automation interacting with the controlled search input before the Places page had reached the authenticated loaded library state. The fix waits for the page’s loading state to settle and for the loaded result section to be visible, then sends the Enter key through the page keyboard after `fill()`, which already focuses the control and avoids a second locator action across the input re-render boundary.
+The root cause was the test automation interacting with the controlled search input before the Places page had reached a stable library state. The fix waits for the page’s loading state to settle and for either the result section or empty state to be visible, then sends the Enter key through the page keyboard after `fill()`, which already focuses the control and avoids a second locator action across the input re-render boundary.
 
 The fix does not:
 
