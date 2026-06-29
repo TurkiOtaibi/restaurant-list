@@ -244,7 +244,8 @@ test("real places library covers subtype filters sorting layout bidi and errors"
   });
 
   const placesHarness = new PlacesAcceptanceHarness(page, context);
-  await placesHarness.resetFeature("PLACE-007");
+  const placesDataset = await placesHarness.resetFeature("PLACE-007");
+  await signInApiUserThroughUi(page, placesDataset.user.email);
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`/places?type=restaurant&q=${encodeURIComponent(prefix)}`);
@@ -364,6 +365,14 @@ async function waitForApi() {
 async function waitForPlaceLibraryReady(page: Page) {
   await expect(page.locator(".place-library-loading")).toHaveCount(0, { timeout: 30_000 });
   await expect(page.locator(".place-memory-section, .ds-empty")).toBeVisible({ timeout: 30_000 });
+}
+
+async function signInApiUserThroughUi(page: Page, email: string) {
+  await page.goto("/login");
+  await page.locator('input[type="email"]').fill(email);
+  await page.locator('input[type="password"]').fill("password123");
+  await page.locator('button[type="submit"]').click();
+  await expect(page).toHaveURL(/\/places$/, { timeout: 15_000 });
 }
 
 type ApiPlaceType = "restaurant" | "cafe" | "ice_cream";
