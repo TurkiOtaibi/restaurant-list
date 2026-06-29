@@ -54,8 +54,7 @@ export type Place = {
 
 export type UserList = {
   id: string;
-  ownerDisplayName: string;
-  userId?: string;
+  ownerDisplayName?: string;
   name: string;
   visibility: "public" | "private";
   placeCount: number;
@@ -63,14 +62,22 @@ export type UserList = {
   updatedAt: string;
 };
 
+export type ListItemPlace = Omit<Place, "createdByUserId" | "currentUserListIds" | "currentUserListNames">;
+
 export type ListItem = {
   id: string;
-  place: Place;
+  listId: string;
+  placeId: string;
+  place: ListItemPlace;
   createdAt: string;
 };
 
 export type ListDetail = UserList & {
   items: ListItem[];
+};
+
+export type DataResponse<T> = {
+  data: T;
 };
 
 export type Rating = {

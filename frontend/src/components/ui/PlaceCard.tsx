@@ -13,7 +13,16 @@ import { PlaceTypeIcon } from "./PlaceTypeIcon";
 type PlaceCardProps = {
   compact?: boolean;
   href?: string;
-  place: Place;
+  place: Pick<
+    Place,
+    | "averageRating"
+    | "currentUserTried"
+    | "id"
+    | "name"
+    | "ratingCount"
+    | "subtype"
+    | "type"
+  >;
   view?: "card" | "row";
 };
 
@@ -36,7 +45,7 @@ export function PlaceCard({ compact = false, href, place, view = "card" }: Place
   return <Card className={className}>{content}</Card>;
 }
 
-function PlaceCardContent({ place }: { place: Place }) {
+function PlaceCardContent({ place }: { place: PlaceCardProps["place"] }) {
   const subtype = placeSubtypeLabel(place.subtype);
   const hasRating = place.averageRating !== null && place.ratingCount > 0;
 

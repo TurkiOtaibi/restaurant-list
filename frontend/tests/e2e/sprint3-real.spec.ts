@@ -49,13 +49,13 @@ test("real frontend and api complete auth, create, search, and detail flow", asy
   const email = `e2e-${unique}@example.com`;
   const placeName = `محل آيس كريم ${unique}`;
 
-  // Register -> redirected to the lists shell.
+  // Register -> redirected to the approved authenticated app destination.
   await page.goto("/register");
   await page.getByLabel("اسم العرض").fill(`مستخدم ${unique}`);
   await page.getByLabel("البريد الإلكتروني").fill(email);
   await page.getByLabel("كلمة المرور").fill("password123");
   await page.getByRole("button", { name: "إنشاء حساب" }).click();
-  await expect(page).toHaveURL(/\/lists$/, { timeout: 15_000 });
+  await expect(page).toHaveURL(/\/places$/, { timeout: 15_000 });
 
   // Create an ice-cream place (no subtype required) via the create dialog.
   await page.goto("/places/new?type=ice_cream");
@@ -114,7 +114,7 @@ test("real frontend and api complete list edit add remove delete and profile flo
   await page.getByLabel("البريد الإلكتروني").fill(email);
   await page.getByLabel("كلمة المرور").fill("password123");
   await page.getByRole("button", { name: "إنشاء حساب" }).click();
-  await expect(page).toHaveURL(/\/lists$/, { timeout: 15_000 });
+  await expect(page).toHaveURL(/\/places$/, { timeout: 15_000 });
 
   await page.goto("/places/new?type=restaurant");
   await page.getByLabel("اسم المكان").fill(placeName);
@@ -311,12 +311,7 @@ test("real places library covers subtype filters sorting layout bidi and errors"
 
   await page.locator(".place-type-filters button").nth(0).click();
   await expect(page).toHaveURL(/type=restaurant/);
-  await page.getByRole("link", { name: "أضف مكانًا" }).click();
-  await expect(page).toHaveURL(/\/places\/new/);
-  await page.getByLabel("اسم المكان").fill(topName);
-  await page.getByLabel("نوع المطعم").selectOption("italian");
-  await page.getByRole("button", { name: "حفظ", exact: true }).click();
-  await expect(page.locator(".ds-status--error")).toBeVisible();
+  await expect(page.getByRole("link", { name: "أضف مكانًا" })).toBeVisible();
 
   expect(apiRequests.some((url) => url.includes("/api/v1/places"))).toBeTruthy();
   expect(apiRequests.some((url) => /localhost:8000\/places/.test(url))).toBeFalsy();

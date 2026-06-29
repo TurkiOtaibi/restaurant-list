@@ -1,9 +1,9 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.modules.places.schemas import PlaceResponse
+from app.modules.places.schemas import PlaceCollectionResponse
 
 ListVisibility = Literal["public", "private"]
 
@@ -12,9 +12,23 @@ class ListCreateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     visibility: ListVisibility = "private"
 
+    @field_validator("name", mode="before")
+    @classmethod
+    def normalize_name(cls, value: object) -> object:
+        if isinstance(value, str):
+            return value.strip()
+        return value
+
 
 class ListUpdateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=80)
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def normalize_name(cls, value: object) -> object:
+        if isinstance(value, str):
+            return value.strip()
+        return value
 
 
 class ListVisibilityUpdateRequest(BaseModel):
@@ -29,17 +43,18 @@ class ListItemCreateRequest(BaseModel):
 
 class ListItemResponse(BaseModel):
     id: str
-    place: PlaceResponse
+    list_id: str = Field(serialization_alias="listId")
+    place_id: str = Field(serialization_alias="placeId")
+    place: PlaceCollectionResponse
     created_at: datetime = Field(serialization_alias="createdAt")
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
-class ListBaseResponse(BaseModel):
+class ListResponse(BaseModel):
     id: str
     name: str
     visibility: ListVisibility
-    owner_display_name: str = Field(serialization_alias="ownerDisplayName")
     place_count: int = Field(default=0, serialization_alias="placeCount")
     created_at: datetime = Field(serialization_alias="createdAt")
     updated_at: datetime = Field(serialization_alias="updatedAt")
@@ -47,12 +62,12 @@ class ListBaseResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
-class ListResponse(ListBaseResponse):
-    user_id: str = Field(serialization_alias="userId")
+class ListDataResponse(BaseModel):
+    data: ListResponse
 
 
-class PublicListResponse(ListBaseResponse):
-    pass
+class PublicListResponse(ListResponse):
+    owner_display_name: str = Field(serialization_alias="ownerDisplayName")
 
 
 class ListDetailResponse(ListResponse):

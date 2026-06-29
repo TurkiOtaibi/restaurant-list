@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 
 import { BottomSheet, Button, Modal, StatusMessage, TextInput } from "@/components/ui";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { ApiError, ListDetail, UserList, apiRequest } from "@/lib/api";
+import { ApiError, DataResponse, ListDetail, UserList, apiRequest } from "@/lib/api";
 
 import { VisibilitySelector } from "./VisibilitySelector";
 
@@ -67,14 +67,17 @@ export function EditListDialog({ list, onClose, onUpdated, open }: EditListDialo
       }
 
       if (visibility !== list.visibility) {
-        const updatedVisibility = await apiRequest<UserList>(`/lists/${list.id}/visibility`, {
-          method: "PATCH",
-          body: JSON.stringify({ visibility })
-        });
+        const updatedVisibility = await apiRequest<DataResponse<UserList>>(
+          `/lists/${list.id}/visibility`,
+          {
+            method: "PATCH",
+            body: JSON.stringify({ visibility })
+          }
+        );
         nextList = {
           ...nextList,
-          updatedAt: updatedVisibility.updatedAt,
-          visibility: updatedVisibility.visibility
+          updatedAt: updatedVisibility.data.updatedAt,
+          visibility: updatedVisibility.data.visibility
         };
       }
 

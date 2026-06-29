@@ -9,6 +9,7 @@ from app.modules.auth.dependencies import get_current_user
 from app.modules.auth.models import User
 from app.modules.lists.schemas import (
     ListCreateRequest,
+    ListDataResponse,
     ListDetailResponse,
     ListItemCreateRequest,
     ListItemResponse,
@@ -123,19 +124,20 @@ async def update_list(
     )
 
 
-@router.patch("/{list_id}/visibility", response_model=ListResponse)
+@router.patch("/{list_id}/visibility", response_model=ListDataResponse)
 async def update_list_visibility(
     list_id: str,
     payload: ListVisibilityUpdateRequest,
     current_user: CurrentUser,
     db: DatabaseSession,
-) -> ListResponse:
-    return await update_owned_list_visibility(
+) -> ListDataResponse:
+    updated = await update_owned_list_visibility(
         db,
         list_id=list_id,
         payload=payload,
         user_id=current_user.id,
     )
+    return ListDataResponse(data=updated)
 
 
 @router.delete("/{list_id}")

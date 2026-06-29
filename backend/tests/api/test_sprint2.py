@@ -215,7 +215,11 @@ async def test_public_private_list_visibility_and_guest_denial(client: AsyncClie
     assert private_detail.status_code == 404
     assert guest_collection.status_code == 401
     assert visibility.status_code == 200
-    assert visibility.json()["visibility"] == "public"
+    visibility_data = visibility.json()["data"]
+    assert visibility_data["id"] == owner_list["id"]
+    assert visibility_data["name"] == "Owner list"
+    assert visibility_data["visibility"] == "public"
+    assert visibility_data["placeCount"] == 0
     assert public_collection.status_code == 200
     public_summary = collection_data(public_collection)[0]
     assert public_summary["id"] == owner_list["id"]
@@ -228,7 +232,11 @@ async def test_public_private_list_visibility_and_guest_denial(client: AsyncClie
     assert "userId" not in public_detail.json()
     assert "owner@example.com" not in str(public_detail.json())
     assert private_again.status_code == 200
-    assert private_again.json()["visibility"] == "private"
+    private_again_data = private_again.json()["data"]
+    assert private_again_data["id"] == owner_list["id"]
+    assert private_again_data["name"] == "Owner list"
+    assert private_again_data["visibility"] == "private"
+    assert private_again_data["placeCount"] == 0
     assert private_again_detail.status_code == 404
 
 

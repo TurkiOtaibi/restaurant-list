@@ -22,6 +22,7 @@ from app.modules.lists.schemas import (
     PublicListResponse,
 )
 from app.modules.places.models import Place
+from app.modules.places.schemas import PlaceCollectionResponse
 from app.modules.places.services import get_place_summaries_by_id
 
 
@@ -80,8 +81,8 @@ async def list_owned_lists(
     )
     return ListCollectionResult(
         items=[
-            _list_response(user_list, int(place_count), owner_display_name)
-            for user_list, place_count, owner_display_name in result.items
+            _list_response(user_list, int(place_count))
+            for user_list, place_count, _owner_display_name in result.items
         ],
         total=result.total,
     )
@@ -122,7 +123,7 @@ async def create_list_for_user(
     db.add(user_list)
     await db.commit()
     await db.refresh(user_list)
-    return _list_response(user_list, 0, await _owner_display_name(db, user_id))
+    return _list_response(user_list, 0)
 
 
 async def update_owned_list_name(
@@ -136,7 +137,7 @@ async def update_owned_list_name(
     user_list.name = payload.name.strip()
     await db.commit()
     await db.refresh(user_list)
-    return _list_response(user_list, len(user_list.items), user_list.user.display_name)
+    return _list_response(user_list, len(user_list.items))
 
 
 async def update_owned_list_visibility(
@@ -150,7 +151,7 @@ async def update_owned_list_visibility(
     user_list.visibility = payload.visibility
     await db.commit()
     await db.refresh(user_list)
-    return _list_response(user_list, len(user_list.items), user_list.user.display_name)
+    return _list_response(user_list, len(user_list.items))
 
 
 async def delete_owned_list(
@@ -231,17 +232,17 @@ async def list_detail_response(
     )
     return ListDetailResponse(
         id=user_list.id,
-        user_id=user_list.user_id,
         name=user_list.name,
         visibility=cast(ListVisibility, user_list.visibility),
-        owner_display_name=user_list.user.display_name,
         place_count=len(user_list.items),
         created_at=user_list.created_at,
         updated_at=user_list.updated_at,
         items=[
             ListItemResponse(
                 id=item.id,
-                place=place_by_id[item.place_id],
+                list_id=item.list_id,
+                place_id=item.place_id,
+                place=PlaceCollectionResponse.model_validate(place_by_id[item.place_id]),
                 created_at=item.created_at,
             )
             for item in user_list.items
@@ -271,7 +272,9 @@ async def public_list_detail_response(
         items=[
             ListItemResponse(
                 id=item.id,
-                place=place_by_id[item.place_id],
+                list_id=item.list_id,
+                place_id=item.place_id,
+                place=PlaceCollectionResponse.model_validate(place_by_id[item.place_id]),
                 created_at=item.created_at,
             )
             for item in user_list.items
@@ -288,7 +291,9 @@ async def list_item_response(
     place_by_id = await get_place_summaries_by_id(db, current_user_id, [item.place_id])
     return ListItemResponse(
         id=item.id,
-        place=place_by_id[item.place_id],
+        list_id=item.list_id,
+        place_id=item.place_id,
+        place=PlaceCollectionResponse.model_validate(place_by_id[item.place_id]),
         created_at=item.created_at,
     )
 
@@ -330,20 +335,11 @@ async def add_place_to_list(
     return result, True
 
 
-async def _owner_display_name(db: AsyncSession, user_id: str) -> str:
-    display_name = await db.scalar(select(User.display_name).where(User.id == user_id))
-    if display_name is None:
-        internal_error()
-    return display_name
-
-
-def _list_response(user_list: UserList, place_count: int, owner_display_name: str) -> ListResponse:
+def _list_response(user_list: UserList, place_count: int) -> ListResponse:
     return ListResponse(
         id=user_list.id,
-        user_id=user_list.user_id,
         name=user_list.name,
         visibility=cast(ListVisibility, user_list.visibility),
-        owner_display_name=owner_display_name,
         place_count=place_count,
         created_at=user_list.created_at,
         updated_at=user_list.updated_at,
