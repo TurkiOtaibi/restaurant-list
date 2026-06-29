@@ -2,7 +2,7 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import { PlacesAcceptanceHarness } from "./support/places-acceptance-harness";
 
@@ -249,9 +249,7 @@ test("real places library covers subtype filters sorting layout bidi and errors"
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/places?type=restaurant");
   await expect(page).toHaveURL(/\/places/);
-  await expect(page.getByRole("searchbox", { name: "بحث" })).toBeVisible({ timeout: 30_000 });
-  await page.getByRole("searchbox", { name: "بحث" }).fill(prefix);
-  await page.getByRole("searchbox", { name: "بحث" }).press("Enter");
+  await submitPlaceSearchWithEnter(page, prefix);
   await expect(page).toHaveURL(/q=/);
   await expect(page.locator(".ds-place-card--row")).toHaveCount(5, { timeout: 30_000 });
   await expect(page.locator(".ds-place-card--row .ds-place-card__title")).toHaveText([
@@ -269,7 +267,7 @@ test("real places library covers subtype filters sorting layout bidi and errors"
 
   // The type glyph is deterministic by place type; re-running the same search
   // keeps the first result's type icon present.
-  await page.getByRole("searchbox", { name: "بحث" }).press("Enter");
+  await submitPlaceSearchWithEnter(page);
   await expect(page.locator(".ds-place-card--row")).toHaveCount(5, { timeout: 30_000 });
   await expect(page.locator(".ds-place-card--row").first().locator(".ds-type-icon")).toBeVisible();
 
@@ -293,19 +291,16 @@ test("real places library covers subtype filters sorting layout bidi and errors"
   await page.locator(".place-subtype-filter__trigger").click();
   await page.getByRole("radio").nth(1).click();
   await expect(page).toHaveURL(/subtype=coffee/);
-  await page.getByRole("searchbox", { name: "بحث" }).fill(prefix);
-  await page.getByRole("searchbox", { name: "بحث" }).press("Enter");
+  await submitPlaceSearchWithEnter(page, prefix);
   await expect(page.locator(".ds-place-card--row .ds-place-card__title")).toHaveText([cafeName]);
 
   await page.locator(".place-type-filters button").nth(2).click();
   await expect(page).toHaveURL(/type=ice_cream/);
   await expect(page.locator(".place-subtype-filter__trigger")).toHaveCount(0);
-  await page.getByRole("searchbox", { name: "بحث" }).fill(prefix);
-  await page.getByRole("searchbox", { name: "بحث" }).press("Enter");
+  await submitPlaceSearchWithEnter(page, prefix);
   await expect(page.locator(".ds-place-card--row .ds-place-card__title")).toHaveText([iceCreamName]);
 
-  await page.getByRole("searchbox", { name: "بحث" }).fill(`No Match ${unique}`);
-  await page.getByRole("searchbox", { name: "بحث" }).press("Enter");
+  await submitPlaceSearchWithEnter(page, `No Match ${unique}`);
   await expect(page.locator(".ds-empty__title")).toBeVisible();
   await expect(page.getByRole("button", { name: "عرض الكل" })).toBeVisible();
 
@@ -362,6 +357,17 @@ async function waitForApi() {
   }
 
   throw new Error(`Timed out waiting for the real API.\n${apiOutput}`);
+}
+
+async function submitPlaceSearchWithEnter(page: Page, value?: string) {
+  const searchbox = page.getByRole("searchbox", { name: "بحث" });
+  await expect(searchbox).toBeVisible({ timeout: 30_000 });
+  if (value !== undefined) {
+    await searchbox.fill(value);
+    await expect(searchbox).toHaveValue(value);
+  }
+  await searchbox.focus();
+  await page.keyboard.press("Enter");
 }
 
 type ApiPlaceType = "restaurant" | "cafe" | "ice_cream";
