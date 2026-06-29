@@ -1,7 +1,7 @@
 import { expect, test } from "./support/places-acceptance-harness";
 
 test.describe("focused authenticated Places acceptance harness", () => {
-  test("loads Places feature states directly with deterministic authenticated data", async ({
+  test("loads list and filter states directly with deterministic authenticated data", async ({
     page,
     placesHarness
   }) => {
@@ -17,6 +17,13 @@ test.describe("focused authenticated Places acceptance harness", () => {
     });
     await expect(placesHarness.placeCardByName(dataset.places.cafeCoffee.name)).toBeVisible();
     await expect(page.locator("body")).not.toContainText(dataset.places.restaurantBurger.name);
+  });
+
+  test("loads detail and create states directly with deterministic authenticated data", async ({
+    page,
+    placesHarness
+  }) => {
+    const dataset = await placesHarness.resetFeature("PLACE-001");
 
     await placesHarness.loadPlaceDetail(dataset.places.restaurantBurger.id);
     await expect(page.getByRole("heading", { name: dataset.places.restaurantBurger.name })).toBeVisible();
@@ -26,6 +33,13 @@ test.describe("focused authenticated Places acceptance harness", () => {
       type: "restaurant"
     });
     await expect(page.locator("#place-name")).toHaveValue(`${dataset.runId} Draft Place`);
+  });
+
+  test("loads rating and add-to-list states directly with deterministic authenticated data", async ({
+    page,
+    placesHarness
+  }) => {
+    const dataset = await placesHarness.resetFeature("PLACE-001");
 
     await placesHarness.loadRatingState(dataset.places.restaurantItalian.id);
     await expect(page.locator(".rate-place-dialog")).toBeVisible();

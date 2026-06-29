@@ -104,7 +104,6 @@ export const test = base.extend<PlacesFixtures>({
   placesHarness: async ({ context, page }, runFixture) => {
     await ensureE2eApiServer();
     const harness = new PlacesAcceptanceHarness(page, context);
-    await harness.resetFeature("PLACE-HARNESS");
     await runFixture(harness);
   }
 });
@@ -156,7 +155,7 @@ export class PlacesAcceptanceHarness {
       params.set("q", options.query);
     }
 
-    await this.page.goto(`/places?${params.toString()}`);
+    await this.gotoFeatureState(`/places?${params.toString()}`);
     await expect(this.page.locator(".place-library-page")).toBeVisible({ timeout: 30_000 });
     await expect(this.page.locator(".place-memory-list, .ds-empty, .place-library-loading")).toBeVisible({
       timeout: 30_000
@@ -164,7 +163,7 @@ export class PlacesAcceptanceHarness {
   }
 
   async loadPlaceDetail(placeId: string): Promise<void> {
-    await this.page.goto(`/places/${placeId}`);
+    await this.gotoFeatureState(`/places/${placeId}`);
     await expect(this.page.locator(".place-detail-page")).toBeVisible({ timeout: 30_000 });
     await expect(this.page.locator("#place-detail-title")).toBeVisible({ timeout: 30_000 });
   }
@@ -176,7 +175,7 @@ export class PlacesAcceptanceHarness {
       params.set("name", options.name);
     }
 
-    await this.page.goto(`/places/new?${params.toString()}`);
+    await this.gotoFeatureState(`/places/new?${params.toString()}`);
     await expect(this.page.locator(".create-place-dialog")).toBeVisible({ timeout: 30_000 });
     await expect(this.page.locator("#place-name")).toBeVisible();
   }
@@ -192,7 +191,7 @@ export class PlacesAcceptanceHarness {
   }
 
   async loadRatingState(placeId: string): Promise<void> {
-    await this.page.goto(`/places/${placeId}/rate`);
+    await this.gotoFeatureState(`/places/${placeId}/rate`);
     await expect(this.page.locator(".rate-place-dialog")).toBeVisible({ timeout: 30_000 });
   }
 
@@ -204,6 +203,10 @@ export class PlacesAcceptanceHarness {
 
   placeCardByName(name: string) {
     return this.page.locator(".ds-place-card", { hasText: name });
+  }
+
+  private async gotoFeatureState(path: string): Promise<void> {
+    await this.page.goto(path, { waitUntil: "domcontentloaded" });
   }
 }
 
