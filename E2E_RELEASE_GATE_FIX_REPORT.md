@@ -24,7 +24,7 @@ CI environment:
 - Database: PostgreSQL 16 service
 - E2E command: `npm run test:e2e`
 
-CI failure excerpt:
+Initial CI failure excerpt:
 
 - `Test timeout of 240000ms exceeded`
 - `Error: locator.press: Test timeout of 240000ms exceeded`
@@ -32,6 +32,14 @@ CI failure excerpt:
 - Locator resolved to the expected search input
 - `elementHandle.press("Enter")`
 - `element was detached from the DOM, retrying`
+
+Follow-up CI verification run `28401963734` proved the same root cause still existed when a locator-bound `focus()` was used after filling the search field:
+
+- `Error: locator.focus: Test timeout of 240000ms exceeded`
+- Locator resolved to the expected search input with the filled search value
+- `element was detached from the DOM, retrying`
+
+Local repeated execution then exposed the underlying synchronization gap directly: immediately after navigation, the Places page can still be completing its initial URL-state/load cycle. If the test fills the controlled searchbox before that cycle completes, the app can legitimately reset the search value to the URL query value.
 
 Artifacts:
 
@@ -47,16 +55,16 @@ Artifacts:
 Added a test helper that:
 
 1. Locates the searchbox.
-2. Fills the search value when required.
-3. Asserts the value is present.
-4. Focuses a fresh locator.
-5. Sends Enter through `page.keyboard.press("Enter")`.
+2. Waits for the Places library loading state to finish before interaction.
+3. Fills the search value when required.
+4. Asserts the value is present.
+5. Sends Enter through `page.keyboard.press("Enter")` without performing another locator-bound action after `fill()`.
 
-This preserves Enter-key form submission coverage while avoiding Playwright holding an element handle across a React-controlled input re-render.
+This preserves Enter-key form submission coverage while avoiding Playwright holding or reacquiring an element handle across a React-controlled input re-render.
 
 ## Why The Fix Is Correct
 
-The root cause was the test automation binding the keyboard action to a DOM node that can be replaced during controlled input updates. The fix keeps the same user-level behavior, but sends the Enter key after focus is established through the page keyboard, which is stable across the input re-render boundary.
+The root cause was the test automation interacting with the controlled search input before the Places page had finished its current load and URL-state synchronization. The fix waits for the page’s loading state to settle, then sends the Enter key through the page keyboard after `fill()`, which already focuses the control and avoids a second locator action across the input re-render boundary.
 
 The fix does not:
 

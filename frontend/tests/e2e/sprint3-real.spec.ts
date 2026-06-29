@@ -362,11 +362,11 @@ async function waitForApi() {
 async function submitPlaceSearchWithEnter(page: Page, value?: string) {
   const searchbox = page.getByRole("searchbox", { name: "بحث" });
   await expect(searchbox).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator(".place-library-loading")).toHaveCount(0, { timeout: 30_000 });
   if (value !== undefined) {
     await searchbox.fill(value);
     await expect(searchbox).toHaveValue(value);
   }
-  await searchbox.focus();
   await page.keyboard.press("Enter");
 }
 
