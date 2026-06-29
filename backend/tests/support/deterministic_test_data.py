@@ -159,9 +159,7 @@ def build_dataset(dataset_id: DatasetId, namespace: str | None = None) -> Determ
         id=dataset_id,
         lists=_build_lists(recipe, normalized_namespace, visible_place_ids),
         malformed_responses=(
-            _build_malformed_responses(normalized_namespace)
-            if recipe.malformed_responses
-            else ()
+            _build_malformed_responses(normalized_namespace) if recipe.malformed_responses else ()
         ),
         namespace=normalized_namespace,
         places=(
