@@ -65,7 +65,9 @@ CI run `28407838141` confirmed that loading the filtered URL directly was necess
 
 Because loading had completed but neither success nor empty-state content rendered, the page was in a non-library state, most consistently explained by the manually injected refresh-cookie bootstrap not producing the same in-memory authenticated browser state in CI. The final fix signs in the deterministic QA user through the real login UI before navigating to the filtered Places state.
 
-CI run `28409015754` showed the same readiness failure after plain UI login to `/places`. The final adjustment now uses the documented `returnTo` login path so successful login lands directly on `/places?type=restaurant&q=<unique>`, forcing the Places page to mount in the exact filtered state being tested.
+CI run `28409015754` showed the same readiness failure after plain UI login to `/places`. The adjustment uses the documented `returnTo` login path so successful login lands directly on `/places?type=restaurant&q=<unique>`, forcing the Places page to mount in the exact filtered state being tested.
+
+CI run `28432840764` proved the first filtered state then succeeded and moved the failure to the later "repeat same search" step. That step used `page.goto()` to navigate from `/places?type=restaurant&q=<unique>` to the same URL again. On CI, same-route navigation could leave the Places component in an unstable state. The final change uses `page.reload()` for that repeat check, forcing a full remount of the same filtered URL while preserving the assertion.
 
 The failed workflow run had no uploaded Playwright trace or screenshot artifacts.
 
@@ -80,7 +82,7 @@ Updated the failing scenario so it enters the deterministic feature state throug
 
 - Initial state now loads `/places?type=restaurant&q=<unique>` directly.
 - The deterministic QA user created by the acceptance harness is signed in through the real login UI with `returnTo=/places?type=restaurant&q=<unique>`, so the Places page mounts directly in the filtered state under test.
-- The repeated deterministic search check reloads the same filtered state directly.
+- The repeated deterministic search check uses `page.reload()` on the same filtered URL instead of same-route `page.goto()`.
 - Cafe, ice cream, and no-results checks preserve the existing product assertions while avoiding a broad unfiltered pre-search collection load.
 - Added `waitForPlaceLibraryReady()` only as a post-navigation/post-filter readiness check for the actual filtered state under test.
 
@@ -88,7 +90,7 @@ The assertions were preserved: result count, ordering, type glyphs, score render
 
 ## Why The Fix Is Correct
 
-The root cause was the test automation loading a broad initial collection state that was not part of the scenario's assertions, then interacting with the controlled search input while the page was still settling. The CI-only continuation showed that the scenario also needed to establish the browser session through the same login path used by real user flows, rather than relying on a manually injected refresh cookie and first-load silent refresh. Using the login `returnTo` flow mounts the Places page directly in the filtered state being verified and avoids same-route state carryover from `/places`.
+The root cause was the test automation loading a broad initial collection state that was not part of the scenario's assertions, then interacting with the controlled search input while the page was still settling. The CI-only continuation showed that the scenario also needed to establish the browser session through the same login path used by real user flows, rather than relying on a manually injected refresh cookie and first-load silent refresh. Using the login `returnTo` flow mounts the Places page directly in the filtered state being verified. Using `page.reload()` for the repeat check avoids same-route `goto()` state carryover.
 
 The fix does not:
 
@@ -105,6 +107,7 @@ Passed locally after the final deterministic URL-state adjustment:
 - `npm run test:e2e -- tests/e2e/sprint3-real.spec.ts --grep "real places library covers subtype filters sorting layout bidi and errors" --repeat-each=5` - 5 passed
 - `npm run test:e2e -- tests/e2e/sprint3-real.spec.ts --grep "real places library covers subtype filters sorting layout bidi and errors" --repeat-each=3` - 3 passed after adding real UI login
 - `npm run test:e2e -- tests/e2e/sprint3-real.spec.ts --grep "real places library covers subtype filters sorting layout bidi and errors" --repeat-each=3` - 3 passed after switching login to direct `returnTo`
+- `npm run test:e2e -- tests/e2e/sprint3-real.spec.ts --grep "real places library covers subtype filters sorting layout bidi and errors" --repeat-each=3` - 3 passed after switching repeat same-search navigation to `page.reload()`
 - `npm run test:e2e` - 30 passed
 - `python -m pytest -q` - 53 passed, 1 skipped
 - `python -m ruff check .`
