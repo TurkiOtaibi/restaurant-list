@@ -76,7 +76,13 @@ CI run `28433853049` then proved that replacing same-route `page.goto()` with `p
 - Timeout: 30000 ms
 - Failing line: repeat same-search readiness wait after `page.reload()`
 
-The successful first filtered render plus failed reload isolated the problem to test flow synchronization rather than product filtering behavior. A full reload discards the frontend's in-memory access token and forces the page to bootstrap authentication during the repeat assertion. The repeat assertion does not need a browser reload; it needs to prove that re-submitting the same visible search keeps the deterministic result set and type glyphs stable. The final change re-submits the existing search form via the real search button, preserving the user-level assertion without forcing an unrelated session bootstrap.
+CI run `28435224281` proved the search-button role lookup itself could also hang in the CI browser after the result assertions had already passed:
+
+- `Error: locator.click: Test timeout of 240000ms exceeded`
+- Locator: `getByRole('button', { name: 'بحث', exact: true })`
+- Failing line: repeat same-search submission step
+
+The successful result assertions before that line proved the Places page was already in the correct filtered state. The repeat assertion does not need a browser reload or Arabic accessible-name lookup; it needs to prove that re-submitting the existing search form keeps the deterministic result set and type glyphs stable. The final change submits the actual `.place-library-search` form with `requestSubmit()`, preserving the form-submission path while avoiding CI-only role lookup instability.
 
 The failed workflow run had no uploaded Playwright trace or screenshot artifacts.
 
@@ -91,7 +97,7 @@ Updated the failing scenario so it enters the deterministic feature state throug
 
 - Initial state now loads `/places?type=restaurant&q=<unique>` directly.
 - The deterministic QA user created by the acceptance harness is signed in through the real login UI with `returnTo=/places?type=restaurant&q=<unique>`, so the Places page mounts directly in the filtered state under test.
-- The repeated deterministic search check re-submits the visible search form with the real search button instead of using same-route `page.goto()` or a browser reload.
+- The repeated deterministic search check re-submits the actual `.place-library-search` form instead of using same-route `page.goto()`, a browser reload, or a CI-fragile Arabic role lookup.
 - Cafe, ice cream, and no-results checks preserve the existing product assertions while avoiding a broad unfiltered pre-search collection load.
 - Added `waitForPlaceLibraryReady()` only as a post-navigation/post-filter readiness check for the actual filtered state under test.
 
@@ -99,7 +105,7 @@ The assertions were preserved: result count, ordering, type glyphs, score render
 
 ## Why The Fix Is Correct
 
-The root cause was the test automation loading a broad initial collection state that was not part of the scenario's assertions, then interacting with the controlled search input while the page was still settling. The CI-only continuation showed that the scenario also needed to establish the browser session through the same login path used by real user flows, rather than relying on a manually injected refresh cookie and first-load silent refresh. Using the login `returnTo` flow mounts the Places page directly in the filtered state being verified. Re-submitting the real search form for the repeat check avoids both same-route `goto()` state carryover and reload-triggered auth bootstrap.
+The root cause was the test automation loading a broad initial collection state that was not part of the scenario's assertions, then interacting with the controlled search input while the page was still settling. The CI-only continuation showed that the scenario also needed to establish the browser session through the same login path used by real user flows, rather than relying on a manually injected refresh cookie and first-load silent refresh. Using the login `returnTo` flow mounts the Places page directly in the filtered state being verified. Re-submitting the actual search form for the repeat check avoids same-route `goto()` state carryover, reload-triggered auth bootstrap, and CI-only accessible-name lookup instability.
 
 The fix does not:
 
@@ -127,6 +133,8 @@ Passed locally after the final deterministic URL-state adjustment:
 - `npm run build`
 
 Latest local note: after the final search-button adjustment, the Windows local Playwright command did not return output before the tool timeout and left Playwright web-server processes running. Those orphaned test processes were cleaned up. The decisive verification for this CI-only failure remains the GitHub Actions re-run on Ubuntu/PostgreSQL.
+
+Latest CI note: run `28435224281` passed backend and frontend but failed e2e on the repeat search-button role lookup. The test now submits the existing search form directly to remove that locator-only instability.
 
 ## Remaining Risks
 
