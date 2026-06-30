@@ -3,6 +3,7 @@ import { expect, test as base, type BrowserContext, type Page } from "@playwrigh
 import { ensureE2eApiServer, stopE2eApiServer } from "./e2e-api-server";
 
 const API_BASE_URL = process.env.E2E_API_BASE_URL ?? "http://localhost:8000";
+const SESSION_MARKER_KEY = "restaurantWishlist.hasSession";
 const TEST_PASSWORD = "password123";
 
 export type PlacesFeatureId =
@@ -127,6 +128,7 @@ export class PlacesAcceptanceHarness {
     await this.context.clearCookies();
     const user = await registerApiUser(runId);
     await installRefreshCookie(this.context, user.refreshCookie);
+    await installSessionMarker(this.context);
     const dataset = await seedPlacesDataset(featureId, runId, user.accessToken);
     this.dataset = {
       featureId,
@@ -256,6 +258,12 @@ async function installRefreshCookie(context: BrowserContext, refreshCookie: stri
       value: nameValue.slice(separator + 1)
     }
   ]);
+}
+
+async function installSessionMarker(context: BrowserContext): Promise<void> {
+  await context.addInitScript((key) => {
+    window.localStorage.setItem(key, "1");
+  }, SESSION_MARKER_KEY);
 }
 
 async function seedPlacesDataset(

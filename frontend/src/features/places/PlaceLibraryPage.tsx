@@ -15,7 +15,14 @@ import {
   StatusMessage,
   VirtualList
 } from "@/components/ui";
-import { ApiError, Place, apiCollection, clearTokens, ensureSession } from "@/lib/api";
+import {
+  ApiError,
+  Place,
+  apiCollection,
+  clearTokens,
+  ensureSession,
+  isSessionRecoveryError
+} from "@/lib/api";
 import { loginHrefForReturn } from "@/lib/authReturn";
 import { cx } from "@/lib/ui";
 
@@ -102,23 +109,23 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
     requestIdRef.current = requestId;
     const isCurrent = () => requestId === requestIdRef.current;
 
-    if (!(await ensureSession())) {
-      if (isCurrent()) {
-        setNeedsAuth(true);
-        setLoading(false);
-      }
-      return;
-    }
-
-    setNeedsAuth(false);
-    setLoading(true);
-    setError("");
-    setPageError(false);
-    setReachedEnd(false);
-    loadingMoreRef.current = false;
-    setLoadingMore(false);
-
     try {
+      if (!(await ensureSession())) {
+        if (isCurrent()) {
+          setNeedsAuth(true);
+          setLoading(false);
+        }
+        return;
+      }
+
+      setNeedsAuth(false);
+      setLoading(true);
+      setError("");
+      setPageError(false);
+      setReachedEnd(false);
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+
       const response = await apiCollection<Place>(`/places?${buildQuery(0)}`);
       if (!isCurrent()) {
         return;
@@ -134,6 +141,8 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
       if (caught instanceof ApiError && caught.status === 401) {
         clearTokens();
         setNeedsAuth(true);
+      } else if (isSessionRecoveryError(caught)) {
+        setError("تعذر استعادة الجلسة. حاول مرة أخرى.");
       } else {
         setError(caught instanceof ApiError ? caught.message : "تعذر تحميل الأماكن.");
       }

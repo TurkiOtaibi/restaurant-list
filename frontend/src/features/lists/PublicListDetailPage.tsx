@@ -13,7 +13,14 @@ import {
   PlaceCard,
   StatusMessage
 } from "@/components/ui";
-import { ApiError, ListDetail, apiRequest, clearTokens, ensureSession } from "@/lib/api";
+import {
+  ApiError,
+  ListDetail,
+  apiRequest,
+  clearTokens,
+  ensureSession,
+  isSessionRecoveryError
+} from "@/lib/api";
 import { loginHrefForReturn } from "@/lib/authReturn";
 import { placeCountLabel } from "@/lib/numerals";
 
@@ -32,13 +39,13 @@ export function PublicListDetailPage({ listId }: PublicListDetailPageProps) {
     setNeedsAuth(false);
     setLoading(true);
 
-    if (!(await ensureSession())) {
-      setNeedsAuth(true);
-      setLoading(false);
-      return;
-    }
-
     try {
+      if (!(await ensureSession())) {
+        setNeedsAuth(true);
+        setLoading(false);
+        return;
+      }
+
       const response = await apiRequest<ListDetail>(`/lists/public/${listId}`);
       setList(response);
     } catch (caught) {
@@ -47,6 +54,8 @@ export function PublicListDetailPage({ listId }: PublicListDetailPageProps) {
         setNeedsAuth(true);
       } else if (caught instanceof ApiError && caught.status === 404) {
         setError("هذه القائمة خاصة أو غير متاحة.");
+      } else if (isSessionRecoveryError(caught)) {
+        setError("تعذر استعادة الجلسة. حاول مرة أخرى.");
       } else {
         setError(caught instanceof ApiError ? caught.message : "تعذر تحميل القائمة العامة.");
       }

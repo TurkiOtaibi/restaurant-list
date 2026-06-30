@@ -17,7 +17,16 @@ import {
   StatusMessage
 } from "@/components/ui";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { ApiError, Place, UserList, apiCollection, apiRequest, clearTokens, ensureSession } from "@/lib/api";
+import {
+  ApiError,
+  Place,
+  UserList,
+  apiCollection,
+  apiRequest,
+  clearTokens,
+  ensureSession,
+  isSessionRecoveryError
+} from "@/lib/api";
 import { loginHrefForReturn } from "@/lib/authReturn";
 import { placeCountLabel, ratingCountLabel } from "@/lib/numerals";
 
@@ -35,21 +44,23 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
   const [addToListOpen, setAddToListOpen] = useState(false);
 
   const loadPlace = useCallback(async () => {
-    if (!(await ensureSession())) {
-      setNeedsAuth(true);
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
     setError("");
     try {
+      if (!(await ensureSession())) {
+        setNeedsAuth(true);
+        setLoading(false);
+        return;
+      }
+
       const placeResponse = await apiRequest<Place>(`/places/${placeId}`);
       setPlace(placeResponse);
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 401) {
         clearTokens();
         setNeedsAuth(true);
+      } else if (isSessionRecoveryError(caught)) {
+        setError("تعذر استعادة الجلسة. حاول مرة أخرى.");
       } else {
         setError(caught instanceof ApiError ? caught.message : "تعذر تحميل المكان.");
       }

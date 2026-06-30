@@ -3,26 +3,40 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { StatusMessage } from "@/components/ui";
 import { CreateListDialog } from "@/features/lists/CreateListDialog";
-import { ensureSession } from "@/lib/api";
+import { ensureSession, isSessionRecoveryError } from "@/lib/api";
 import { loginHrefForReturn } from "@/lib/authReturn";
 
 export default function CreateListPage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [sessionError, setSessionError] = useState("");
 
   useEffect(() => {
     let active = true;
-    void ensureSession().then((token) => {
-      if (!active) {
-        return;
-      }
-      if (token) {
-        setIsAuthenticated(true);
-      } else {
-        router.replace(loginHrefForReturn("/lists/new"));
-      }
-    });
+    void ensureSession()
+      .then((token) => {
+        if (!active) {
+          return;
+        }
+        if (token) {
+          setSessionError("");
+          setIsAuthenticated(true);
+        } else {
+          router.replace(loginHrefForReturn("/lists/new"));
+        }
+      })
+      .catch((caught) => {
+        if (!active) {
+          return;
+        }
+        if (isSessionRecoveryError(caught)) {
+          setSessionError("تعذر استعادة الجلسة. حاول مرة أخرى.");
+        } else {
+          router.replace(loginHrefForReturn("/lists/new"));
+        }
+      });
     return () => {
       active = false;
     };
@@ -30,6 +44,7 @@ export default function CreateListPage() {
 
   return (
     <main className="dialog-route-shell">
+      {sessionError ? <StatusMessage tone="error">{sessionError}</StatusMessage> : null}
       <CreateListDialog
         onClose={() => router.push("/lists?focus=create-list")}
         open={isAuthenticated}

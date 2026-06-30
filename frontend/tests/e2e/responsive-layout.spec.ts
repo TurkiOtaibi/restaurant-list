@@ -298,6 +298,10 @@ test("metadata contrast meets AA on dark surfaces", async ({ page }) => {
 });
 
 async function mockApi(page: Page) {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("restaurantWishlist.hasSession", "1");
+  });
+
   await page.route("**/api/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());

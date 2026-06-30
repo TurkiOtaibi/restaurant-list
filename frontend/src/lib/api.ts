@@ -157,6 +157,10 @@ let refreshPromise: Promise<string | null> | null = null;
 let lastSessionValidationAt = 0;
 const sessionMarkerKey = "restaurantWishlist.hasSession";
 
+export type AuthSessionState = "unknown" | "restoring" | "authenticated" | "unauthenticated";
+
+let authSessionState: AuthSessionState = "unknown";
+
 const authChannel: BroadcastChannel | null =
   typeof BroadcastChannel === "undefined"
     ? null
@@ -166,8 +170,10 @@ authChannel?.addEventListener("message", (event: MessageEvent) => {
   const data = event.data as { type?: string; token?: string } | null;
   if (data?.type === "token" && typeof data.token === "string") {
     accessToken = data.token;
+    setAuthSessionState("authenticated");
   } else if (data?.type === "logout") {
     accessToken = null;
+    setAuthSessionState("unauthenticated");
   }
 });
 
@@ -183,18 +189,38 @@ export class ApiError extends Error {
   }
 }
 
+export class SessionRecoveryError extends Error {
+  detail: unknown;
+
+  constructor(detail: unknown) {
+    super("Session recovery is temporarily unavailable.");
+    this.name = "SessionRecoveryError";
+    this.detail = detail;
+  }
+}
+
+export function isSessionRecoveryError(caught: unknown): caught is SessionRecoveryError {
+  return caught instanceof SessionRecoveryError;
+}
+
 export function getAccessToken(): string | null {
   return accessToken;
 }
 
+export function getAuthSessionState(): AuthSessionState {
+  return authSessionState;
+}
+
 export function saveAccessToken(token: string): void {
   accessToken = token;
+  setAuthSessionState("authenticated");
   setSessionMarker();
   authChannel?.postMessage({ type: "token", token });
 }
 
 export function clearTokens(): void {
   accessToken = null;
+  setAuthSessionState("unauthenticated");
   clearSessionMarker();
   authChannel?.postMessage({ type: "logout" });
 }
@@ -207,6 +233,10 @@ export function clearTokens(): void {
 export async function ensureSession(): Promise<string | null> {
   if (accessToken) {
     return accessToken;
+  }
+  if (typeof window !== "undefined" && !hasSessionMarker()) {
+    setAuthSessionState("unauthenticated");
+    return null;
   }
   return refreshAccessToken();
 }
@@ -237,7 +267,7 @@ export async function apiRequest<T>(
   const data = await parseResponseBody(response);
 
   if (response.status === 401 && options.auth !== false && !options.skipRefresh) {
-    const refreshedToken = await refreshAccessToken();
+    const refreshedToken = await refreshAccessToken(true);
     if (refreshedToken) {
       const retryResponse = await performRequest(path, { ...options, skipRefresh: true });
       const retryData = await parseResponseBody(retryResponse);
@@ -283,9 +313,9 @@ async function performRequest(path: string, options: ApiRequestOptions): Promise
   });
 }
 
-async function refreshAccessToken(): Promise<string | null> {
+async function refreshAccessToken(force = false): Promise<string | null> {
   if (!refreshPromise) {
-    refreshPromise = runRefreshWithLock(false).finally(() => {
+    refreshPromise = runRefreshWithLock(force).finally(() => {
       refreshPromise = null;
     });
   }
@@ -309,6 +339,8 @@ async function performRefresh(force: boolean): Promise<string | null> {
     return accessToken;
   }
 
+  setAuthSessionState("restoring");
+
   try {
     const response = await apiRequest<RefreshResponse>("/auth/refresh", {
       method: "POST",
@@ -317,9 +349,14 @@ async function performRefresh(force: boolean): Promise<string | null> {
     });
     saveAccessToken(response.accessToken);
     return response.accessToken;
-  } catch {
-    clearTokens();
-    return null;
+  } catch (caught) {
+    if (isAuthoritativeRefreshFailure(caught)) {
+      clearTokens();
+      return null;
+    }
+
+    setAuthSessionState(accessToken ? "authenticated" : "unknown");
+    throw new SessionRecoveryError(caught);
   }
 }
 
@@ -371,7 +408,15 @@ function installSessionRecoveryListeners(): void {
       return;
     }
 
+    if (accessToken) {
+      return;
+    }
+
     if (!accessToken && !hasSessionMarker()) {
+      return;
+    }
+
+    if (refreshPromise) {
       return;
     }
 
@@ -380,7 +425,10 @@ function installSessionRecoveryListeners(): void {
       return;
     }
     lastSessionValidationAt = now;
-    void runRefreshWithLock(Boolean(accessToken));
+    void refreshAccessToken().catch(() => {
+      // Recoverable foreground failures keep the session marker so the next
+      // protected request can retry instead of forcing a premature logout.
+    });
   };
 
   window.addEventListener("focus", validateSession);
@@ -399,11 +447,19 @@ function hasSessionMarker(): boolean {
   }
 }
 
+function setAuthSessionState(state: AuthSessionState): void {
+  authSessionState = state;
+}
+
+function isAuthoritativeRefreshFailure(caught: unknown): boolean {
+  return caught instanceof ApiError && caught.status === 401;
+}
+
 function setSessionMarker(): void {
   try {
     window.localStorage.setItem(sessionMarkerKey, "1");
   } catch {
-    // The marker only gates proactive refresh. Auth still works without storage.
+    // The in-memory access token remains usable; reload restoration needs storage.
   }
 }
 

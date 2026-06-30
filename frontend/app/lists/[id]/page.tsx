@@ -26,7 +26,8 @@ import {
   ListItem,
   apiRequest,
   clearTokens,
-  ensureSession
+  ensureSession,
+  isSessionRecoveryError
 } from "@/lib/api";
 import { loginHrefForReturn } from "@/lib/authReturn";
 import { placeCountLabel } from "@/lib/numerals";
@@ -61,13 +62,13 @@ export default function ListDetailPage() {
     setNeedsAuth(false);
     setLoading(true);
 
-    if (!(await ensureSession())) {
-      setNeedsAuth(true);
-      setLoading(false);
-      return;
-    }
-
     try {
+      if (!(await ensureSession())) {
+        setNeedsAuth(true);
+        setLoading(false);
+        return;
+      }
+
       const listResponse = await apiRequest<ListDetail>(`/lists/${listId}`);
       setList(listResponse);
     } catch (caught) {
@@ -76,6 +77,8 @@ export default function ListDetailPage() {
         setNeedsAuth(true);
       } else if (caught instanceof ApiError && caught.status === 404) {
         setError("هذه القائمة خاصة أو غير متاحة.");
+      } else if (isSessionRecoveryError(caught)) {
+        setError("تعذر استعادة الجلسة. حاول مرة أخرى.");
       } else {
         setError(caught instanceof ApiError ? caught.message : "تعذر تحميل القائمة.");
       }

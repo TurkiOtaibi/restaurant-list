@@ -14,7 +14,15 @@ import {
   TextArea
 } from "@/components/ui";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { ApiError, Place, Rating, apiRequest, clearTokens, ensureSession } from "@/lib/api";
+import {
+  ApiError,
+  Place,
+  Rating,
+  apiRequest,
+  clearTokens,
+  ensureSession,
+  isSessionRecoveryError
+} from "@/lib/api";
 import { loginHrefForReturn } from "@/lib/authReturn";
 
 type RatePlaceDialogProps = {
@@ -46,15 +54,15 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
     let active = true;
 
     async function loadPlace() {
-      if (!(await ensureSession())) {
-        setNeedsAuth(true);
-        setLoading(false);
-        return;
-      }
-
       setLoading(true);
       setFormError("");
       try {
+        if (!(await ensureSession())) {
+          setNeedsAuth(true);
+          setLoading(false);
+          return;
+        }
+
         const response = await apiRequest<Place>(`/places/${placeId}`);
         if (!active) {
           return;
@@ -72,6 +80,8 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
         if (caught instanceof ApiError && caught.status === 401) {
           clearTokens();
           setNeedsAuth(true);
+        } else if (isSessionRecoveryError(caught)) {
+          setFormError("تعذر استعادة الجلسة. حاول مرة أخرى.");
         } else if (active) {
           setFormError(caught instanceof ApiError ? caught.message : "تعذر تحميل المكان.");
         }

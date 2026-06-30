@@ -17,7 +17,8 @@ import {
   UserList,
   apiCollection,
   clearTokens,
-  ensureSession
+  ensureSession,
+  isSessionRecoveryError
 } from "@/lib/api";
 import { loginHrefForReturn } from "@/lib/authReturn";
 
@@ -32,19 +33,21 @@ export function PublicListsPage() {
     setNeedsAuth(false);
     setLoading(true);
 
-    if (!(await ensureSession())) {
-      setNeedsAuth(true);
-      setLoading(false);
-      return;
-    }
-
     try {
+      if (!(await ensureSession())) {
+        setNeedsAuth(true);
+        setLoading(false);
+        return;
+      }
+
       const response = await apiCollection<UserList>("/lists/public");
       setLists(response.data.map((list) => ({ ...list, items: [] })));
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 401) {
         clearTokens();
         setNeedsAuth(true);
+      } else if (isSessionRecoveryError(caught)) {
+        setError("تعذر استعادة الجلسة. حاول مرة أخرى.");
       } else {
         setError(caught instanceof ApiError ? caught.message : "تعذر تحميل القوائم العامة.");
       }
