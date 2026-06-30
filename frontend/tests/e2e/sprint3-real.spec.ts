@@ -245,10 +245,13 @@ test("real places library covers subtype filters sorting layout bidi and errors"
 
   const placesHarness = new PlacesAcceptanceHarness(page, context);
   const placesDataset = await placesHarness.resetFeature("PLACE-007");
-  await signInApiUserThroughUi(page, placesDataset.user.email);
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(`/places?type=restaurant&q=${encodeURIComponent(prefix)}`);
+  await signInApiUserThroughUi(
+    page,
+    placesDataset.user.email,
+    `/places?type=restaurant&q=${encodeURIComponent(prefix)}`
+  );
   await expect(page).toHaveURL(/\/places/);
   await expect(page).toHaveURL(/q=/);
   await waitForPlaceLibraryReady(page);
@@ -367,12 +370,18 @@ async function waitForPlaceLibraryReady(page: Page) {
   await expect(page.locator(".place-memory-section, .ds-empty")).toBeVisible({ timeout: 30_000 });
 }
 
-async function signInApiUserThroughUi(page: Page, email: string) {
-  await page.goto("/login");
+async function signInApiUserThroughUi(page: Page, email: string, returnTo: string) {
+  await page.goto(`/login?returnTo=${encodeURIComponent(returnTo)}`);
   await page.locator('input[type="email"]').fill(email);
   await page.locator('input[type="password"]').fill("password123");
   await page.locator('button[type="submit"]').click();
-  await expect(page).toHaveURL(/\/places$/, { timeout: 15_000 });
+  await expect(page).toHaveURL(new RegExp(`${escapeRegExp(returnTo.split("?")[0])}.*q=`), {
+    timeout: 15_000
+  });
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 type ApiPlaceType = "restaurant" | "cafe" | "ice_cream";
