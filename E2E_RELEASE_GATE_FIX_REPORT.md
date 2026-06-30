@@ -84,6 +84,14 @@ CI run `28435224281` proved the search-button role lookup itself could also hang
 
 The successful result assertions before that line proved the Places page was already in the correct filtered state. The repeat assertion does not need a browser reload or Arabic accessible-name lookup; it needs to prove that re-submitting the existing search form keeps the deterministic result set and type glyphs stable. The final change submits the actual `.place-library-search` form with `requestSubmit()`, preserving the form-submission path while avoiding CI-only role lookup instability.
 
+CI run `28435717324` then moved the failure to the no-results setup step:
+
+- `Error: expect(locator).toBeVisible() failed`
+- Locator: `.place-memory-section, .ds-empty`
+- Failing line: readiness wait after `page.goto('/places?type=ice_cream&q=No Match ...')`
+
+This is the same same-route navigation issue: the scenario was already on `/places?type=ice_cream`, then used `page.goto()` to change only the query string. The fix now updates the visible search field and submits the same search form, keeping the scenario in the user interaction path instead of forcing same-route navigation.
+
 The failed workflow run had no uploaded Playwright trace or screenshot artifacts.
 
 ## Files Modified
@@ -98,6 +106,7 @@ Updated the failing scenario so it enters the deterministic feature state throug
 - Initial state now loads `/places?type=restaurant&q=<unique>` directly.
 - The deterministic QA user created by the acceptance harness is signed in through the real login UI with `returnTo=/places?type=restaurant&q=<unique>`, so the Places page mounts directly in the filtered state under test.
 - The repeated deterministic search check re-submits the actual `.place-library-search` form instead of using same-route `page.goto()`, a browser reload, or a CI-fragile Arabic role lookup.
+- The no-results state is reached through the visible search field and the same search form instead of same-route `page.goto()`.
 - Cafe, ice cream, and no-results checks preserve the existing product assertions while avoiding a broad unfiltered pre-search collection load.
 - Added `waitForPlaceLibraryReady()` only as a post-navigation/post-filter readiness check for the actual filtered state under test.
 
@@ -135,6 +144,8 @@ Passed locally after the final deterministic URL-state adjustment:
 Latest local note: after the final search-button adjustment, the Windows local Playwright command did not return output before the tool timeout and left Playwright web-server processes running. Those orphaned test processes were cleaned up. The decisive verification for this CI-only failure remains the GitHub Actions re-run on Ubuntu/PostgreSQL.
 
 Latest CI note: run `28435224281` passed backend and frontend but failed e2e on the repeat search-button role lookup. The test now submits the existing search form directly to remove that locator-only instability.
+
+Latest CI note: run `28435717324` passed backend and frontend but failed e2e on the no-results same-route `page.goto()` transition. The test now reaches no-results by filling the visible search field and submitting the actual search form.
 
 ## Remaining Risks
 

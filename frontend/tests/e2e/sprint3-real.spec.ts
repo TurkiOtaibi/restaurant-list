@@ -307,7 +307,10 @@ test("real places library covers subtype filters sorting layout bidi and errors"
   await waitForPlaceLibraryReady(page);
   await expect(page.locator(".ds-place-card--row .ds-place-card__title")).toHaveText([iceCreamName]);
 
-  await page.goto(`/places?type=ice_cream&q=${encodeURIComponent(`No Match ${unique}`)}`);
+  await page.locator(".place-library-search input").fill(`No Match ${unique}`);
+  await page.locator(".place-library-search").evaluate((form) => {
+    (form as HTMLFormElement).requestSubmit();
+  });
   await waitForPlaceLibraryReady(page);
   await expect(page.locator(".ds-empty__title")).toBeVisible();
   await expect(page.getByRole("button", { name: "عرض الكل" })).toBeVisible();
