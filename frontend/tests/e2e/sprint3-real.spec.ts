@@ -271,7 +271,7 @@ test("real places library covers subtype filters sorting layout bidi and errors"
 
   // The type glyph is deterministic by place type; re-running the same search
   // keeps the first result's type icon present.
-  await page.reload();
+  await page.getByRole("button", { name: "بحث", exact: true }).click();
   await waitForPlaceLibraryReady(page);
   await expect(page.locator(".ds-place-card--row")).toHaveCount(5, { timeout: 30_000 });
   await expect(page.locator(".ds-place-card--row").first().locator(".ds-type-icon")).toBeVisible();
