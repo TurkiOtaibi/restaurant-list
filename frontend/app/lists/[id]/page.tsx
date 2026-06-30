@@ -10,7 +10,6 @@ import {
   Badge,
   BidiText,
   Button,
-  DeleteIcon,
   EmptyState,
   PlaceCard,
   StatusMessage,
@@ -255,15 +254,16 @@ export default function ListDetailPage() {
                 renderItem={(item) => (
                   <article className="collection-list__row">
                     <PlaceCard compact href={`/places/${item.place.id}`} place={item.place} />
-                    <Button
-                      aria-label={`إزالة ${item.place.name} من القائمة`}
-                      className="collection-list__remove list-action list-action--danger"
-                      onClick={() => void handleRemovePlace(item)}
-                      type="button"
-                      variant="icon"
-                    >
-                      <DeleteIcon />
-                    </Button>
+                    <ActionMenu
+                      items={[
+                        {
+                          destructive: true,
+                          label: "إزالة",
+                          onSelect: () => void handleRemovePlace(item)
+                        }
+                      ]}
+                      label={`إجراءات ${item.place.name}`}
+                    />
                   </article>
                 )}
               />

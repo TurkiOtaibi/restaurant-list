@@ -108,7 +108,7 @@ export default function ListsPage() {
                 أنشئ أول قائمة
               </Link>
               <Link className="text-link" href="/lists/public">
-                استكشف القوائم العامة <span aria-hidden="true">{"\u2192"}</span>
+                استكشف القوائم العامة <span aria-hidden="true">{"\u2190"}</span>
               </Link>
             </div>
           }
@@ -131,20 +131,13 @@ export default function ListsPage() {
               />
             ))}
           </div>
-          {lists.length === 1 ? (
-            <EmptyState
-              action={<Link className="ds-button" href="/lists/new">إنشاء قائمة أخرى</Link>}
-              body="قسّم أماكنك حسب المناسبة أو المدينة حتى تصبح القوائم أسهل في التصفح."
-              title="قائمة واحدة فقط"
-            />
-          ) : null}
         </section>
       ) : null}
 
       {!loading && !needsAuth && !error && lists.length > 0 ? (
         <div className="public-lists-entry-compact">
           <Link href="/lists/public">
-            استكشف القوائم العامة <span aria-hidden="true">→</span>
+            استكشف القوائم العامة <span aria-hidden="true">{"\u2190"}</span>
           </Link>
         </div>
       ) : null}

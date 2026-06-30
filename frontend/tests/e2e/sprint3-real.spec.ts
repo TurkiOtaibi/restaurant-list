@@ -164,7 +164,8 @@ test("real frontend and api complete list edit add remove delete and profile flo
   await expect(page.getByRole("dialog", { name: "أضف مكانًا" })).toBeHidden();
   await expect(page.getByRole("link", { name: new RegExp(placeName) })).toBeVisible();
 
-  await page.getByRole("button", { name: new RegExp(`إزالة ${placeName}`) }).click();
+  await page.getByRole("button", { name: new RegExp(`إجراءات ${placeName}`) }).click();
+  await page.getByRole("menuitem", { name: "إزالة" }).click();
   await expect(page.getByText("لا توجد أماكن")).toBeVisible();
 
   await page.getByRole("button", { name: "أضف أول مكان" }).click();

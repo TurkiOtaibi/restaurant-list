@@ -50,7 +50,6 @@ function PlaceCardContent({ place }: { place: PlaceCardProps["place"] }) {
 
   return (
     <>
-      <PlaceTypeIcon type={place.type} />
       <div className="ds-place-card__main">
         <h2 className="ds-place-card__title">
           <BidiText>{place.name}</BidiText>
@@ -73,6 +72,7 @@ function PlaceCardContent({ place }: { place: PlaceCardProps["place"] }) {
           {subtype ? <span>{subtype}</span> : null}
         </p>
       </div>
+      <PlaceTypeIcon type={place.type} />
     </>
   );
 }

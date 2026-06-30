@@ -155,6 +155,7 @@ export type CollectionResponse<T> = {
 let accessToken: string | null = null;
 let refreshPromise: Promise<string | null> | null = null;
 let lastSessionValidationAt = 0;
+const sessionMarkerKey = "restaurantWishlist.hasSession";
 
 const authChannel: BroadcastChannel | null =
   typeof BroadcastChannel === "undefined"
@@ -188,11 +189,13 @@ export function getAccessToken(): string | null {
 
 export function saveAccessToken(token: string): void {
   accessToken = token;
+  setSessionMarker();
   authChannel?.postMessage({ type: "token", token });
 }
 
 export function clearTokens(): void {
   accessToken = null;
+  clearSessionMarker();
   authChannel?.postMessage({ type: "logout" });
 }
 
@@ -364,7 +367,11 @@ function installSessionRecoveryListeners(): void {
   }
 
   const validateSession = () => {
-    if (document.visibilityState === "hidden" || !accessToken) {
+    if (document.visibilityState === "hidden") {
+      return;
+    }
+
+    if (!accessToken && !hasSessionMarker()) {
       return;
     }
 
@@ -373,11 +380,37 @@ function installSessionRecoveryListeners(): void {
       return;
     }
     lastSessionValidationAt = now;
-    void runRefreshWithLock(true);
+    void runRefreshWithLock(Boolean(accessToken));
   };
 
   window.addEventListener("focus", validateSession);
+  window.addEventListener("pageshow", validateSession);
   document.addEventListener("visibilitychange", validateSession);
+  window.setTimeout(validateSession, 0);
 }
 
 installSessionRecoveryListeners();
+
+function hasSessionMarker(): boolean {
+  try {
+    return window.localStorage.getItem(sessionMarkerKey) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setSessionMarker(): void {
+  try {
+    window.localStorage.setItem(sessionMarkerKey, "1");
+  } catch {
+    // The marker only gates proactive refresh. Auth still works without storage.
+  }
+}
+
+function clearSessionMarker(): void {
+  try {
+    window.localStorage.removeItem(sessionMarkerKey);
+  } catch {
+    // Ignore storage failures; the in-memory token is already cleared.
+  }
+}

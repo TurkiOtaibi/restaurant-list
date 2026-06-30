@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { BottomSheet, Button, Modal, StatusMessage, TextInput } from "@/components/ui";
@@ -23,21 +23,31 @@ export function CreateListDialog({ onClose, open }: CreateListDialogProps) {
   const [visibility, setVisibility] = useState<UserList["visibility"]>("private");
   const [nameError, setNameError] = useState("");
   const [formError, setFormError] = useState("");
+  const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const hasUnsavedChanges = Boolean(name.trim()) || visibility !== "private";
+
+  useEffect(() => {
+    if (open) {
+      setNameError("");
+      setFormError("");
+      setSubmitted(false);
+    }
+  }, [open]);
 
   function currentName() {
     return (nameRef.current?.value ?? name).trim();
   }
 
   function showNameRequired(shouldFocus = true) {
-    setNameError("الاسم مطلوب.");
+    setNameError("اسم القائمة مطلوب");
     if (shouldFocus) {
       nameRef.current?.focus();
     }
   }
 
   async function submitList() {
+    setSubmitted(true);
     setNameError("");
     setFormError("");
 
@@ -88,14 +98,14 @@ export function CreateListDialog({ onClose, open }: CreateListDialogProps) {
           id="list-name"
           label="اسم القائمة"
           name="name"
-          onBlur={() => {
-            if (!name.trim()) {
-              showNameRequired(false);
-            }
-          }}
           onChange={(event) => {
-            setName(event.target.value);
-            setNameError("");
+            const nextName = event.target.value;
+            setName(nextName);
+            if (submitted && !nextName.trim()) {
+              showNameRequired(false);
+            } else {
+              setNameError("");
+            }
             setFormError("");
           }}
           ref={nameRef}
