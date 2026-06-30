@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useId } from "react";
 
 import { formatOutOfTen } from "@/lib/numerals";
@@ -36,6 +37,7 @@ export function RatingControl({
   const validationId = error ? errorId ?? `${controlId}-error` : undefined;
   const describedBy = [consequenceId, validationId].filter(Boolean).join(" ");
   const currentValue = value ?? 1;
+  const progress = `${((currentValue - 1) / 9) * 100}%`;
 
   return (
     <fieldset
@@ -46,12 +48,19 @@ export function RatingControl({
     >
       <legend>{label}</legend>
       <div className="ds-rating-control__value" aria-live="polite">
-        <NumberText>{value ? formatOutOfTen(value) : "—/10"}</NumberText>
+        <NumberText>{value ? formatOutOfTen(value) : "-/10"}</NumberText>
       </div>
-      <label className="ds-rating-control__stars" htmlFor={inputId}>
+      <label
+        className="ds-rating-control__stars"
+        htmlFor={inputId}
+        style={{ "--rating-progress": progress } as CSSProperties}
+      >
+        <span className="ds-rating-control__slider-label">
+          اسحب أو استخدم الأسهم لتحديد التقييم
+        </span>
         <input
           aria-label={label}
-          aria-valuetext={`${currentValue} من 10`}
+          aria-valuetext={`Rating, ${currentValue.toFixed(1)} out of 10`}
           id={inputId}
           max={10}
           min={1}

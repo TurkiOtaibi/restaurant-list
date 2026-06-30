@@ -1,5 +1,4 @@
 import type { Place } from "@/lib/api";
-import { formatAverageRating } from "@/lib/format";
 import { ratingCountLabel } from "@/lib/numerals";
 import { placeSubtypeLabel, placeTypeLabel } from "@/features/places/taxonomy";
 import { cx } from "@/lib/ui";
@@ -7,8 +6,8 @@ import { cx } from "@/lib/ui";
 import { BidiText } from "./BidiText";
 import { Card, CardLink } from "./Card";
 import { CheckIcon } from "./Icon";
-import { NumberText } from "./NumberText";
 import { PlaceTypeIcon } from "./PlaceTypeIcon";
+import { RatingDisplay } from "./RatingDisplay";
 
 type PlaceCardProps = {
   compact?: boolean;
@@ -58,9 +57,11 @@ function PlaceCardContent({ place }: { place: PlaceCardProps["place"] }) {
         </h2>
         <p className="ds-place-card__meta">
           {hasRating ? (
-            <span className="ds-place-card__score" aria-label={ratingCountLabel(place.ratingCount)}>
-              <NumberText>{formatAverageRating(place.averageRating)}</NumberText>
-            </span>
+            <RatingDisplay
+              ariaLabel={ratingCountLabel(place.ratingCount)}
+              className="ds-place-card__score"
+              value={place.averageRating ?? 0}
+            />
           ) : null}
           {place.currentUserTried ? (
             <span className="ds-place-card__tried">

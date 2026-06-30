@@ -340,14 +340,14 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
             <div className="place-subtype-filter">
               <Button
                 aria-haspopup="dialog"
-                aria-label={`النوع: ${selectedSubtypeLabel}`}
+                aria-label={`التصنيف: ${selectedSubtypeLabel}`}
                 className="place-subtype-filter__trigger"
                 onClick={() => setSubtypeFilterOpen(true)}
                 type="button"
                 variant="secondary"
               >
                 <FilterIcon />
-                <span>النوع: {selectedSubtypeLabel}</span>
+                <span>التصنيف: {selectedSubtypeLabel}</span>
               </Button>
             </div>
           ) : null}
@@ -357,7 +357,7 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
             labelledBy="place-subtype-filter-title"
             onClose={() => setSubtypeFilterOpen(false)}
             open={subtypeFilterOpen}
-            title="نوع المكان"
+            title="التصنيف"
           >
             <div
               aria-label="تصفية حسب النوع"

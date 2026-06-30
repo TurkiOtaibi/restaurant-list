@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import {
-  Badge,
   BidiText,
   BottomSheet,
   Button,
@@ -13,15 +12,14 @@ import {
   EmptyState,
   LoadingState,
   Modal,
-  NumberText,
   PlaceTypeIcon,
+  RatingDisplay,
   StatusMessage
 } from "@/components/ui";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { ApiError, Place, UserList, apiCollection, apiRequest, clearTokens, ensureSession } from "@/lib/api";
 import { loginHrefForReturn } from "@/lib/authReturn";
-import { formatAverageRating } from "@/lib/format";
-import { formatOutOfTen, placeCountLabel, ratingCountLabel } from "@/lib/numerals";
+import { placeCountLabel, ratingCountLabel } from "@/lib/numerals";
 
 import { placeSubtypeLabel, placeTypeLabel } from "./taxonomy";
 
@@ -119,19 +117,10 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
             <Chip>{placeTypeLabel(place.type)}</Chip>
             {subtype ? <Chip>{subtype}</Chip> : null}
           </div>
-          {place.averageRating !== null && place.ratingCount > 0 ? (
-            <div className="place-detail-hero__rating">
-              <NumberText>{formatAverageRating(place.averageRating)}</NumberText>
-              <span>{ratingCountLabel(place.ratingCount)}</span>
-            </div>
-          ) : null}
           <div className="actions place-detail-hero__actions">
-            <Button onClick={() => setAddToListOpen(true)} type="button">
+            <Button className="ds-button--full" onClick={() => setAddToListOpen(true)} type="button">
               أضف إلى قائمة
             </Button>
-            <ButtonLink href={`/places/${place.id}/rate`} variant="secondary">
-              {place.currentUserRating ? "تعديل التقييم" : "قيّم المكان"}
-            </ButtonLink>
           </div>
         </div>
       </section>
@@ -150,27 +139,34 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
           </article>
         ) : null}
 
-        {place.currentUserRating ? (
-          <article className="place-detail-panel">
-            <h2>تقييمك</h2>
-            <div className="place-detail-community">
-              <Badge variant="rating">
-                <NumberText>{formatOutOfTen(place.currentUserRating)}</NumberText>
-              </Badge>
-              <ButtonLink href={`/places/${place.id}/rate`} variant="secondary">
-                تعديل التقييم
-              </ButtonLink>
-            </div>
-          </article>
-        ) : null}
+        <article className="place-detail-panel place-detail-panel--rating">
+          <h2>تقييمك</h2>
+          <div className="place-detail-community">
+            {place.currentUserRating ? (
+              <RatingDisplay
+                className="place-detail-community__rating"
+                label="تقييمك الحالي"
+                variant="outOfTen"
+                value={place.currentUserRating}
+              />
+            ) : (
+              <p className="muted">لم تضف تقييما لهذا المكان بعد.</p>
+            )}
+            <ButtonLink href={`/places/${place.id}/rate`} variant="secondary">
+              {place.currentUserRating ? "تعديل التقييم" : "قيّم المكان"}
+            </ButtonLink>
+          </div>
+        </article>
 
         {place.averageRating !== null && place.ratingCount > 0 ? (
           <article className="place-detail-panel">
             <h2>تقييم المجتمع</h2>
             <div className="place-detail-community">
-              <Badge variant="rating">
-                <NumberText>{formatAverageRating(place.averageRating)}</NumberText>
-              </Badge>
+              <RatingDisplay
+                ariaLabel={ratingCountLabel(place.ratingCount)}
+                className="place-detail-community__rating"
+                value={place.averageRating}
+              />
               <span>{ratingCountLabel(place.ratingCount)}</span>
             </div>
           </article>
@@ -308,6 +304,7 @@ function SavePlaceToListDialog({
                     <p className="muted">{placeCountLabel(list.placeCount)}</p>
                   </div>
                   <Button
+                    className="place-save-dialog__add-button"
                     disabled={isSavedHere}
                     isLoading={savingListId === list.id}
                     onClick={() => void saveToList(list)}

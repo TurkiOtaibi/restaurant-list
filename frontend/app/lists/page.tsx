@@ -131,6 +131,13 @@ export default function ListsPage() {
               />
             ))}
           </div>
+          {lists.length === 1 ? (
+            <EmptyState
+              action={<Link className="ds-button" href="/lists/new">إنشاء قائمة أخرى</Link>}
+              body="قسّم أماكنك حسب المناسبة أو المدينة حتى تصبح القوائم أسهل في التصفح."
+              title="قائمة واحدة فقط"
+            />
+          ) : null}
         </section>
       ) : null}
 

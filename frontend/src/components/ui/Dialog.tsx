@@ -44,6 +44,7 @@ export function Modal(props: DialogProps) {
         role={props.dialogRole ?? "dialog"}
         tabIndex={-1}
       >
+        <span className="ds-bottom-sheet__grabber" aria-hidden="true" />
         <DialogHeader {...props} onRequestClose={close} />
         {confirmingClose ? (
           <ConfirmCloseNotice

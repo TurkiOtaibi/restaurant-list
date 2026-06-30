@@ -16,8 +16,6 @@ import {
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { ApiError, Place, Rating, apiRequest, clearTokens, ensureSession } from "@/lib/api";
 import { loginHrefForReturn } from "@/lib/authReturn";
-import { formatAverageRating } from "@/lib/format";
-import { formatOutOfTen } from "@/lib/numerals";
 
 type RatePlaceDialogProps = {
   onClose: (place: Place | null) => void;
@@ -165,10 +163,6 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
               </h2>
               <div className="rate-place-dialog__meta">
                 {place.currentUserTried ? <Badge>جربته</Badge> : null}
-                {place.currentUserRating ? (
-                  <Badge variant="rating">تقييمك الحالي {formatOutOfTen(place.currentUserRating)}</Badge>
-                ) : null}
-                <span>{formatAverageRating(place.averageRating)}</span>
               </div>
             </div>
 

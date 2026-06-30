@@ -13,8 +13,10 @@ import {
   ListCard,
   LoadingState,
   PlaceTypeIcon,
+  RatingDisplay,
   StatusMessage
 } from "@/components/ui";
+import { placeSubtypeLabel, placeTypeLabel } from "@/features/places/taxonomy";
 import {
   ApiError,
   Profile,
@@ -160,7 +162,11 @@ export function ProfileArchivePage() {
             </ButtonLink>
           </div>
           {publicLists.length === 0 ? (
-            <p className="muted">لا توجد قوائم عامة حاليًا.</p>
+            <EmptyState
+              action={<ButtonLink href="/lists/public">القوائم العامة</ButtonLink>}
+              body="عندما تنشر قائمة عامة ستظهر هنا لسهولة الرجوع إليها."
+              title="لا توجد قوائم عامة حالياً"
+            />
           ) : (
             <div className="library-grid" aria-label="قوائمك العامة">
               {publicLists.map((list) => (
@@ -238,7 +244,9 @@ function RatingArchiveList({ ratings }: { ratings: ProfileRating[] }) {
 }
 
 function RatingArchiveCard({ rating }: { rating: ProfileRating }) {
-  const metadata = [rating.place.type, rating.place.subtype].filter(Boolean).join(" · ");
+  const metadata = [placeTypeLabel(rating.place.type), placeSubtypeLabel(rating.place.subtype)]
+    .filter(Boolean)
+    .join(" · ");
 
   function rememberPrivateNote() {
     if (typeof window === "undefined") {
@@ -263,7 +271,12 @@ function RatingArchiveCard({ rating }: { rating: ProfileRating }) {
           <BidiText>{rating.place.name}</BidiText>
         </h3>
         <div className="profile-rating-card__meta">
-          <Badge variant="rating">تقييمك {formatOutOfTen(rating.rating)}</Badge>
+          <RatingDisplay
+            className="profile-rating-card__score"
+            label="تقييمك"
+            variant="outOfTen"
+            value={rating.rating}
+          />
           <Badge>جربته</Badge>
           {metadata ? <span className="profile-rating-card__type-meta">{metadata}</span> : null}
         </div>

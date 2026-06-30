@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans_Arabic } from "next/font/google";
 import { AppNav } from "@/components/AppNav";
+import { InstallAppPrompt } from "@/components/InstallAppPrompt";
 import "./globals.css";
 
 const ibmPlexSansArabic = IBM_Plex_Sans_Arabic({
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className={ibmPlexSansArabic.className}>
         <AppNav />
         {children}
+        <InstallAppPrompt />
       </body>
     </html>
   );

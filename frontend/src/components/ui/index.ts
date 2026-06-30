@@ -27,6 +27,7 @@ export { NumberText } from "./NumberText";
 export { PlaceCard } from "./PlaceCard";
 export { PlaceTypeIcon } from "./PlaceTypeIcon";
 export { RatingControl } from "./RatingControl";
+export { RatingDisplay } from "./RatingDisplay";
 export { SearchField } from "./SearchField";
 export { StatusMessage } from "./StatusMessage";
 export { Toast } from "./Toast";
