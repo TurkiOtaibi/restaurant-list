@@ -515,9 +515,13 @@ textarea:disabled {
   box-shadow: var(--shadow-elevated);
 }
 
-.install-app-prompt strong,
+.install-app-prompt h2,
 .install-app-prompt p {
   margin: 0;
+}
+
+.install-app-prompt h2 {
+  font-size: 15px;
 }
 
 .install-app-prompt p {
@@ -1234,7 +1238,12 @@ textarea:disabled {
   padding: 12px 0;
   border-bottom: 1px solid rgba(40, 53, 68, 0.54);
   border-radius: 0;
-  overflow: hidden;
+  overflow: visible;
+}
+
+.ds-place-card--row:focus-visible {
+  border-radius: var(--radius-sm);
+  outline-offset: -4px;
 }
 
 .ds-place-card--row .ds-place-card__main {

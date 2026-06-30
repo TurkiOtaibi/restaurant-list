@@ -18,6 +18,9 @@ export async function ensureE2eApiServer(): Promise<void> {
   }
 
   if (!apiProcess) {
+    apiOutput = "";
+    apiExited = false;
+
     const backendScript = path.resolve(
       process.cwd(),
       "..",
@@ -26,18 +29,22 @@ export async function ensureE2eApiServer(): Promise<void> {
       "start_e2e_api.py"
     );
 
-    apiProcess = spawn(process.env.PYTHON ?? "python", [backendScript], {
+    const spawnedProcess = spawn(process.env.PYTHON ?? "python", [backendScript], {
       env: { ...process.env },
       stdio: "pipe"
     });
+    apiProcess = spawnedProcess;
 
-    apiProcess.stdout.on("data", (chunk) => {
+    spawnedProcess.stdout.on("data", (chunk) => {
       apiOutput += chunk.toString();
     });
-    apiProcess.stderr.on("data", (chunk) => {
+    spawnedProcess.stderr.on("data", (chunk) => {
       apiOutput += chunk.toString();
     });
-    apiProcess.on("exit", (code, signal) => {
+    spawnedProcess.on("exit", (code, signal) => {
+      if (apiProcess !== spawnedProcess) {
+        return;
+      }
       apiExited = true;
       apiReady = false;
       apiOutput += `\nAPI exited with code ${code ?? "null"} and signal ${signal ?? "null"}.`;
@@ -49,9 +56,11 @@ export async function ensureE2eApiServer(): Promise<void> {
 }
 
 export function stopE2eApiServer(): void {
-  apiProcess?.kill();
+  const currentProcess = apiProcess;
   apiProcess = undefined;
   apiReady = false;
+  apiExited = false;
+  currentProcess?.kill();
 }
 
 async function waitForApi(): Promise<void> {

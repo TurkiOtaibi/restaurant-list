@@ -1,8 +1,10 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui";
+import { getAccessToken } from "@/lib/api";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -10,6 +12,8 @@ type BeforeInstallPromptEvent = Event & {
 };
 
 const DISMISS_KEY = "restaurantWishlist.installPromptDismissed";
+const AUTH_ROUTE_PREFIXES = ["/login", "/register", "/auth", "/password", "/forgot-password", "/reset-password"];
+const APP_ROUTE_PREFIXES = ["/places", "/lists", "/profile", "/restaurants", "/cafes"];
 
 function isStandalone() {
   return (
@@ -26,7 +30,24 @@ function isIosSafari() {
   return isIos && isWebKit && !isCriOs;
 }
 
+function canShowInstallPrompt(pathname: string | null) {
+  if (!pathname) {
+    return false;
+  }
+
+  if (AUTH_ROUTE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
+    return false;
+  }
+
+  return APP_ROUTE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+function hasAuthenticatedSession() {
+  return Boolean(getAccessToken());
+}
+
 export function InstallAppPrompt() {
+  const pathname = usePathname();
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showIosHint, setShowIosHint] = useState(false);
 
@@ -35,12 +56,17 @@ export function InstallAppPrompt() {
       return;
     }
 
+    setShowIosHint(false);
+
     if (window.localStorage.getItem(DISMISS_KEY) === "true" || isStandalone()) {
       return;
     }
 
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
+      if (window.localStorage.getItem(DISMISS_KEY) === "true" || isStandalone()) {
+        return;
+      }
       setInstallPrompt(event as BeforeInstallPromptEvent);
       setShowIosHint(false);
     };
@@ -48,7 +74,7 @@ export function InstallAppPrompt() {
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 
     const hintTimer = window.setTimeout(() => {
-      if (isIosSafari() && !isStandalone()) {
+      if (canShowInstallPrompt(pathname) && isIosSafari() && !isStandalone() && hasAuthenticatedSession()) {
         setShowIosHint(true);
       }
     }, 1800);
@@ -57,7 +83,7 @@ export function InstallAppPrompt() {
       window.clearTimeout(hintTimer);
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     };
-  }, []);
+  }, [pathname]);
 
   async function install() {
     if (!installPrompt) {
@@ -80,10 +106,14 @@ export function InstallAppPrompt() {
     return null;
   }
 
+  if (!canShowInstallPrompt(pathname) || !hasAuthenticatedSession()) {
+    return null;
+  }
+
   return (
-    <aside className="install-app-prompt" role="status">
+    <aside aria-labelledby="install-app-prompt-title" className="install-app-prompt">
       <div>
-        <strong>ثبّت سجل</strong>
+        <h2 id="install-app-prompt-title">ثبّت سجل</h2>
         <p>{installPrompt ? "افتح التطبيق بسرعة من الشاشة الرئيسية." : "من زر المشاركة اختر إضافة إلى الشاشة الرئيسية."}</p>
       </div>
       <div className="install-app-prompt__actions">
