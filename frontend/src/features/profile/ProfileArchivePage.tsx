@@ -216,10 +216,11 @@ function RatingArchiveList({ ratings }: { ratings: ProfileRating[] }) {
     );
   }
 
-  const startIndex = Math.max(0, Math.floor(scrollTop / ARCHIVE_ROW_HEIGHT) - ARCHIVE_OVERSCAN);
-  const visibleCount = Math.ceil(viewportHeight / ARCHIVE_ROW_HEIGHT) + ARCHIVE_OVERSCAN * 2;
-  const endIndex = Math.min(ratings.length, startIndex + visibleCount);
-  const visibleRatings = ratings.slice(startIndex, endIndex);
+  const { startIndex, visibleRatings } = profileRatingWindow({
+    ratings,
+    scrollTop,
+    viewportHeight
+  });
 
   return (
     <div
@@ -243,6 +244,25 @@ function RatingArchiveList({ ratings }: { ratings: ProfileRating[] }) {
       </div>
     </div>
   );
+}
+
+function profileRatingWindow({
+  ratings,
+  scrollTop,
+  viewportHeight
+}: {
+  ratings: ProfileRating[];
+  scrollTop: number;
+  viewportHeight: number;
+}) {
+  const startIndex = Math.max(0, Math.floor(scrollTop / ARCHIVE_ROW_HEIGHT) - ARCHIVE_OVERSCAN);
+  const visibleCount = Math.ceil(viewportHeight / ARCHIVE_ROW_HEIGHT) + ARCHIVE_OVERSCAN * 2;
+  const endIndex = Math.min(ratings.length, startIndex + visibleCount);
+
+  return {
+    startIndex,
+    visibleRatings: ratings.slice(startIndex, endIndex)
+  };
 }
 
 function RatingArchiveCard({ rating }: { rating: ProfileRating }) {
