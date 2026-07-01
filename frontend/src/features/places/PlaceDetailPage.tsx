@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import {
+  ActionMenu,
+  AddIcon,
+  ArrowLeftIcon,
   BidiText,
   BottomSheet,
   Button,
@@ -12,6 +15,7 @@ import {
   EmptyState,
   LoadingState,
   Modal,
+  MoreVerticalIcon,
   PlaceTypeIcon,
   RatingDisplay,
   StatusMessage
@@ -118,6 +122,27 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
 
   return (
     <main className="content place-detail-page">
+      <div className="place-detail-topbar" aria-label="إجراءات المكان">
+        <ButtonLink aria-label="العودة للأماكن" className="place-detail-topbar__action" href="/places" variant="secondary">
+          <ArrowLeftIcon />
+        </ButtonLink>
+        <ActionMenu
+          items={[
+            {
+              label: "أضف إلى قائمة",
+              onSelect: () => setAddToListOpen(true)
+            },
+            {
+              label: place.currentUserRating ? "تعديل التقييم" : "قيّم المكان",
+              onSelect: () => {
+                window.location.href = `/places/${place.id}/rate`;
+              }
+            }
+          ]}
+          label="خيارات المكان"
+          trigger={<MoreVerticalIcon />}
+        />
+      </div>
       <section aria-labelledby="place-detail-title" className="place-detail-hero">
         <PlaceTypeIcon className="place-detail-hero__art" type={place.type} />
         <div className="place-detail-hero__content">
@@ -130,6 +155,7 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
           </div>
           <div className="actions place-detail-hero__actions">
             <Button className="ds-button--full" onClick={() => setAddToListOpen(true)} type="button">
+              <AddIcon />
               أضف إلى قائمة
             </Button>
           </div>

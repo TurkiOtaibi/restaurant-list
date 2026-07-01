@@ -55,22 +55,26 @@ function PlaceCardContent({ place }: { place: PlaceCardProps["place"] }) {
           <BidiText>{place.name}</BidiText>
         </h2>
         <p className="ds-place-card__meta">
-          {hasRating ? (
-            <RatingDisplay
-              ariaLabel={ratingCountLabel(place.ratingCount)}
-              className="ds-place-card__score"
-              value={place.averageRating ?? 0}
-            />
-          ) : null}
-          {place.currentUserTried ? (
-            <span className="ds-place-card__tried">
-              <CheckIcon aria-hidden="true" />
-              <span>جربته</span>
-            </span>
-          ) : null}
           <span>{placeTypeLabel(place.type)}</span>
           {subtype ? <span>{subtype}</span> : null}
         </p>
+        {hasRating || place.currentUserTried ? (
+          <div className="ds-place-card__signals">
+            {place.currentUserTried ? (
+              <span className="ds-place-card__tried">
+                <CheckIcon aria-hidden="true" />
+                <span>جربته</span>
+              </span>
+            ) : null}
+            {hasRating ? (
+              <RatingDisplay
+                ariaLabel={ratingCountLabel(place.ratingCount)}
+                className="ds-place-card__score"
+                value={place.averageRating ?? 0}
+              />
+            ) : null}
+          </div>
+        ) : null}
       </div>
       <PlaceTypeIcon type={place.type} />
     </>

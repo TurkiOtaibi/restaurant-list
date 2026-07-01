@@ -10,6 +10,7 @@ export { Field, TextArea, TextInput } from "./Input";
 export {
   AddIcon,
   ArchiveIcon,
+  ArrowLeftIcon,
   CafeIcon,
   CheckIcon,
   ClearIcon,
@@ -17,6 +18,7 @@ export {
   DeleteIcon,
   EditIcon,
   FilterIcon,
+  MoreVerticalIcon,
   RestaurantIcon,
   ShelfIcon,
   TasteMarkIcon

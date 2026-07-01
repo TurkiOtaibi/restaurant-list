@@ -119,12 +119,30 @@ export function AddIcon(props: IconProps) {
   );
 }
 
+export function ArrowLeftIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M15 6l-6 6 6 6" />
+    </BaseIcon>
+  );
+}
+
 export function FilterIcon(props: IconProps) {
   return (
     <BaseIcon {...props}>
       <path d="M5 6h14" />
       <path d="M8 12h8" />
       <path d="M10 18h4" />
+    </BaseIcon>
+  );
+}
+
+export function MoreVerticalIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M12 5h.01" />
+      <path d="M12 12h.01" />
+      <path d="M12 19h.01" />
     </BaseIcon>
   );
 }
