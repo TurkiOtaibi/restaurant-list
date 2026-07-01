@@ -2,8 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 
-import { BottomSheet, Button, Modal, StatusMessage, TextInput } from "@/components/ui";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { Button, ResponsiveDialog, StatusMessage, TextInput } from "@/components/ui";
 import { ApiError, DataResponse, ListDetail, UserList, apiRequest } from "@/lib/api";
 
 import { VisibilitySelector } from "./VisibilitySelector";
@@ -16,8 +15,6 @@ type EditListDialogProps = {
 };
 
 export function EditListDialog({ list, onClose, onUpdated, open }: EditListDialogProps) {
-  const isDesktop = useMediaQuery("(min-width: 768px)");
-  const Dialog = isDesktop ? Modal : BottomSheet;
   const nameRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(list.name);
   const [visibility, setVisibility] = useState<UserList["visibility"]>(list.visibility);
@@ -96,7 +93,7 @@ export function EditListDialog({ list, onClose, onUpdated, open }: EditListDialo
   }
 
   return (
-    <Dialog
+    <ResponsiveDialog
       confirmCloseMessage="هناك تغييرات غير محفوظة. إغلاق؟"
       hasUnsavedChanges={hasUnsavedChanges && !submitting}
       initialFocusSelector="#edit-list-name"
@@ -135,6 +132,6 @@ export function EditListDialog({ list, onClose, onUpdated, open }: EditListDialo
           </Button>
         </div>
       </form>
-    </Dialog>
+    </ResponsiveDialog>
   );
 }

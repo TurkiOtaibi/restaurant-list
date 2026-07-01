@@ -5,16 +5,14 @@ import { useEffect, useRef, useState } from "react";
 
 import {
   BidiText,
-  BottomSheet,
   Button,
   EmptyState,
   LoadingState,
-  Modal,
   PlaceTypeIcon,
+  ResponsiveDialog,
   SearchField,
   StatusMessage
 } from "@/components/ui";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { ApiError, ListDetail, Place, apiCollection, apiRequest } from "@/lib/api";
 import { placeSubtypeLabel, placeTypeLabel } from "@/features/places/taxonomy";
 
@@ -33,8 +31,6 @@ export function AddPlaceDialog({
   open,
   savedPlaceIds = []
 }: AddPlaceDialogProps) {
-  const isDesktop = useMediaQuery("(min-width: 768px)");
-  const Dialog = isDesktop ? Modal : BottomSheet;
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Place[]>([]);
   const [loadingResults, setLoadingResults] = useState(false);
@@ -107,7 +103,7 @@ export function AddPlaceDialog({
   }
 
   return (
-    <Dialog
+    <ResponsiveDialog
       initialFocusSelector="#add-place-search"
       labelledBy="add-place-title"
       onClose={onClose}
@@ -182,6 +178,6 @@ export function AddPlaceDialog({
           </div>
         ) : null}
       </div>
-    </Dialog>
+    </ResponsiveDialog>
   );
 }

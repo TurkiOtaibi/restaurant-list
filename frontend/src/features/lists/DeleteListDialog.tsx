@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { BidiText, BottomSheet, Button, Modal, StatusMessage } from "@/components/ui";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { BidiText, Button, ResponsiveDialog, StatusMessage } from "@/components/ui";
 import { ApiError, ListDetail, apiRequest } from "@/lib/api";
 
 type DeleteListDialogProps = {
@@ -15,8 +14,6 @@ type DeleteListDialogProps = {
 
 export function DeleteListDialog({ list, onClose, open }: DeleteListDialogProps) {
   const router = useRouter();
-  const isDesktop = useMediaQuery("(min-width: 768px)");
-  const Dialog = isDesktop ? Modal : BottomSheet;
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -34,7 +31,7 @@ export function DeleteListDialog({ list, onClose, open }: DeleteListDialogProps)
   }
 
   return (
-    <Dialog
+    <ResponsiveDialog
       dialogRole="alertdialog"
       initialFocusSelector="#delete-list-cancel"
       labelledBy="delete-list-title"
@@ -62,6 +59,6 @@ export function DeleteListDialog({ list, onClose, open }: DeleteListDialogProps)
           </Button>
         </div>
       </div>
-    </Dialog>
+    </ResponsiveDialog>
   );
 }

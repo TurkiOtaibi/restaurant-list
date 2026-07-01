@@ -27,7 +27,11 @@ import { loginHrefForReturn } from "@/lib/authReturn";
 import { cx } from "@/lib/ui";
 
 import {
-  isSubtypeValidForType,
+  buildPlaceLibraryApiQuery,
+  buildPlaceLibraryUrl,
+  parsePlaceLibraryUrlState
+} from "./placeLibraryQuery";
+import {
   placeSubtypeLabel,
   placeTypeOptions,
   PlaceType,
@@ -65,42 +69,27 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
   const loadingMoreRef = useRef(false);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const type = params.get("type");
-    const nextType =
-      type === "restaurant" || type === "cafe" || type === "ice_cream" ? type : initialType;
-    const subtype = params.get("subtype") as SubtypeFilterValue | null;
-    const query = params.get("q") ?? "";
+    const urlState = parsePlaceLibraryUrlState(window.location.search, initialType);
 
-    setActiveType(nextType);
-    if (subtype && isSubtypeValidForType(nextType, subtype)) {
-      setActiveSubtype(subtype);
-    } else {
-      setActiveSubtype("all");
-    }
-    setSearchTerm(query);
-    setSubmittedSearch(query);
+    setActiveType(urlState.type);
+    setActiveSubtype(urlState.subtype);
+    setSearchTerm(urlState.q);
+    setSubmittedSearch(urlState.q);
 
-    if (params.get("focus") === "create-place") {
+    if (urlState.focusCreatePlace) {
       createLinkRef.current?.focus();
     }
   }, [initialType]);
 
   const buildQuery = useCallback(
-    (offset: number) => {
-      const params = new URLSearchParams({ type: activeType });
-      const normalizedSearch = submittedSearch.trim();
-      if (normalizedSearch) {
-        params.set("q", normalizedSearch);
-      }
-      if (activeSubtype !== "all" && activeType !== "ice_cream") {
-        params.set("subtype", activeSubtype);
-      }
-      params.set("sort", "rating_desc");
-      params.set("limit", String(PAGE_SIZE));
-      params.set("offset", String(offset));
-      return params.toString();
-    },
+    (offset: number) =>
+      buildPlaceLibraryApiQuery({
+        limit: PAGE_SIZE,
+        offset,
+        q: submittedSearch,
+        subtype: activeSubtype,
+        type: activeType
+      }),
     [activeSubtype, activeType, submittedSearch]
   );
 
@@ -268,15 +257,7 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
     subtype: SubtypeFilterValue;
     type: PlaceType;
   }) {
-    const params = new URLSearchParams();
-    params.set("type", type);
-    if (subtype !== "all" && type !== "ice_cream") {
-      params.set("subtype", subtype);
-    }
-    if (q.trim()) {
-      params.set("q", q.trim());
-    }
-    window.history.replaceState(null, "", `/places?${params.toString()}`);
+    window.history.replaceState(null, "", buildPlaceLibraryUrl({ q, subtype, type }));
   }
 
   const isSearching = submittedSearch.trim().length > 0;

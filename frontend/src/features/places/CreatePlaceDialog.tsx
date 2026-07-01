@@ -2,8 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 
-import { BottomSheet, Button, Field, Modal, StatusMessage, TextInput } from "@/components/ui";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { Button, Field, ResponsiveDialog, StatusMessage, TextInput } from "@/components/ui";
 import { ApiError, Place, apiRequest } from "@/lib/api";
 
 import {
@@ -27,8 +26,6 @@ export function CreatePlaceDialog({
   onClose,
   open
 }: CreatePlaceDialogProps) {
-  const isDesktop = useMediaQuery("(min-width: 768px)");
-  const Dialog = isDesktop ? Modal : BottomSheet;
   const nameRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(initialName);
   const [type, setType] = useState<PlaceType>(initialType);
@@ -117,7 +114,7 @@ export function CreatePlaceDialog({
   }
 
   return (
-    <Dialog
+    <ResponsiveDialog
       confirmCloseMessage="لديك تغييرات غير محفوظة. هل تريد الإغلاق؟"
       hasUnsavedChanges={hasUnsavedChanges && !submitting && !createdPlace}
       initialFocusSelector="#place-name"
@@ -202,7 +199,7 @@ export function CreatePlaceDialog({
           </Button>
         </div>
       </form>
-    </Dialog>
+    </ResponsiveDialog>
   );
 }
 

@@ -22,7 +22,7 @@ from app.modules.lists.schemas import (
     PublicListResponse,
 )
 from app.modules.places.models import Place
-from app.modules.places.schemas import PlaceCollectionResponse
+from app.modules.places.schemas import PlaceCollectionResponse, PlaceResponse
 from app.modules.places.services import get_place_summaries_by_id
 
 
@@ -237,16 +237,7 @@ async def list_detail_response(
         place_count=len(user_list.items),
         created_at=user_list.created_at,
         updated_at=user_list.updated_at,
-        items=[
-            ListItemResponse(
-                id=item.id,
-                list_id=item.list_id,
-                place_id=item.place_id,
-                place=PlaceCollectionResponse.model_validate(place_by_id[item.place_id]),
-                created_at=item.created_at,
-            )
-            for item in user_list.items
-        ],
+        items=_list_item_responses(user_list.items, place_by_id),
     )
 
 
@@ -269,16 +260,7 @@ async def public_list_detail_response(
         place_count=len(user_list.items),
         created_at=user_list.created_at,
         updated_at=user_list.updated_at,
-        items=[
-            ListItemResponse(
-                id=item.id,
-                list_id=item.list_id,
-                place_id=item.place_id,
-                place=PlaceCollectionResponse.model_validate(place_by_id[item.place_id]),
-                created_at=item.created_at,
-            )
-            for item in user_list.items
-        ],
+        items=_list_item_responses(user_list.items, place_by_id),
     )
 
 
@@ -289,6 +271,20 @@ async def list_item_response(
     current_user_id: str,
 ) -> ListItemResponse:
     place_by_id = await get_place_summaries_by_id(db, current_user_id, [item.place_id])
+    return _list_item_response(item, place_by_id)
+
+
+def _list_item_responses(
+    items: list[ListItem],
+    place_by_id: dict[str, PlaceResponse],
+) -> list[ListItemResponse]:
+    return [_list_item_response(item, place_by_id) for item in items]
+
+
+def _list_item_response(
+    item: ListItem,
+    place_by_id: dict[str, PlaceResponse],
+) -> ListItemResponse:
     return ListItemResponse(
         id=item.id,
         list_id=item.list_id,
@@ -310,8 +306,10 @@ async def add_place_to_list(
     if place is None:
         not_found("Place")
 
-    existing_item = await db.scalar(
-        select(ListItem).where(ListItem.list_id == list_id, ListItem.place_id == place_id)
+    existing_item = await _get_list_item_by_place(
+        db,
+        list_id=list_id,
+        place_id=place_id,
     )
     if existing_item is not None:
         return existing_item, False
@@ -322,8 +320,10 @@ async def add_place_to_list(
         await db.commit()
     except IntegrityError:
         await db.rollback()
-        existing_after_race = await db.scalar(
-            select(ListItem).where(ListItem.list_id == list_id, ListItem.place_id == place_id)
+        existing_after_race = await _get_list_item_by_place(
+            db,
+            list_id=list_id,
+            place_id=place_id,
         )
         if existing_after_race is not None:
             return existing_after_race, False
@@ -333,6 +333,18 @@ async def add_place_to_list(
     if result is None:
         internal_error()
     return result, True
+
+
+async def _get_list_item_by_place(
+    db: AsyncSession,
+    *,
+    list_id: str,
+    place_id: str,
+) -> ListItem | None:
+    result: ListItem | None = await db.scalar(
+        select(ListItem).where(ListItem.list_id == list_id, ListItem.place_id == place_id)
+    )
+    return result
 
 
 def _list_response(user_list: UserList, place_count: int) -> ListResponse:

@@ -136,16 +136,7 @@ async def list_place_summaries(
     )
     total = int(await db.scalar(count_statement) or 0)
     return PlaceListResult(
-        items=[
-            _place_response(
-                place,
-                average_rating,
-                int(rating_count),
-                current_user_rating,
-                relationships.get(place.id),
-            )
-            for place, average_rating, rating_count, current_user_rating in row_items
-        ],
+        items=[_place_response_from_summary_row(row, relationships) for row in row_items],
         total=total,
     )
 
@@ -163,13 +154,7 @@ async def get_place_summary(
 
     place, average_rating, rating_count, current_user_rating = row
     relationships = await get_user_place_relationships(db, current_user_id, [place.id])
-    return _place_response(
-        place,
-        average_rating,
-        int(rating_count),
-        current_user_rating,
-        relationships.get(place.id),
-    )
+    return _place_response_from_summary_row(row, relationships)
 
 
 async def get_place_summaries_by_id(
@@ -186,15 +171,23 @@ async def get_place_summaries_by_id(
     row_items = rows.all()
     relationships = await get_user_place_relationships(db, current_user_id, place_ids)
     return {
-        place.id: _place_response(
-            place,
-            average_rating,
-            int(rating_count),
-            current_user_rating,
-            relationships.get(place.id),
-        )
-        for place, average_rating, rating_count, current_user_rating in row_items
+        cast(Place, row[0]).id: _place_response_from_summary_row(row, relationships)
+        for row in row_items
     }
+
+
+def _place_response_from_summary_row(
+    row: Any,
+    relationships: dict[str, UserPlaceRelationship],
+) -> PlaceResponse:
+    place, average_rating, rating_count, current_user_rating = row
+    return _place_response(
+        place,
+        average_rating,
+        int(rating_count),
+        current_user_rating,
+        relationships.get(place.id),
+    )
 
 
 async def get_user_place_relationships(

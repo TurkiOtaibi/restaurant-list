@@ -3,8 +3,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { BottomSheet, Button, Modal, StatusMessage, TextInput } from "@/components/ui";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { Button, ResponsiveDialog, StatusMessage, TextInput } from "@/components/ui";
 import { ApiError, UserList, apiRequest } from "@/lib/api";
 
 import { VisibilitySelector } from "./VisibilitySelector";
@@ -16,8 +15,6 @@ type CreateListDialogProps = {
 
 export function CreateListDialog({ onClose, open }: CreateListDialogProps) {
   const router = useRouter();
-  const isDesktop = useMediaQuery("(min-width: 768px)");
-  const Dialog = isDesktop ? Modal : BottomSheet;
   const nameRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
   const [visibility, setVisibility] = useState<UserList["visibility"]>("private");
@@ -83,7 +80,7 @@ export function CreateListDialog({ onClose, open }: CreateListDialogProps) {
   }
 
   return (
-    <Dialog
+    <ResponsiveDialog
       confirmCloseMessage="هناك تغييرات غير محفوظة. إغلاق؟"
       hasUnsavedChanges={hasUnsavedChanges && !submitting}
       initialFocusSelector="#list-name"
@@ -126,6 +123,6 @@ export function CreateListDialog({ onClose, open }: CreateListDialogProps) {
           </Button>
         </div>
       </form>
-    </Dialog>
+    </ResponsiveDialog>
   );
 }

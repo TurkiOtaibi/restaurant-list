@@ -3,7 +3,7 @@ export { Badge } from "./Badge";
 export { BidiText } from "./BidiText";
 export { Button, ButtonLink } from "./Button";
 export { Card, CardLink } from "./Card";
-export { BottomSheet, Modal } from "./Dialog";
+export { BottomSheet, Modal, ResponsiveDialog } from "./Dialog";
 export { Chip } from "./Chip";
 export { EmptyState } from "./EmptyState";
 export { Field, TextArea, TextInput } from "./Input";

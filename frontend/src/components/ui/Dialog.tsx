@@ -4,6 +4,8 @@ import { createPortal } from "react-dom";
 import type { KeyboardEvent, ReactNode, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
 
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+
 import { Button } from "./Button";
 import { CloseIcon } from "./Icon";
 
@@ -22,6 +24,22 @@ type DialogProps = {
 };
 
 export function Modal(props: DialogProps) {
+  return <DialogSurface className="ds-modal" props={props} />;
+}
+
+export function BottomSheet(props: DialogProps) {
+  return <DialogSurface className="ds-bottom-sheet" props={props} showGrabber />;
+}
+
+function DialogSurface({
+  className,
+  props,
+  showGrabber = false
+}: {
+  className: string;
+  props: DialogProps;
+  showGrabber?: boolean;
+}) {
   const layer = useDialogLayer(props.open);
   const ref = useDialogBehavior(props.open, layer?.root ?? null, props.initialFocusSelector);
   const { cancelClose, close, confirmingClose, confirmClose } = useConfirmableClose(props);
@@ -38,12 +56,13 @@ export function Modal(props: DialogProps) {
       <section
         aria-labelledby={props.labelledBy}
         aria-modal="true"
-        className="ds-modal"
+        className={className}
         onKeyDown={(event) => handleDialogKeyDown(event, close)}
         ref={ref}
         role={props.dialogRole ?? "dialog"}
         tabIndex={-1}
       >
+        {showGrabber ? <span className="ds-bottom-sheet__grabber" aria-hidden="true" /> : null}
         <DialogHeader {...props} onRequestClose={close} />
         {confirmingClose ? (
           <ConfirmCloseNotice
@@ -59,43 +78,11 @@ export function Modal(props: DialogProps) {
   );
 }
 
-export function BottomSheet(props: DialogProps) {
-  const layer = useDialogLayer(props.open);
-  const ref = useDialogBehavior(props.open, layer?.root ?? null, props.initialFocusSelector);
-  const { cancelClose, close, confirmingClose, confirmClose } = useConfirmableClose(props);
-  useDocumentEscape(props.open, close);
-  useFocusAfterConfirmClose(props.open, ref, confirmingClose, props.initialFocusSelector);
+export function ResponsiveDialog(props: DialogProps) {
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const Dialog = isDesktop ? Modal : BottomSheet;
 
-  if (!props.open || !layer) {
-    return null;
-  }
-
-  return createPortal(
-    <>
-      <div className="ds-dialog-backdrop" />
-      <section
-        aria-labelledby={props.labelledBy}
-        aria-modal="true"
-        className="ds-bottom-sheet"
-        onKeyDown={(event) => handleDialogKeyDown(event, close)}
-        ref={ref}
-        role={props.dialogRole ?? "dialog"}
-        tabIndex={-1}
-      >
-        <span className="ds-bottom-sheet__grabber" aria-hidden="true" />
-        <DialogHeader {...props} onRequestClose={close} />
-        {confirmingClose ? (
-          <ConfirmCloseNotice
-            message={props.confirmCloseMessage}
-            onCancel={cancelClose}
-            onConfirm={confirmClose}
-          />
-        ) : null}
-        {props.children}
-      </section>
-    </>,
-    layer.root
-  );
+  return <Dialog {...props} />;
 }
 
 function DialogHeader({

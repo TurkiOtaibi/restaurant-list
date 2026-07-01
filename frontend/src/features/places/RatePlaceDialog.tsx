@@ -5,14 +5,12 @@ import { FormEvent, useEffect, useState } from "react";
 
 import {
   BidiText,
-  BottomSheet,
   Button,
-  Modal,
   RatingControl,
+  ResponsiveDialog,
   StatusMessage,
   TextArea
 } from "@/components/ui";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
 import {
   ApiError,
   Place,
@@ -33,8 +31,6 @@ type RatePlaceDialogProps = {
 const RATING_NOTE_SESSION_PREFIX = "restaurantWishlist.ratingNote.";
 
 export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps) {
-  const isDesktop = useMediaQuery("(min-width: 768px)");
-  const Dialog = isDesktop ? Modal : BottomSheet;
   const [place, setPlace] = useState<Place | null>(null);
   const [rating, setRating] = useState<number | null>(null);
   const [initialRating, setInitialRating] = useState<number | null>(null);
@@ -141,7 +137,7 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
   }
 
   return (
-    <Dialog
+    <ResponsiveDialog
       confirmCloseMessage="لديك تقييم لم تحفظه بعد. هل تريد الإغلاق؟"
       hasUnsavedChanges={hasUnsavedChanges}
       initialFocusSelector="#rating-control"
@@ -213,6 +209,6 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
           </Button>
         </div>
       </form>
-    </Dialog>
+    </ResponsiveDialog>
   );
 }
