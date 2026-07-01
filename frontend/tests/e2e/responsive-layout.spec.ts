@@ -10,7 +10,6 @@ type MockPlace = {
   currentUserListIds: string[];
   currentUserListNames: string[];
   currentUserRating: number | null;
-  currentUserTried: boolean;
   description: string | null;
   id: string;
   name: string;
@@ -37,7 +36,6 @@ function makePlace(
     currentUserListIds: id === "p1" || id === "p4" ? ["list-pop"] : [],
     currentUserListNames: id === "p1" || id === "p4" ? ["برجر الرياض طويل الاسم"] : [],
     currentUserRating,
-    currentUserTried: currentUserRating !== null,
     description: null,
     id,
     name,
@@ -130,10 +128,10 @@ const emptyListDetail = {
 
 const profile = {
   listCount: 3,
+  ratedCafeCount: 1,
+  ratedIceCreamCount: 0,
+  ratedRestaurantCount: 1,
   ratingsCreatedCount: 2,
-  triedCafeCount: 1,
-  triedIceCreamCount: 0,
-  triedRestaurantCount: 1,
   userRatings: [
     {
       createdAt: now,

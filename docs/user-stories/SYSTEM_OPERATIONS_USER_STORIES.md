@@ -390,7 +390,7 @@ Feature Description: Backend tests cover ratings, profile, and public-list autho
 |---|---|---|---|---|
 | QA-003-US-001 | Test rating create/update semantics | Critical | As QA, I want rating lifecycle tested. | Given rating tests run, then `POST` create/upsert status semantics and `PATCH` update semantics are verified. |
 | QA-003-US-002 | Test rating validation | Critical | As QA, I want rating values constrained. | Given rating tests run, then valid `0.5` increments and invalid values are verified. |
-| QA-003-US-003 | Test tried side effects | Critical | As QA, I want tried behavior correct. | Given rating tests run, then first rating removes place from user's lists and rating update does not repeat cleanup. |
+| QA-003-US-003 | Test rating/list independence | Critical | As QA, I want rating/list independence correct. | Given rating tests run, then rating create/edit does not add or remove list membership. |
 | QA-003-US-004 | Test notes privacy | Critical | As QA, I want private notes protected. | Given profile/public place/list tests run, then only the rating owner can see notes and public surfaces never expose notes. |
 | QA-003-US-005 | Test profile statistics | High | As QA, I want profile stats accurate. | Given profile tests run, then list count, ratings count, and tried counts by type are verified. |
 | QA-003-US-006 | Test profile canonical archive | High | As QA, I want no duplicate tried archive. | Given profile tests run, then `userRatings` is canonical and `triedPlaces` does not appear. |

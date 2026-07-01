@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
-  Badge,
   BidiText,
   Button,
   ButtonLink,
@@ -280,7 +279,6 @@ function RatingArchiveCard({ rating }: { rating: ProfileRating }) {
             variant="outOfTen"
             value={rating.rating}
           />
-          <Badge>جربته</Badge>
           {metadata ? <span className="profile-rating-card__type-meta">{metadata}</span> : null}
         </div>
       </div>
@@ -307,7 +305,7 @@ function ProfileLoadingState() {
   return (
     <section className="profile-loading" aria-label="جاري تحميل صفحتك">
       <LoadingState count={4} delayMs={0} label="جاري تحميل إحصاءات الملف" variant="text" />
-      <LoadingState count={3} delayMs={0} label="جاري تحميل أماكنك المجربة" />
+      <LoadingState count={3} delayMs={0} label="جاري تحميل تقييماتك" />
     </section>
   );
 }
@@ -315,9 +313,9 @@ function ProfileLoadingState() {
 function profileStats(profile: Profile): ProfileStat[] {
   return [
     { label: "قوائم", unit: "قائمة", value: profile.listsCount ?? profile.listCount ?? 0 },
-    { label: "مطاعم مجربة", unit: "مطعم", value: profile.triedRestaurantCount },
-    { label: "مقاهٍ مجربة", unit: "مقهى", value: profile.triedCafeCount },
-    { label: "آيس كريم مجرب", unit: "محل", value: profile.triedIceCreamCount },
+    { label: "مطاعم قيّمتها", unit: "مطعم", value: profile.ratedRestaurantCount },
+    { label: "مقاهٍ قيّمتها", unit: "مقهى", value: profile.ratedCafeCount },
+    { label: "آيس كريم قيّمته", unit: "محل", value: profile.ratedIceCreamCount },
     { label: "تقييمات", unit: "تقييم", value: profile.ratingsCount ?? profile.ratingsCreatedCount ?? 0 }
   ];
 }

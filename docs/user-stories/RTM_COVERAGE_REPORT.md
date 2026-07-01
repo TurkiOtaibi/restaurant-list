@@ -100,8 +100,8 @@
 | RATING-003 | Support 1-10 in 0.5 increments | 17 | 17 | 0 | 0 | 0 | Covered | QA-003, QA-004 |
 | RATING-004 | Add/view own private note | 18 | 18 | 0 | 0 | 0 | Covered | QA-003, QA-004 |
 | RATING-005 | Tried derived from rating row | 10 | 10 | 0 | 0 | 0 | Covered | QA-003, QA-004 |
-| RATING-006 | First rating removes place from all user lists | 13 | 13 | 0 | 0 | 0 | Covered | QA-003, QA-004 |
-| RATING-007 | Re-add tried place later | 8 | 8 | 0 | 0 | 0 | Covered | QA-003, QA-004 |
+| RATING-006 | Rating does not affect list membership | 13 | 13 | 0 | 0 | 0 | Covered | QA-003, QA-004 |
+| RATING-007 | Add rated place later | 8 | 8 | 0 | 0 | 0 | Covered | QA-003, QA-004 |
 | RATING-008 | Average rating and rating count | 15 | 15 | 0 | 0 | 0 | Covered | QA-003, QA-004 |
 | RATING-009 | Repeated POST updates existing rating | 12 | 12 | 0 | 0 | 0 | Covered | QA-003, QA-004 |
 | RESP-001 | RTL primary nav | 15 | 15 | 0 | 0 | 0 | Covered | QA-004 |

@@ -177,11 +177,11 @@ User Story ID: `RATING-001-US-010`
 
 User Story Title: Show first-rating consequence before save
 
-User Story Summary: As a user, I want to know rating removes the place from my lists so that the side effect is not surprising.
+User Story Summary: As a user, I want to know rating will not change my lists so that list organization remains predictable.
 
 | Test Case ID | Test Title | Test Type | Priority | Preconditions | Test Data | Steps | Expected Result | Related User Story ID | Automation Candidate | Automation Layer | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| RATING-001-US-010-TC-001 | First-rating consequence copy is visible before save | UI, UX | High | FX-R001-A is loaded and `user-001` has no rating for `place-001`. | Place `place-001` appears in `user-001` owned lists `list-001` and `list-002`. | 1. Open create rating flow for `place-001`. 2. Inspect visible explanatory text before selecting Save. 3. Inspect network log. | The flow displays copy stating that saving the first rating marks the place tried and removes it from the user's lists; no `POST /api/v1/ratings` request is sent by rendering the copy. | RATING-001-US-010 | Yes | UI E2E | Regression. Source: RATING-001-US-010. Cleanup execution belongs to RATING-006. |
+| RATING-001-US-010-TC-001 | First-rating consequence copy is visible before save | UI, UX | High | FX-R001-A is loaded and `user-001` has no rating for `place-001`. | Place `place-001` appears in `user-001` owned lists `list-001` and `list-002`. | 1. Open create rating flow for `place-001`. 2. Inspect visible explanatory text before selecting Save. 3. Inspect network log. | The flow displays copy stating that saving the first rating records only the rating and does not add or remove the place from the user's lists; no `POST /api/v1/ratings` request is sent by rendering the copy. | RATING-001-US-010 | Yes | UI E2E | Regression. Source: RATING-001-US-010. Rating/list independence belongs to RATING-006. |
 
 ## RATING-001-US-011 - Prevent duplicate submit during create
 

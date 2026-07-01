@@ -13,7 +13,7 @@ Out of scope for this file:
 
 - Public-list browsing and public-list detail behavior are covered in `docs/user-stories/PUBLIC_LISTS_USER_STORIES.md`.
 - Place creation/search taxonomy behavior is covered in `docs/user-stories/PLACES_USER_STORIES.md`.
-- Rating/tried side effects are covered in `docs/user-stories/RATINGS_USER_STORIES.md`.
+- Rating/list independence and rating side effects are covered in `docs/user-stories/RATINGS_USER_STORIES.md`.
 
 Total features processed: 11
 Total user stories written: 140
@@ -305,7 +305,7 @@ Feature Description: Adding the same place to the same list again succeeds witho
 | LIST-009-US-005 | Recover from duplicate race | Critical | As the system, I want duplicate races handled as idempotent success. | Given an `IntegrityError` occurs because another request created the row first, then the service rolls back, loads the existing item, and returns idempotent success. |
 | LIST-009-US-006 | Keep UI item display unique | High | As a user, I want the list detail to show one row per membership. | Given duplicate add is attempted, when list detail refreshes, then the place appears exactly once. |
 | LIST-009-US-007 | Keep counts stable on duplicate add | High | As a user, I want counts not inflated by duplicate taps. | Given duplicate add returns `200`, then `placeCount` remains unchanged after refresh. |
-| LIST-009-US-008 | Keep tried/rating state unchanged | High | As the system, I want duplicate add not to affect ratings or tried state. | Given a tried/rated place is added again to the same list, then no rating is created, edited, deleted, or duplicated. |
+| LIST-009-US-008 | Keep rating state unchanged | High | As the system, I want duplicate add not to affect ratings. | Given a rated place is added again to the same list, then no rating is created, edited, deleted, or duplicated. |
 | LIST-009-US-009 | Avoid duplicate error for normal users | Medium | As a user, I want accidental duplicate taps to feel harmless. | Given duplicate add happens through UI, then the UI should show success/already-added state, not a blocking duplicate error. |
 | LIST-009-US-010 | Preserve owner authorization before idempotency | Critical | As the system, I want idempotency not to bypass ownership. | Given the list belongs to another user, when duplicate or non-duplicate add is attempted, then access is denied before returning membership data. |
 

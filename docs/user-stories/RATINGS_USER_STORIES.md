@@ -12,9 +12,9 @@ Scope: all `RATING-*` features from `FEATURE_CATALOG.md`.
 Out of scope for this file:
 
 - Rating deletion is not supported.
-- Tried removal via rating deletion is out of scope.
+- The legacy `tried` concept is removed from active product behavior by `docs/engineering-decisions/EDR-009_RATING_LIST_DECOUPLING.md`.
 - Public note sharing, comments, reactions, recommendations, moderation, and admin workflows are out of scope.
-- Place browsing and list management are covered in their own module user-story files, except where rating side effects directly affect them.
+- Place browsing and list management are covered in their own module user-story files. Ratings must not create list-management side effects.
 
 Total features processed: 9
 Total user stories written: 127
@@ -40,8 +40,8 @@ Total user stories written: 127
 - `RatingResponse` fields are exactly `id`, `userId`, `placeId`, `rating`, `notes`, `createdAt`, and `updatedAt`.
 - Notes are optional, private, trimmed before save, limited to 1000 characters, and blank notes are stored and returned as `notes: null`.
 - Notes must never appear in Places list, Place Detail for non-owner, Public Lists, other users' profile/public data, aggregate responses, logs, or error payloads.
-- Creating the first rating derives tried status and removes the place from all lists owned by the rating user.
-- Updating an existing rating preserves tried status and must not repeat first-rating list cleanup.
+- Creating a rating records a score only; it must not derive tried status and must not add or remove list membership.
+- Updating an existing rating records rating changes only; it must not add or remove list membership.
 - After successful rating create or update, the UI navigates back to Place Detail and refreshes place context, current-user context, and aggregate rating data.
 - Average rating is calculated from the ratings table using full internal precision and displayed with one decimal place.
 - Display rounding examples: `8.44 -> 8.4`, `8.45 -> 8.5`, `8.46 -> 8.5`.
@@ -68,7 +68,7 @@ Feature Description: Authenticated users can create a rating for a place from th
 | RATING-001-US-007 | Return RatingResponse on create | Critical | As an API consumer, I want the created rating response complete so that the UI can refresh state. | Given a rating is created, then response includes `id`, `userId`, `placeId`, `rating`, `notes`, `createdAt`, and `updatedAt`. |
 | RATING-001-US-008 | Create rating with optional note | High | As a user, I want to add an optional private note while rating so that I can remember context. | Given valid rating and note text of 1000 characters or fewer, when I save, then the trimmed note is saved only for my rating. |
 | RATING-001-US-009 | Create rating without note | High | As a user, I want to rate without writing a note so that logging remains fast. | Given I enter a valid rating and no note, when I save, then rating is saved and `notes` is returned as `null`. |
-| RATING-001-US-010 | Show first-rating consequence before save | High | As a user, I want to know rating removes the place from my lists so that the side effect is not surprising. | Given I am creating my first rating for a place, when the rating flow renders, then it communicates that saving will mark the place tried and remove it from my lists. |
+| RATING-001-US-010 | Show rating-only consequence before save | High | As a user, I want to know rating will not change my lists so that list organization remains predictable. | Given I am creating my first rating for a place, when the rating flow renders, then it communicates that saving records only my rating and does not add or remove the place from lists. |
 | RATING-001-US-011 | Prevent duplicate submit during create | High | As a user, I want save protected during submission so that duplicate requests are not sent by repeated taps. | Given save is in progress, when I press save again, then the save action is disabled or busy and no additional client submission is sent. |
 | RATING-001-US-012 | Preserve input after create failure | High | As a user, I want to retry after save failure without re-entering data. | Given network or 5xx failure occurs, when the error appears, then selected rating and note draft remain visible and no false success appears. |
 | RATING-001-US-013 | Navigate back after create success | Critical | As a user, I want to return to Place Detail after rating so that I can see updated context. | Given rating creation succeeds, when the flow completes, then the app navigates back to Place Detail and refreshes place context, current-user context, and aggregate rating data. |
@@ -84,7 +84,7 @@ Coverage Assessment: Covers opening, auth, place validation, rating requirement,
 
 Missing Assumptions: None.
 
-Risks: Critical business risk because rating creation drives tried status, list cleanup, aggregates, and profile archive.
+Risks: Critical business risk if rating creation changes list membership, reintroduces tried state, corrupts aggregates, or misrepresents the profile archive.
 
 ### RATING-002 - Edit existing rating
 
@@ -117,7 +117,7 @@ Coverage Assessment: Covers edit opening, PATCH preference, auth, owner-only acc
 
 Missing Assumptions: None.
 
-Risks: High integrity risk if PATCH creates ratings, mutates wrong-owner data, or repeats first-rating side effects.
+Risks: High integrity risk if PATCH creates ratings, mutates wrong-owner data, or changes list membership.
 
 ### RATING-003 - Support 1-10 in 0.5 increments
 
@@ -188,87 +188,75 @@ Missing Assumptions: None.
 
 Risks: Critical privacy risk if notes leak through any non-owner or operational surface.
 
-### RATING-005 - Tried derived from rating row
+### RATING-005 - Tried concept removed from active product model
 
-Feature Description: Tried status is derived from the existence of a rating row; no separate tried table exists.
+Feature Description: `tried` is a superseded legacy concept. Ratings expose rating context only; no active API or UI should expose tried state.
 
 #### User Stories
 
 | Story ID | Title | Priority | User Story | Acceptance Criteria |
 |---|---|---|---|---|
-| RATING-005-US-001 | Mark tried after rating | Critical | As a user, I want a place marked tried after I rate it so that my archive reflects visited places. | Given I create a rating, when place data reloads, then `currentUserTried` is true. |
-| RATING-005-US-002 | Tried has no manual toggle | High | As Product, I want tried derived from ratings so that the model stays simple. | Given no rating exists for user/place, when viewing a place, then tried is false and no separate tried toggle is required. |
-| RATING-005-US-003 | Preserve tried on rating update | High | As a user, I want tried status to remain when I update a rating. | Given I already rated a place, when I update the rating, then tried remains true. |
-| RATING-005-US-004 | Profile tried counts derive from ratings | High | As a user, I want profile tried counts accurate so that stats reflect my ratings. | Given ratings exist by place type, when profile loads, then tried restaurant/cafe/ice-cream counts are derived from rated places. |
-| RATING-005-US-005 | Places list tried context | Medium | As a user, I want place context to reflect tried status so that I can recognize places I have rated. | Given I rated a place, when places data loads, then current-user tried context is available to the UI. |
-| RATING-005-US-006 | Place Detail tried context | Medium | As a user, I want Place Detail to reflect tried status. | Given I rated a place, when Place Detail reloads, then current-user tried context and rating context reflect the rating row. |
-| RATING-005-US-007 | No orphan tried state | High | As the system, I want no tried state without rating so that data cannot diverge. | Given ratings table has no row for user/place, when queried, then tried is false. |
-| RATING-005-US-008 | Rating deletion unsupported | Medium | As Product, I want rating deletion excluded so that tried removal semantics are not ambiguous. | Given current product scope, then no delete-rating action or endpoint is required and tried removal via deletion is out of scope. |
-| RATING-005-US-009 | Refresh archive after tried change | High | As a user, I want profile archive updated after rating so that tried/rating history is current. | Given rating create succeeds, when profile data reloads, then the rated place appears in the rating archive and tried counts update. |
-| RATING-005-US-010 | Keep tried derivation current across tabs | Medium | As a user with multiple tabs, I want refreshed views to reflect rating state. | Given I rate in one tab, when another tab refreshes place/profile data, then tried status is derived from the persisted rating row. |
+| RATING-005-US-001 | Rating does not create tried state | Critical | As Product, I want ratings to remain independent scores without creating tried product state. | Given I create a rating, when place data reloads, then `currentUserRating` reflects the score and `currentUserTried` is absent. |
+| RATING-005-US-002 | No tried UI or manual tried control | High | As a user, I should see rating language only, not tried language or controls. | Given Places, Place Detail, rating flow, or Profile renders, then no `جربته`, `tried`, `مجرب`, or `مجربة` label/control appears. |
+| RATING-005-US-003 | Rating update stays rating-only | High | As a user, editing my score should update only rating data. | Given I already rated a place, when I update the rating, then no tried context is created or exposed. |
+| RATING-005-US-004 | Profile rated counts replace tried counts | High | As a user, I want profile type counts to describe rated places, not tried places. | Given ratings exist by place type, when profile loads, then `ratedRestaurantCount`, `ratedCafeCount`, and `ratedIceCreamCount` are returned and tried count fields are absent. |
+| RATING-005-US-005 | Places list exposes rating context only | Medium | As an API consumer, I want place context to expose rating state without a tried duplicate. | Given I rated a place, when places data loads, then `currentUserRating` is available where appropriate and `currentUserTried` is absent. |
 
-Story Count: 10
+Story Count: 5
 
-Coverage Assessment: Covers tried derivation, no manual tried table/toggle, update preservation, profile counts, Places/Detail context, no orphan state, rating deletion out of scope, archive refresh, and multi-tab refresh behavior.
+Coverage Assessment: Covers tried removal, no tried UI/control, rating-only update behavior, profile rated counts, Places/Detail rating context, and absence of legacy tried fields.
 
 Missing Assumptions: None.
 
-Risks: Medium-high if future deletion support is added without explicit tried semantics.
+Risks: Medium-high if legacy tried state or UI is reintroduced through rating/profile changes.
 
-### RATING-006 - First rating removes place from all user lists
+### RATING-006 - Rating does not affect list membership
 
-Feature Description: Creating the first rating removes the place from all lists owned by that user.
+Feature Description: Creating or editing a rating never removes a place from a list and never adds a place to a list.
 
 #### User Stories
 
 | Story ID | Title | Priority | User Story | Acceptance Criteria |
 |---|---|---|---|---|
-| RATING-006-US-001 | Remove from one list after first rating | Critical | As a user, I want a rated place removed from my list so that lists remain for untried places. | Given the place is in one of my lists and I rate it for the first time, when save succeeds, then it is removed from that list. |
-| RATING-006-US-002 | Remove from all owned lists | Critical | As a user, I want first rating to remove the place from all my lists so that tried status is consistent. | Given the place is in multiple owned lists, when I create the first rating, then it is removed from all lists owned by me. |
-| RATING-006-US-003 | Do not remove from other users' lists | Critical | As the system, I want list cleanup scoped to the rating owner so that other users' lists are not changed. | Given another user has the same place in a list, when I rate it, then their list item remains. |
-| RATING-006-US-004 | Commit rating and cleanup atomically | Critical | As the system, I want rating and list cleanup consistent so that partial updates do not corrupt state. | Given first rating succeeds, when transaction commits, then rating exists and all matching owned list items are removed together. |
-| RATING-006-US-005 | Roll back rating if cleanup fails | Critical | As the system, I want failed cleanup to avoid inconsistent tried/list state. | Given cleanup cannot complete before commit, when create rating is attempted, then the transaction rolls back and neither rating nor partial cleanup persists. |
-| RATING-006-US-006 | Roll back cleanup if rating insert fails | Critical | As the system, I want failed rating insert not to remove list items. | Given rating insert fails, when create rating is attempted, then owned list items remain unchanged. |
-| RATING-006-US-007 | Handle commit failure consistently | Critical | As the system, I want commit failure to leave no half-applied state. | Given commit fails after rating/list cleanup is prepared, then transaction rollback leaves rating and list memberships in their previous state. |
-| RATING-006-US-008 | Handle concurrent first ratings safely | Critical | As the system, I want concurrent creates for same user/place safe. | Given concurrent `POST /api/v1/ratings` requests for the same user/place occur, when they complete, then one rating row exists and list cleanup is applied at most once. |
-| RATING-006-US-009 | Rating update does not repeat cleanup | High | As a user, I want later rating edits not to remove re-added list items. | Given I update an existing rating, when save succeeds, then no first-rating list cleanup runs. |
-| RATING-006-US-010 | POST upsert update does not repeat cleanup | High | As the system, I want POST update path to avoid first-rating side effects. | Given POST finds an existing rating and returns `200`, then list cleanup does not run again. |
-| RATING-006-US-011 | Refresh UI after cleanup | High | As a user, I want the UI to reflect list removal after rating. | Given first rating removed a place from lists, when place/list/profile data reloads, then memberships and counts reflect removal. |
-| RATING-006-US-012 | Preserve places and ratings after cleanup | High | As the system, I want list cleanup to affect memberships only. | Given first rating removes list items, then the place remains in catalog and the rating remains in the rating archive. |
-| RATING-006-US-013 | Avoid cleanup data leaks | High | As the system, I want cleanup errors safe. | Given cleanup fails, then errors do not expose private list names, user IDs, notes, SQL, or stack traces. |
+| RATING-006-US-001 | Rating listed place preserves list membership | Critical | As a user, I want a place to remain in my lists after I rate it. | Given the place is in one or more of my lists, when I rate it, then every list membership remains. |
+| RATING-006-US-002 | Rating unlisted place creates no membership | Critical | As the system, I want rating creation not to add a place to any list. | Given the place is in none of my lists, when I rate it, then no list membership is created. |
+| RATING-006-US-003 | Rated place can be added to a list | Critical | As a user, I can organize rated places in lists without changing my rating. | Given I rated a place, when I add it to an owned list, then the list item is created and the existing rating remains unchanged. |
+| RATING-006-US-004 | Editing rating preserves list membership | High | As a user, I want rating edits not to remove or add list items. | Given a rated place is in a list, when I edit the rating through PATCH or POST upsert, then list membership remains unchanged. |
+| RATING-006-US-005 | List membership changes do not mutate ratings | High | As the system, I want list operations not to create, edit, or delete ratings. | Given a rated place is added to or removed from a list, then the rating row remains unchanged. |
+| RATING-006-US-006 | UI flow confirms rating/list independence | Critical | As a user, I can add, rate, and return to my list without losing the place. | Given I create a list, add a place, and rate that place, when I return to the list, then the place is still present. |
 
-Story Count: 13
+Story Count: 6
 
-Coverage Assessment: Covers one/all-list cleanup, owner scoping, atomic transaction, rollback paths, commit failure, concurrency, update/upsert distinction, UI refresh, membership-only cleanup, and safe errors.
+Coverage Assessment: Covers listed and unlisted rating behavior, adding rated places to lists, rating edit/upsert behavior, list operation independence, and full UI flow persistence.
 
 Missing Assumptions: None.
 
-Risks: Very high business-rule and data-integrity risk.
+Risks: Very high business-rule and data-integrity risk if ratings and lists become coupled again.
 
-### RATING-007 - Re-add tried place later
+### RATING-007 - Add rated place to list later
 
-Feature Description: Users can re-add tried places to lists after rating; doing so does not create another rating or remove tried status.
+Feature Description: Users can add rated places to lists at any time; doing so does not create another rating or change the existing rating.
 
 #### User Stories
 
 | Story ID | Title | Priority | User Story | Acceptance Criteria |
 |---|---|---|---|---|
-| RATING-007-US-001 | Re-add tried place to list | High | As a user, I want to re-add a tried place to a list so that I can keep it in a collection after rating. | Given a place is tried, when I add it to one of my lists, then the list item is created if it does not already exist. |
-| RATING-007-US-002 | Preserve tried status after re-add | High | As a user, I want tried status preserved so that my history remains accurate. | Given I re-add a tried place, when place data reloads, then `currentUserTried` remains true. |
-| RATING-007-US-003 | Do not create second rating | Critical | As the system, I want re-adding to lists not to create ratings so that one rating per user/place is preserved. | Given I re-add a tried place, when the list item is created, then no new rating row is created. |
-| RATING-007-US-004 | Preserve existing rating value and note | Critical | As a user, I want list organization not to alter my rating archive. | Given I re-add a tried place, then existing rating value and private note remain unchanged. |
-| RATING-007-US-005 | Duplicate re-add remains idempotent | High | As a user, I want repeated re-add to the same list harmless so that accidental taps do not duplicate rows. | Given a tried place is already in the list, when I add it again, then no duplicate list item is created. |
-| RATING-007-US-006 | Rating update does not remove re-added place | High | As a user, I want a re-added tried place to remain in lists when I edit my rating. | Given I re-added a tried place after first rating, when I update the rating, then the list item remains. |
-| RATING-007-US-007 | Owner-only re-add | Critical | As the system, I want re-add constrained to owned lists so that users cannot modify others' lists. | Given I do not own a list, when I try to re-add a tried place to it, then the request is denied. |
-| RATING-007-US-008 | Show tried context during add | Medium | As a user, I want to recognize tried places during add-to-list so that I understand the place's history. | Given a tried place appears in add-to-list selection, then UI may show tried context without blocking re-add. |
+| RATING-007-US-001 | Add rated place to list | High | As a user, I want to add a rated place to a list so that I can organize it after rating. | Given a place is rated, when I add it to one of my lists, then the list item is created if it does not already exist. |
+| RATING-007-US-002 | Preserve rating after add | High | As a user, I want rating data preserved when I organize places. | Given I add a rated place to a list, when place data reloads, then `currentUserRating` remains unchanged. |
+| RATING-007-US-003 | Do not create second rating | Critical | As the system, I want adding to lists not to create ratings so that one rating per user/place is preserved. | Given I add a rated place to a list, when the list item is created, then no new rating row is created. |
+| RATING-007-US-004 | Preserve existing rating value and note | Critical | As a user, I want list organization not to alter my rating archive. | Given I add a rated place to a list, then existing rating value and private note remain unchanged. |
+| RATING-007-US-005 | Duplicate add remains idempotent | High | As a user, I want repeated add to the same list harmless so that accidental taps do not duplicate rows. | Given a place is already in the list, when I add it again, then no duplicate list item is created. |
+| RATING-007-US-006 | Rating update does not remove listed place | High | As a user, I want a listed rated place to remain in lists when I edit my rating. | Given a rated place is in a list, when I update the rating, then the list item remains. |
+| RATING-007-US-007 | Owner-only add | Critical | As the system, I want add-to-list constrained to owned lists so that users cannot modify others' lists. | Given I do not own a list, when I try to add a place to it, then the request is denied. |
+| RATING-007-US-008 | Show rating context during add when available | Medium | As a user, I want to recognize rated places during add-to-list when useful. | Given a rated place appears in add-to-list selection, then UI may show rating context without creating tried state. |
 
 Story Count: 8
 
-Coverage Assessment: Covers re-add, tried preservation, no second rating, rating/note preservation, duplicate item prevention, update behavior, authorization, and tried context.
+Coverage Assessment: Covers adding rated places, rating preservation, no second rating, rating/note preservation, duplicate item prevention, update behavior, authorization, and optional rating context.
 
 Missing Assumptions: None.
 
-Risks: High if rating update cleanup incorrectly removes later re-added items.
+Risks: High if list organization mutates rating records or rating edits mutate list membership.
 
 ### RATING-008 - Average rating and rating count
 
@@ -318,7 +306,7 @@ Feature Description: `POST /api/v1/ratings` behaves as create-or-update API safe
 | RATING-009-US-006 | Return conflict only as safe fallback | High | As an API consumer, I want race failures understandable. | Given a duplicate race cannot be resolved as update, then API may return structured conflict such as `DUPLICATE_RATING` without exposing database internals. |
 | RATING-009-US-007 | Upsert preserves note rules | High | As a user, I want notes handled consistently during upsert. | Given repeated POST includes blank notes, when updated, then notes become `null`; given a valid note is provided, then it is trimmed and saved privately. |
 | RATING-009-US-008 | Upsert validates rating scale | Critical | As the system, I want POST update path to enforce the same validation as create. | Given repeated POST submits invalid rating value, then API returns `422` and existing rating remains unchanged. |
-| RATING-009-US-009 | Upsert side-effect distinction | Critical | As the system, I want first create and later update side effects distinct so that list cleanup is not repeated. | Given POST updates an existing rating and returns `200`, then first-rating list cleanup does not run again. |
+| RATING-009-US-009 | Upsert remains rating-only | Critical | As the system, I want POST create and update paths not to affect list membership. | Given POST creates or updates a rating, then no list item is added or removed. |
 | RATING-009-US-010 | Frontend uses POST only for create flow | High | As Product, I want frontend behavior clear even though API upsert exists. | Given frontend knows no current-user rating exists, then create flow uses POST; given frontend knows rating exists, edit flow uses PATCH. |
 | RATING-009-US-011 | POST update refreshes contexts | High | As a user, I want API safety updates reflected correctly. | Given POST updates an existing rating, when the frontend receives success, then place context, user context, and aggregate data refresh. |
 | RATING-009-US-012 | Status codes distinguish create/update | High | As QA, I want status codes testable. | Given POST creates, then response status is `201`; given POST updates existing, then response status is `200`. |
@@ -341,14 +329,14 @@ Features With Highest Complexity:
 
 - `RATING-003` - 1-10 rating scale with 0.5 increments across UI/API/DB.
 - `RATING-004` - private notes across API, UI, logs, errors, and public surfaces.
-- `RATING-006` - first-rating list cleanup with transaction and race behavior.
+- `RATING-006` - rating/list independence across create, update, add, remove, and UI flows.
 - `RATING-008` - aggregate calculation, precision, rounding, and cross-surface consistency.
 - `RATING-009` - POST upsert safety and frontend PATCH preference.
 
 Features With Highest Business Risk:
 
 - `RATING-004` - private notes and privacy boundaries.
-- `RATING-006` - automatic removal from user lists after first rating.
+- `RATING-006` - preventing rating/list coupling and accidental membership mutation.
 - `RATING-009` - one rating per user/place and upsert semantics.
 - `RATING-003` - validation consistency across UI/API/DB.
 - `RATING-008` - aggregate correctness and trust.
@@ -367,7 +355,7 @@ Recommended QA Priority Order:
 
 Coverage Assessment:
 
-- Covered: rating creation, rating editing, API versioned paths, 201/200/422/404/401/403 behavior, exact `RatingResponse`, rating validation matrix, 0.5 increments, private notes, note trimming/null/max length, notes privacy across all surfaces, current-user-only visibility, community average, rating count, aggregate precision/rounding/freshness, create/update success, failures, duplicate prevention, upsert behavior, tried derivation, first-rating side effects, transactional list cleanup, re-add later, mobile UX, accessibility, keyboard behavior, decimal display, formatting, loading states, cancel behavior, retry behavior, and error privacy.
+- Covered: rating creation, rating editing, API versioned paths, 201/200/422/404/401/403 behavior, exact `RatingResponse`, rating validation matrix, 0.5 increments, private notes, note trimming/null/max length, notes privacy across all surfaces, current-user-only visibility, community average, rating count, aggregate precision/rounding/freshness, create/update success, failures, duplicate prevention, upsert behavior, tried removal, rating/list independence, adding rated places to lists, mobile UX, accessibility, keyboard behavior, decimal display, formatting, loading states, cancel behavior, retry behavior, and error privacy.
 - Not included: deleting ratings, public note sharing, social reactions, comments, recommendations, moderation, or admin workflows because they are not current `RATING-*` catalog features.
 
 Resolved Product Decisions:
@@ -380,5 +368,5 @@ Resolved Product Decisions:
 - Notes are trimmed before save.
 - Blank notes become and return `notes: null`.
 - Rating deletion is unsupported.
-- Tried removal via rating deletion is out of scope.
+- The legacy tried model is superseded by `EDR-009`; rating deletion remains unsupported.
 - Average rating display uses one decimal place with examples `8.44 -> 8.4`, `8.45 -> 8.5`, `8.46 -> 8.5`.

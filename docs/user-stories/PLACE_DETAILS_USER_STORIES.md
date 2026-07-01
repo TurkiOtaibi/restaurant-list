@@ -97,14 +97,14 @@ Feature Description: From Place Detail, users can add the current place to one o
 | PLACE-019-US-005 | Duplicate membership prevention | Critical | As the system, I want duplicate list memberships prevented so that the same place is not stored twice in one list. | Given the current place is already in the selected list, when I add it again, then no duplicate row is created. |
 | PLACE-019-US-006 | Idempotent duplicate add success | High | As a user, I want repeat add actions to succeed harmlessly so that accidental taps do not create errors. | Given the current place already belongs to the selected list, when I add it again, then the system returns success or stable existing state. |
 | PLACE-019-US-007 | Owner-only list target | Critical | As the system, I want users to add places only to lists they own so that users cannot modify others' lists. | Given a list is not owned by me, when I attempt to add the place to it, then the request is denied. |
-| PLACE-019-US-008 | Add tried place later | High | As a user, I want to add a tried place back to a list so that rating history does not prevent organization. | Given I have rated the place, when I add it to a list later, then it is added without changing tried status or creating a new rating. |
+| PLACE-019-US-008 | Add rated place later | High | As a user, I want to add a rated place back to a list so that rating history does not prevent organization. | Given I have rated the place, when I add it to a list later, then it is added without changing rating state or creating a new rating. |
 | PLACE-019-US-009 | Add-to-list loading and error states | High | As a user, I want clear loading and error states while adding so that I know whether the action completed. | Given add request is pending or fails, when the flow is open, then loading or error feedback is shown and false success is not displayed. |
 | PLACE-019-US-010 | Accessible add-to-list flow | High | As a keyboard or screen-reader user, I want the add-to-list flow accessible so that I can add the place without a pointer. | Given the flow opens, when navigating by keyboard, then focus is managed, list options are labeled, and close/restoration behavior works. |
 | PLACE-019-US-011 | Mobile add-to-list UX | High | As a mobile user, I want add-to-list usable in a compact sheet/dialog so that I can complete it one-handed. | Given mobile viewport, when add-to-list opens, then options and actions fit without horizontal overflow or keyboard/nav overlap. |
 
 Story Count: 11
 
-Coverage Assessment: Covers opening, owned list choices, one-list target, empty state, duplicate prevention, idempotency, authorization, tried re-add, loading/error states, accessibility, and mobile UX.
+Coverage Assessment: Covers opening, owned list choices, one-list target, empty state, duplicate prevention, idempotency, authorization, rated-place add, loading/error states, accessibility, and mobile UX.
 
 Missing Assumptions: Whether the add-to-list flow should support searching owned lists when a user has many lists.
 
@@ -145,7 +145,7 @@ Total User Stories Generated: 47
 Features With Highest Complexity:
 
 - `PLACE-017` - place detail metadata, community/current-user context, and responsive presentation
-- `PLACE-019` - add-to-list behavior, duplicate prevention, ownership, and tried-place re-add
+- `PLACE-019` - add-to-list behavior, duplicate prevention, ownership, and rated-place add
 - `PLACE-020` - rating entry state and detail refresh after rating
 
 Features With Highest Business Risk:

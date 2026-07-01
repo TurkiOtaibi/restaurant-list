@@ -5,7 +5,6 @@ import { cx } from "@/lib/ui";
 
 import { BidiText } from "./BidiText";
 import { Card, CardLink } from "./Card";
-import { CheckIcon } from "./Icon";
 import { PlaceTypeIcon } from "./PlaceTypeIcon";
 import { RatingDisplay } from "./RatingDisplay";
 
@@ -15,7 +14,6 @@ type PlaceCardProps = {
   place: Pick<
     Place,
     | "averageRating"
-    | "currentUserTried"
     | "id"
     | "name"
     | "ratingCount"
@@ -58,21 +56,13 @@ function PlaceCardContent({ place }: { place: PlaceCardProps["place"] }) {
           <span>{placeTypeLabel(place.type)}</span>
           {subtype ? <span>{subtype}</span> : null}
         </p>
-        {hasRating || place.currentUserTried ? (
+        {hasRating ? (
           <div className="ds-place-card__signals">
-            {place.currentUserTried ? (
-              <span className="ds-place-card__tried">
-                <CheckIcon aria-hidden="true" />
-                <span>جربته</span>
-              </span>
-            ) : null}
-            {hasRating ? (
-              <RatingDisplay
-                ariaLabel={ratingCountLabel(place.ratingCount)}
-                className="ds-place-card__score"
-                value={place.averageRating ?? 0}
-              />
-            ) : null}
+            <RatingDisplay
+              ariaLabel={ratingCountLabel(place.ratingCount)}
+              className="ds-place-card__score"
+              value={place.averageRating ?? 0}
+            />
           </div>
         ) : null}
       </div>

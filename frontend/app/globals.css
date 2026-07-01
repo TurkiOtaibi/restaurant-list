@@ -1210,28 +1210,6 @@ textarea:disabled {
   color: var(--color-muted);
 }
 
-.ds-place-card__tried {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding-inline: 6px;
-  padding-block: 1px;
-  border-radius: 999px;
-  background: var(--color-accent-surface, rgba(74, 222, 128, 0.16));
-  color: var(--color-rating);
-  font-weight: 700;
-}
-
-.ds-place-card__tried svg {
-  width: 13px;
-  height: 13px;
-}
-
-.ds-place-card__meta .ds-place-card__tried + span::before {
-  content: none;
-  margin-inline: 0;
-}
-
 .ds-type-icon {
   display: grid;
   place-items: center;

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 
 import {
-  Badge,
   BidiText,
   BottomSheet,
   Button,
@@ -171,13 +170,10 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
               <h2>
                 <BidiText>{place.name}</BidiText>
               </h2>
-              <div className="rate-place-dialog__meta">
-                {place.currentUserTried ? <Badge>جربته</Badge> : null}
-              </div>
             </div>
 
             <RatingControl
-              consequenceMessage="سيظهر المكان كمجرب ويخرج من قوائمك الحالية."
+              consequenceMessage="لن يغيّر التقييم قوائمك أو عضوية هذا المكان فيها."
               error={ratingError}
               id="rating-control"
               name="place-rating"

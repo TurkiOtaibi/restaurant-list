@@ -2,7 +2,7 @@ import type { HTMLAttributes, ReactNode } from "react";
 
 import { cx } from "@/lib/ui";
 
-type BadgeVariant = "tried" | "public" | "private" | "rating";
+type BadgeVariant = "neutral" | "public" | "private" | "rating";
 
 type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
   children: ReactNode;
@@ -10,7 +10,7 @@ type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
   variant?: BadgeVariant;
 };
 
-export function Badge({ children, className, icon, variant = "tried", ...props }: BadgeProps) {
+export function Badge({ children, className, icon, variant = "neutral", ...props }: BadgeProps) {
   return (
     <span className={cx("ds-badge", badgeClass(variant), className)} {...props}>
       {icon ? <span aria-hidden="true">{icon}</span> : null}

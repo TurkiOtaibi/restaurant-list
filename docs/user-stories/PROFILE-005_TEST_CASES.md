@@ -21,9 +21,9 @@
   - No separate tried-places archive is configured
 - Expected `200 OK` response assertions:
   - `ratingsCount=3`
-  - `triedRestaurantCount=1`
-  - `triedCafeCount=1`
-  - `triedIceCreamCount=1`
+  - `ratedRestaurantCount=1`
+  - `ratedCafeCount=1`
+  - `ratedIceCreamCount=1`
   - `Array.isArray(userRatings)=true`
   - `userRatings.length=3`
   - `Array.isArray(publicListsSummary)=true`
@@ -46,9 +46,9 @@
 | PROFILE-005-TC-002 | Profile API does not return `triedPlaces` anywhere | API, Contract | Critical | Fixture PROFILE-005-A is active. | Request `GET /api/v1/profile`; payload none. | Request endpoint and recursively inspect JSON keys. | API status is `200 OK`; no top-level or nested key equals `triedPlaces`; `userRatings` is present as an array. | PROFILE-005-US-002, PROFILE-005-US-005 | Yes | API |
 | PROFILE-005-TC-003 | Archive rendering uses `userRatings` and ignores absent legacy collection | API, UI | Critical | Fixture PROFILE-005-A is active. | Request `GET /api/v1/profile`; payload none; `userRatings` contains `rating-001`; `triedPlaces` absent. | Open `/profile`. | API status is `200 OK`; UI renders row `مطعم الرياض` from `userRatings`; no request or DOM dependency on `triedPlaces` is observed. | PROFILE-005-US-003 | Yes | UI E2E |
 | PROFILE-005-TC-004 | Accidental legacy `triedPlaces` field does not create duplicate UI | Regression, UI | High | Fixture PROFILE-005-B is active in frontend contract test. | Mock `GET /api/v1/profile` response is `200 OK` and includes `triedPlaces` with `Legacy Place`. | Render `/profile` with the mocked response. | Mocked API status is `200 OK`; UI does not render `Legacy Place`; archive row count equals `userRatings.length`; no second tried archive appears. | PROFILE-005-US-004, PROFILE-005-US-006 | Yes | UI E2E |
-| PROFILE-005-TC-005 | Tried counts remain visible while archive remains canonical | Positive, UI | High | Fixture PROFILE-005-A is active. | Request `GET /api/v1/profile`; payload none; expected `200 OK`; tried counts: restaurant `1`, cafe `1`, ice cream `1`; archive from `userRatings`. | Open `/profile`. | API status is `200 OK`; summary shows counts `1`, `1`, `1`; only `تقييماتك` archive is present; counts do not create a tried-places row group. | PROFILE-005-US-007 | Yes | UI E2E |
+| PROFILE-005-TC-005 | Rated counts remain visible while archive remains canonical | Positive, UI | High | Fixture PROFILE-005-A is active. | Request `GET /api/v1/profile`; payload none; expected `200 OK`; rated counts: restaurant `1`, cafe `1`, ice cream `1`; archive from `userRatings`. | Open `/profile`. | API status is `200 OK`; summary shows counts `1`, `1`, `1`; only `تقييماتك` archive is present; counts do not create a tried-places row group. | PROFILE-005-US-007 | Yes | UI E2E |
 | PROFILE-005-TC-006 | Profile refresh preserves canonical `userRatings` archive model | Regression, UI | Medium | First response and refreshed response both use Fixture PROFILE-005-A shape with changed rating order. | Two `GET /api/v1/profile` responses, both `200 OK` and without `triedPlaces`. | Load `/profile`, then refresh profile data. | Both API responses have status `200 OK`; both renders use only `userRatings`; no separate tried archive appears after refresh. | PROFILE-005-US-010 | Yes | UI E2E |
-| PROFILE-005-TC-007 | Unauthorized profile response does not expose deprecated tried collection | Negative, API, Security | Critical | Fixture PROFILE-005-A data exists but no valid session is present. | Request `GET /api/v1/profile`; payload none. | Request endpoint as guest and inspect response/UI. | API status is `401 Unauthorized`; response contains no `triedPlaces`, `userRatings`, tried counts, profile counts, place names, or rating rows; UI renders signed-out state without a tried archive. | PROFILE-005-US-002 | Yes | API, Security |
+| PROFILE-005-TC-007 | Unauthorized profile response does not expose deprecated tried collection | Negative, API, Security | Critical | Fixture PROFILE-005-A data exists but no valid session is present. | Request `GET /api/v1/profile`; payload none. | Request endpoint as guest and inspect response/UI. | API status is `401 Unauthorized`; response contains no `triedPlaces`, `userRatings`, rated counts, profile counts, place names, or rating rows; UI renders signed-out state without a tried archive. | PROFILE-005-US-002 | Yes | API, Security |
 
 ## Requirement Clarification, Manual, and Traceability Cases
 

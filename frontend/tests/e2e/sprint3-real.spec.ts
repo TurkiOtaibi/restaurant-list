@@ -176,10 +176,8 @@ test("real frontend and api complete list edit add remove delete and profile flo
   await expect(page.getByRole("dialog", { name: "أضف مكانًا" })).toBeHidden();
   const listPlaceLink = page.getByRole("link", { name: new RegExp(placeName) });
   await listPlaceLink.scrollIntoViewIfNeeded();
-  await Promise.all([
-    page.waitForURL(/\/places\/[0-9a-f-]+$/, { timeout: 30_000 }),
-    listPlaceLink.click()
-  ]);
+  await listPlaceLink.click();
+  await expect(page.getByRole("heading", { name: placeName })).toBeVisible({ timeout: 30_000 });
 
   await page.getByRole("link", { name: "قيّم المكان" }).click();
   await page.getByLabel("تقييمك").fill("8.5");
@@ -188,15 +186,26 @@ test("real frontend and api complete list edit add remove delete and profile flo
   await expect(page.getByText("تم حفظ التقييم.")).toBeVisible();
   await page.getByRole("button", { name: "إلغاء" }).click();
   await expect(page.getByText("تقييمك الحالي 8.5/10")).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("جربته");
 
-  await page.goto("/profile");
+  await page.getByRole("link", { name: "قوائمي" }).first().click();
+  await expect(page).toHaveURL(/\/lists$/);
+  await page.getByRole("link", { name: new RegExp(editedListName) }).click();
+  await expect(page.getByRole("heading", { name: editedListName })).toBeVisible();
+  await expect(page.getByRole("link", { name: new RegExp(placeName) })).toBeVisible();
+
+  await page.getByRole("link", { name: "صفحتي" }).first().click();
+  await expect(page).toHaveURL(/\/profile$/);
   await expect(page.getByRole("heading", { name: "صفحتي" })).toBeVisible();
-  await expect(page.getByText(placeName)).toBeVisible();
+  await expect(page.getByText(placeName)).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText("ملاحظة خاصة للاختبار")).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("جربته");
   await expect(page.locator("body")).not.toContainText(/[٠-٩۰-۹]/);
 
-  await page.goto(`/lists`);
+  await page.getByRole("link", { name: "قوائمي" }).first().click();
+  await expect(page).toHaveURL(/\/lists$/);
   await page.getByRole("link", { name: new RegExp(editedListName) }).click();
+  await expect(page.getByRole("heading", { name: editedListName })).toBeVisible();
   await page.getByRole("button", { name: "إجراءات القائمة" }).click();
   await page.getByRole("menuitem", { name: "حذف" }).click();
   await expect(page.getByRole("alertdialog", { name: "حذف القائمة" })).toBeVisible();

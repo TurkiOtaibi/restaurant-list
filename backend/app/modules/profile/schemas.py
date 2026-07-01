@@ -29,9 +29,9 @@ class ProfilePublicListSummaryResponse(BaseModel):
 
 class ProfileResponse(BaseModel):
     lists_count: int = Field(serialization_alias="listsCount")
-    tried_restaurant_count: int = Field(serialization_alias="triedRestaurantCount")
-    tried_cafe_count: int = Field(serialization_alias="triedCafeCount")
-    tried_ice_cream_count: int = Field(serialization_alias="triedIceCreamCount")
+    rated_restaurant_count: int = Field(serialization_alias="ratedRestaurantCount")
+    rated_cafe_count: int = Field(serialization_alias="ratedCafeCount")
+    rated_ice_cream_count: int = Field(serialization_alias="ratedIceCreamCount")
     ratings_count: int = Field(serialization_alias="ratingsCount")
     user_ratings: list[ProfileRatingResponse] = Field(serialization_alias="userRatings")
     public_lists_summary: list[ProfilePublicListSummaryResponse] = Field(

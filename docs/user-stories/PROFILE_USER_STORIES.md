@@ -24,9 +24,9 @@ Total user stories written: 96
 - The profile response must include:
   - `ratingsCount`
   - `listsCount`
-  - `triedRestaurantCount`
-  - `triedCafeCount`
-  - `triedIceCreamCount`
+  - `ratedRestaurantCount`
+  - `ratedCafeCount`
+  - `ratedIceCreamCount`
   - `userRatings`
   - `publicListsSummary`
 - Empty collections return empty arrays, not `null`.
@@ -53,11 +53,11 @@ Total user stories written: 96
 - Updating an existing rating does not increase `ratingsCount`.
 - `listsCount` counts current lists owned by the authenticated user.
 - Deleting a list decreases `listsCount`.
-- Tried counts are derived from rated places by primary type:
-  - `triedRestaurantCount`
-  - `triedCafeCount`
-  - `triedIceCreamCount`
-- Rating archive is the canonical tried archive.
+- Rated counts are derived from rated places by primary type:
+  - `ratedRestaurantCount`
+  - `ratedCafeCount`
+  - `ratedIceCreamCount`
+- Rating archive is the canonical rating archive.
 - There is no separate tried-places archive.
 
 ### Archive Ordering
@@ -82,16 +82,16 @@ This ordering must be stable across refreshes, retries, and equivalent data sets
 
 ## Profile Module
 
-### PROFILE-001 - View list/rating/tried counts
+### PROFILE-001 - View list/rating/rated counts
 
-Feature Description: Authenticated users can view profile summary statistics including list count, rating count, and tried counts by place type.
+Feature Description: Authenticated users can view profile summary statistics including list count, rating count, and rated counts by place type.
 
 #### User Stories
 
 | Story ID | Title | Priority | User Story | Acceptance Criteria |
 |---|---|---|---|---|
 | PROFILE-001-US-001 | Fetch profile summary from API | Critical | As an authenticated user, I want profile summary data loaded from the profile API so that my archive reflects server truth. | Given I am authenticated, when I open `/profile`, then the frontend calls `GET /api/v1/profile` and receives `200 OK`. |
-| PROFILE-001-US-002 | Enforce profile response schema | Critical | As QA, I want the profile response schema explicit so that contract drift is detected. | Given `GET /api/v1/profile` returns `200 OK`, then response contains `ratingsCount`, `listsCount`, `triedRestaurantCount`, `triedCafeCount`, `triedIceCreamCount`, `userRatings`, and `publicListsSummary`. |
+| PROFILE-001-US-002 | Enforce profile response schema | Critical | As QA, I want the profile response schema explicit so that contract drift is detected. | Given `GET /api/v1/profile` returns `200 OK`, then response contains `ratingsCount`, `listsCount`, `ratedRestaurantCount`, `ratedCafeCount`, `ratedIceCreamCount`, `userRatings`, and `publicListsSummary`. |
 | PROFILE-001-US-003 | Reject guest profile access | Critical | As the system, I want profile data protected so that guests cannot access private archive data. | Given no valid session exists, when `GET /api/v1/profile` is requested, then API returns `401 Unauthorized` and no profile fields are returned. |
 | PROFILE-001-US-004 | Prevent private-data flash | Critical | As a user, I want old profile data cleared when my session ends so that private data is not visible after logout or expiry. | Given logout, session expiry, refresh failure, or auth recovery occurs, when `/profile` renders or revalidates, then no previous profile summary, archive row, note, or public-list summary flashes before the signed-out state. |
 | PROFILE-001-US-005 | View list count | High | As a user, I want to see my list count so that I know how many lists I own. | Given I own `N` lists, when profile summary renders, then `listsCount` displays `N` using Western digits. |
@@ -99,10 +99,10 @@ Feature Description: Authenticated users can view profile summary statistics inc
 | PROFILE-001-US-007 | View ratings count | High | As a user, I want to see my ratings count so that I know how many ratings I have recorded. | Given I own `N` rating rows, when profile summary renders, then `ratingsCount` displays `N` using Western digits. |
 | PROFILE-001-US-008 | Rating update does not increase count | Critical | As the system, I want rating counts accurate when ratings are edited. | Given I have an existing rating, when I update its rating value or note, then `ratingsCount` remains unchanged after profile refresh. |
 | PROFILE-001-US-009 | Rating creation increases count | High | As a user, I want my count updated after I rate a new place. | Given I create my first rating for a place, when profile refreshes, then `ratingsCount` increases by one. |
-| PROFILE-001-US-010 | View tried restaurant count | High | As a user, I want tried restaurant count visible so that restaurant history is summarized. | Given I have rated `N` restaurant places, when profile loads, then `triedRestaurantCount` equals `N`. |
-| PROFILE-001-US-011 | View tried cafe count | High | As a user, I want tried cafe count visible so that cafe history is summarized. | Given I have rated `N` cafe places, when profile loads, then `triedCafeCount` equals `N`. |
-| PROFILE-001-US-012 | View tried ice cream count | High | As a user, I want tried ice cream count visible so that ice cream history is included. | Given I have rated `N` ice cream places, when profile loads, then `triedIceCreamCount` equals `N`. |
-| PROFILE-001-US-013 | Tried counts derive from ratings | Critical | As Product, I want tried counts derived from ratings so that there is one source of truth. | Given places exist in lists but have no current-user rating, when profile loads, then those places do not increase tried counts. |
+| PROFILE-001-US-010 | View rated restaurant count | High | As a user, I want rated restaurant count visible so that restaurant ratings are summarized. | Given I have rated `N` restaurant places, when profile loads, then `ratedRestaurantCount` equals `N`. |
+| PROFILE-001-US-011 | View rated cafe count | High | As a user, I want rated cafe count visible so that cafe ratings are summarized. | Given I have rated `N` cafe places, when profile loads, then `ratedCafeCount` equals `N`. |
+| PROFILE-001-US-012 | View rated ice cream count | High | As a user, I want rated ice cream count visible so that ice cream ratings are included. | Given I have rated `N` ice cream places, when profile loads, then `ratedIceCreamCount` equals `N`. |
+| PROFILE-001-US-013 | Rated counts derive from ratings | Critical | As Product, I want rated counts derived from ratings so that there is one source of truth. | Given places exist in lists but have no current-user rating, when profile loads, then those places do not increase rated counts. |
 | PROFILE-001-US-014 | Zero-state statistics | Medium | As a new user, I want empty profile stats to look intentional. | Given I have no lists or ratings, when profile loads, then all counts show `0` with no fake data and no broken layout. |
 | PROFILE-001-US-015 | Handle null-free empty collections | High | As an API consumer, I want empty arrays so the UI can render predictably. | Given I have no ratings or public lists, when `GET /api/v1/profile` returns `200 OK`, then `userRatings` and `publicListsSummary` are `[]`, not `null`. |
 | PROFILE-001-US-016 | Summary loading state | Medium | As a user, I want loading feedback while profile data loads. | Given `GET /api/v1/profile` is pending, when `/profile` renders, then layout-matching summary loading UI appears without fake counts. |
@@ -117,7 +117,7 @@ Feature Description: Authenticated users can view profile summary statistics inc
 
 Story Count: 24
 
-Coverage Assessment: Covers API contract, `200`, `401`, `500`, response fields, summary stats, tried logic, count refresh behavior, loading/error/retry/offline/session expiry, privacy, mobile, accessibility, and number formatting.
+Coverage Assessment: Covers API contract, `200`, `401`, `500`, response fields, summary stats, rated-count logic, count refresh behavior, loading/error/retry/offline/session expiry, privacy, mobile, accessibility, and number formatting.
 
 Missing Assumptions: None.
 
@@ -125,14 +125,14 @@ Risks: Critical privacy and data-integrity risk if profile counts are cached, ex
 
 ### PROFILE-002 - View `تقييماتك` archive
 
-Feature Description: The rating archive is the canonical profile archive for tried places, rating history, and private notes.
+Feature Description: The rating archive is the canonical profile archive for rating history and private notes.
 
 #### User Stories
 
 | Story ID | Title | Priority | User Story | Acceptance Criteria |
 |---|---|---|---|---|
 | PROFILE-002-US-001 | View ratings archive | Critical | As an authenticated user, I want to view `تقييماتك` so that I can browse my personal rating history. | Given I have ratings, when `/profile` loads successfully, then `userRatings` renders as the `تقييماتك` archive. |
-| PROFILE-002-US-002 | Archive is canonical tried history | Critical | As Product, I want the ratings archive to be the only tried archive so that profile remains clear. | Given profile renders, then no separate tried-places archive, tab, card, section, or payload-driven UI is shown. |
+| PROFILE-002-US-002 | Archive is canonical rating history | Critical | As Product, I want the ratings archive to be the only rating-history archive so that profile remains clear. | Given profile renders, then no separate tried-places archive, tab, card, section, or payload-driven UI is shown. |
 | PROFILE-002-US-003 | Use explicit archive ordering | Critical | As a user, I want predictable archive order so that recent activity is easy to find. | Given multiple ratings exist, when archive renders, then rows are ordered by `updatedAt DESC`, then `createdAt DESC`, then `placeName ASC`. |
 | PROFILE-002-US-004 | Stable archive tie-break | High | As QA, I want deterministic order for equal timestamps. | Given two ratings have the same `updatedAt` and `createdAt`, when archive renders repeatedly, then `placeName ASC` produces the same order every time. |
 | PROFILE-002-US-005 | Archive updates after rating creation | High | As a user, I want new ratings to appear in my archive. | Given I create a first rating for a place, when profile refreshes, then the new rating appears in `تقييماتك` using the approved ordering. |
@@ -166,7 +166,7 @@ Coverage Assessment: Covers canonical archive, exact ordering, creation/update r
 
 Missing Assumptions: None.
 
-Risks: Critical product and privacy risk if archive ordering, ownership, or canonical tried behavior is ambiguous.
+Risks: Critical product and privacy risk if archive ordering, ownership, or canonical rating-archive behavior is ambiguous.
 
 ### PROFILE-003 - View own private notes
 
@@ -250,14 +250,14 @@ Feature Description: Separate `triedPlaces` payload is deprecated/legacy; profil
 | PROFILE-005-US-004 | Ignore accidental triedPlaces safely | High | As the system, I want accidental legacy fields not to reintroduce duplicate UI. | Given an accidental `triedPlaces` field appears in a mocked or future response, when frontend renders profile, then it does not render a separate tried archive. |
 | PROFILE-005-US-005 | Tests fail if triedPlaces returns | High | As QA, I want regressions detected. | Given profile API contract tests run, then they fail if `triedPlaces` appears in `GET /api/v1/profile` response. |
 | PROFILE-005-US-006 | Tests fail if tried archive UI appears | High | As QA, I want duplicate archive UI prevented. | Given profile UI tests run, then they fail if a separate tried-places archive appears alongside `تقييماتك`. |
-| PROFILE-005-US-007 | Tried counts remain supported | High | As a user, I want tried counts without duplicate archive concepts. | Given profile summary renders, then tried restaurant/cafe/ice cream counts derive from ratings while the archive remains `تقييماتك`. |
+| PROFILE-005-US-007 | Rated counts remain supported | High | As a user, I want rated counts without duplicate archive concepts. | Given profile summary renders, then rated restaurant/cafe/ice cream counts derive from ratings while the archive remains `تقييماتك`. |
 | PROFILE-005-US-008 | Documentation marks triedPlaces legacy | Medium | As a future analyst or developer, I want legacy status clear. | Given feature documentation is reviewed, then `PROFILE-005` states separate `triedPlaces` is deprecated/legacy and `userRatings` is canonical. |
 | PROFILE-005-US-009 | No migration path needed for triedPlaces UI | Low | As Product, I want scope clear. | Given no separate tried archive is implemented, then no migration, backfill, or new UI is required for `triedPlaces`. |
 | PROFILE-005-US-010 | Profile refresh preserves canonical model | Medium | As QA, I want refresh behavior consistent. | Given profile is refreshed after rating create/update/list changes, then `تقييماتك` remains the only archive surface. |
 
 Story Count: 10
 
-Coverage Assessment: Covers removal from API, frontend dependency, accidental legacy field handling, regression tests, tried counts, documentation, no migration expectation, and profile refresh behavior.
+Coverage Assessment: Covers removal from API, frontend dependency, accidental legacy field handling, regression tests, rated counts, documentation, no migration expectation, and profile refresh behavior.
 
 Missing Assumptions: None.
 
@@ -295,7 +295,7 @@ Recommended QA Priority Order:
 
 Coverage Assessment:
 
-- Covered: `GET /api/v1/profile`, `200`, `401`, `500`, response schema, owner-only profile access, no private-data flash, profile summary, list count, ratings count, tried restaurant/cafe/ice cream counts, count update rules, `تقييماتك` archive, exact archive ordering, archive browsing, archive refresh, rating notes, note privacy, edit rating access, public lists summary, compact public-summary empty state, empty arrays/null behavior, loading states, error states, retry, offline behavior, partial failure, mobile profile UX, accessibility, logout/session expiry safety, privacy rules, personal archive behavior, statistics accuracy, large archive virtualization, and `triedPlaces` deprecation.
+- Covered: `GET /api/v1/profile`, `200`, `401`, `500`, response schema, owner-only profile access, no private-data flash, profile summary, list count, ratings count, rated restaurant/cafe/ice cream counts, count update rules, `تقييماتك` archive, exact archive ordering, archive browsing, archive refresh, rating notes, note privacy, edit rating access, public lists summary, compact public-summary empty state, empty arrays/null behavior, loading states, error states, retry, offline behavior, partial failure, mobile profile UX, accessibility, logout/session expiry safety, privacy rules, personal archive behavior, statistics accuracy, large archive virtualization, and `triedPlaces` deprecation.
 - Not included: separate tried places archive, followers, activity feed, profile editing, avatar, social profile, anonymous public profile, password/account settings, or rating deletion because they are not current `PROFILE-*` features.
 
 Resolved Product Decisions:

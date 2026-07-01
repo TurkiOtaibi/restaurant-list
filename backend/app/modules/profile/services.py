@@ -54,9 +54,9 @@ async def get_profile_for_user(db: AsyncSession, user: User) -> ProfileResponse:
     return ProfileResponse(
         lists_count=int(list_count or 0),
         list_count=int(list_count or 0),
-        tried_restaurant_count=counts_by_type.get("restaurant", 0),
-        tried_cafe_count=counts_by_type.get("cafe", 0),
-        tried_ice_cream_count=counts_by_type.get("ice_cream", 0),
+        rated_restaurant_count=counts_by_type.get("restaurant", 0),
+        rated_cafe_count=counts_by_type.get("cafe", 0),
+        rated_ice_cream_count=counts_by_type.get("ice_cream", 0),
         ratings_count=ratings_created_count,
         ratings_created_count=ratings_created_count,
         user_ratings=user_ratings,

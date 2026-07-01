@@ -188,7 +188,6 @@ function placesCollection(name: string) {
         currentUserListIds: [],
         currentUserListNames: [],
         currentUserRating: null,
-        currentUserTried: false,
         description: null,
         id: "qa-place",
         name,

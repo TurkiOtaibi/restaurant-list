@@ -1,8 +1,8 @@
-# PROFILE-001 Test Cases - View list/rating/tried counts
+# PROFILE-001 Test Cases - View list/rating/rated counts
 
 ## Source Requirements
 
-- Feature: `PROFILE-001 - View list/rating/tried counts`
+- Feature: `PROFILE-001 - View list/rating/rated counts`
 - Sources: `PROFILE_USER_STORIES.md`, `FEATURE_TRACEABILITY.md`, `RESPONSIVE_ACCESSIBILITY_USER_STORIES.md`
 - Endpoint under test: `GET /api/v1/profile`
 - Documented statuses: `200 OK`, `401 Unauthorized`, `500 Error`
@@ -26,9 +26,9 @@
 - Expected `200 OK` response assertions:
   - `ratingsCount=4`
   - `listsCount=3`
-  - `triedRestaurantCount=2`
-  - `triedCafeCount=1`
-  - `triedIceCreamCount=1`
+  - `ratedRestaurantCount=2`
+  - `ratedCafeCount=1`
+  - `ratedIceCreamCount=1`
   - `Array.isArray(userRatings)=true`
   - `Array.isArray(publicListsSummary)=true`
   - `userRatings.length=4`
@@ -51,9 +51,9 @@
 {
   "ratingsCount": 0,
   "listsCount": 0,
-  "triedRestaurantCount": 0,
-  "triedCafeCount": 0,
-  "triedIceCreamCount": 0,
+  "ratedRestaurantCount": 0,
+  "ratedCafeCount": 0,
+  "ratedIceCreamCount": 0,
   "userRatings": [],
   "publicListsSummary": []
 }
@@ -68,7 +68,7 @@
 - Request: `GET /api/v1/profile`
 - Payload: none
 - Expected response: `401 Unauthorized`
-- Forbidden response fields: `ratingsCount`, `listsCount`, `triedRestaurantCount`, `triedCafeCount`, `triedIceCreamCount`, `userRatings`, `publicListsSummary`, `triedPlaces`, `notes`.
+- Forbidden response fields: `ratingsCount`, `listsCount`, `ratedRestaurantCount`, `ratedCafeCount`, `ratedIceCreamCount`, `userRatings`, `publicListsSummary`, `triedPlaces`, `notes`.
 - Expected UI state: signed-out prompt/state only; no previous summary count, archive row, note, or public-list summary is visible.
 
 ### Fixture PROFILE-001-D - Server Failure
@@ -85,16 +85,16 @@
 
 | Test Case ID | Test Title | Type | Priority | Preconditions | Test Data | Steps | Expected Result | Related User Story | Automation Candidate | Automation Layer |
 |---|---|---|---|---|---|---|---|---|---|---|
-| PROFILE-001-TC-001 | Authenticated profile summary fetch returns documented counts | Positive, API, UI | Critical | Fixture PROFILE-001-A is seeded and `user-profile-001` is authenticated. | Request `GET /api/v1/profile`; payload none; expected counts `ratingsCount=4`, `listsCount=3`, `triedRestaurantCount=2`, `triedCafeCount=1`, `triedIceCreamCount=1`; expected arrays `userRatings` and `publicListsSummary`. | Open `/profile`; capture the network request and response. | API status is `200 OK`; response includes all seven required top-level fields; all five count fields have exact values; `userRatings` and `publicListsSummary` are arrays; UI shows the exact `ratingsCount=4`, `listsCount=3`, and tried counters `2`, `1`, `1`; `triedPlaces` is absent. | PROFILE-001-US-001, PROFILE-001-US-002, PROFILE-001-US-005, PROFILE-001-US-007 | Yes | API, UI E2E |
+| PROFILE-001-TC-001 | Authenticated profile summary fetch returns documented counts | Positive, API, UI | Critical | Fixture PROFILE-001-A is seeded and `user-profile-001` is authenticated. | Request `GET /api/v1/profile`; payload none; expected counts `ratingsCount=4`, `listsCount=3`, `ratedRestaurantCount=2`, `ratedCafeCount=1`, `ratedIceCreamCount=1`; expected arrays `userRatings` and `publicListsSummary`. | Open `/profile`; capture the network request and response. | API status is `200 OK`; response includes all seven required top-level fields; all five count fields have exact values; `userRatings` and `publicListsSummary` are arrays; UI shows the exact `ratingsCount=4`, `listsCount=3`, and rated counters `2`, `1`, `1`; `triedPlaces` is absent. | PROFILE-001-US-001, PROFILE-001-US-002, PROFILE-001-US-005, PROFILE-001-US-007 | Yes | API, UI E2E |
 | PROFILE-001-TC-002 | Guest profile access returns no profile data | Negative, Security, API | Critical | Fixture PROFILE-001-C is active with no valid session. | Request `GET /api/v1/profile`; payload none. | Request the endpoint as guest and render `/profile`. | API status is `401 Unauthorized`; none of the profile fields are present; UI displays signed-out state and zero private profile elements. | PROFILE-001-US-003 | Yes | API, Security |
 | PROFILE-001-TC-003 | Expired session during profile load clears private summary | Negative, Security, UI | Critical | Browser initially contains rendered Fixture PROFILE-001-A data, then session becomes expired before revalidation. | Revalidation request `GET /api/v1/profile`; payload none; expected `401 Unauthorized`; stale private canaries are count `4` and note `private-note-profile-001`. | Trigger profile revalidation. | API status is `401 Unauthorized`; before signed-out UI appears, DOM never contains stale summary count `4`, archive row content, note canary `private-note-profile-001`, or public-list summary content. | PROFILE-001-US-004, PROFILE-001-US-020 | Yes | UI E2E, Security |
 | PROFILE-001-TC-004 | Empty profile returns zero counts and empty arrays | Boundary, API, UI | High | Fixture PROFILE-001-B is seeded and authenticated. | Request `GET /api/v1/profile`; payload none; expected empty arrays. | Open `/profile` and inspect response. | API status is `200 OK`; `userRatings=[]` and `publicListsSummary=[]`; all count values are `0`; UI shows all counts as `0` with no fake data or broken layout. | PROFILE-001-US-014, PROFILE-001-US-015 | Yes | API, UI E2E |
 | PROFILE-001-TC-005 | List count excludes deleted owned list after profile refresh | Regression, Integration | High | `user-profile-001` had 3 lists; profile refresh fixture after documented deletion contains `list-001`, `list-002` only. | Request `GET /api/v1/profile`; payload none; expected `listsCount=2`. | Refresh `/profile` after the documented list deletion end state is present. | API status is `200 OK`; `listsCount` is `2`; UI list-count card displays `2`; deleted list id `list-003` is absent from `publicListsSummary`. | PROFILE-001-US-006 | Yes | API, UI E2E |
 | PROFILE-001-TC-006 | Rating update does not increase ratings count | Regression, Data Integrity | Critical | `rating-001` exists for `user-profile-001`; profile refresh fixture contains the same four rating row IDs after update. | Request `GET /api/v1/profile`; payload none; expected `ratingsCount=4`. | Refresh `/profile` after the documented rating update end state is present. | API status is `200 OK`; `ratingsCount` remains `4`; `userRatings` contains exactly four unique rating IDs; UI rating-count card displays `4`. | PROFILE-001-US-008 | Yes | API, UI E2E |
 | PROFILE-001-TC-007 | First rating creation increases ratings count by one | Regression, Data Integrity | High | Before state has `ratingsCount=4`; after documented first-rating end state adds `rating-005` for `place-rest-003`. | Request `GET /api/v1/profile`; payload none; expected `ratingsCount=5`. | Refresh `/profile` after the documented new-rating end state is present. | API status is `200 OK`; `ratingsCount=5`; `userRatings` includes `rating-005`; UI rating-count card displays `5`. | PROFILE-001-US-009 | Yes | API, UI E2E |
-| PROFILE-001-TC-008 | Tried counts derive only from rated places | Data Integrity, API | Critical | Fixture PROFILE-001-A includes one unrated restaurant place in a list. | Request `GET /api/v1/profile`; payload none; expected tried restaurant count `2`. | Request the endpoint and inspect counts. | API status is `200 OK`; `triedRestaurantCount=2`, not `3`; unrated `place-rest-unrated-001` does not appear in `userRatings`; UI restaurant tried count displays `2`. | PROFILE-001-US-010, PROFILE-001-US-013 | Yes | API |
-| PROFILE-001-TC-009 | Cafe tried count is derived from current-user rating rows | Positive, API, UI | High | Fixture PROFILE-001-A contains exactly one cafe rating row, `rating-003`. | Request `GET /api/v1/profile`; payload none. | Open `/profile`. | API status is `200 OK`; `triedCafeCount=1`; UI cafe tried count displays `1` with Western digit `1`. | PROFILE-001-US-011 | Yes | API, UI E2E |
-| PROFILE-001-TC-010 | Ice cream tried count is derived from current-user rating rows | Positive, API, UI | High | Fixture PROFILE-001-A contains exactly one ice cream rating row, `rating-004`. | Request `GET /api/v1/profile`; payload none. | Open `/profile`. | API status is `200 OK`; `triedIceCreamCount=1`; UI ice cream tried count displays `1` with Western digit `1`. | PROFILE-001-US-012 | Yes | API, UI E2E |
+| PROFILE-001-TC-008 | Rated counts derive only from rating rows | Data Integrity, API | Critical | Fixture PROFILE-001-A includes one unrated restaurant place in a list. | Request `GET /api/v1/profile`; payload none; expected rated restaurant count `2`. | Request the endpoint and inspect counts. | API status is `200 OK`; `ratedRestaurantCount=2`, not `3`; unrated `place-rest-unrated-001` does not appear in `userRatings`; UI restaurant rated count displays `2`. | PROFILE-001-US-010, PROFILE-001-US-013 | Yes | API |
+| PROFILE-001-TC-009 | Cafe rated count is derived from current-user rating rows | Positive, API, UI | High | Fixture PROFILE-001-A contains exactly one cafe rating row, `rating-003`. | Request `GET /api/v1/profile`; payload none. | Open `/profile`. | API status is `200 OK`; `ratedCafeCount=1`; UI cafe rated count displays `1` with Western digit `1`. | PROFILE-001-US-011 | Yes | API, UI E2E |
+| PROFILE-001-TC-010 | Ice cream rated count is derived from current-user rating rows | Positive, API, UI | High | Fixture PROFILE-001-A contains exactly one ice cream rating row, `rating-004`. | Request `GET /api/v1/profile`; payload none. | Open `/profile`. | API status is `200 OK`; `ratedIceCreamCount=1`; UI ice cream rated count displays `1` with Western digit `1`. | PROFILE-001-US-012 | Yes | API, UI E2E |
 | PROFILE-001-TC-011 | Loading state does not display fake counts | Loading, UX | Medium | Intercept `GET /api/v1/profile` and hold it pending for 2 seconds. | Pending request, payload none. | Navigate to `/profile` while request is pending. | Summary skeleton/loading UI is visible; DOM contains no count values from Fixture PROFILE-001-A until the `200 OK` response resolves. | PROFILE-001-US-016 | Yes | UI E2E |
 | PROFILE-001-TC-012 | Server error shows retry without fake stats | Error Handling, API, UI | High | Fixture PROFILE-001-D is active. | Request `GET /api/v1/profile`; payload none; expected `500 Error`. | Open `/profile`. | API status is `500 Error`; safe error payload excludes profile fields, `triedPlaces`, private note canary `private-note-profile-001`, and raw profile/rating payload values; UI shows one retry control; no count cards with fake values are rendered. | PROFILE-001-US-017 | Yes | API, UI E2E |
 | PROFILE-001-TC-013 | Retry refetches profile and replaces error state after success | Error Handling, UI | Medium | First `GET /api/v1/profile` returns Fixture PROFILE-001-D; second request returns Fixture PROFILE-001-A. | First response `500 Error`; second response `200 OK`. | Open `/profile`, then activate retry once. | Exactly two `GET /api/v1/profile` requests are made; after second response, error state is removed and UI shows count values `4`, `3`, `2`, `1`, `1`. | PROFILE-001-US-018 | Yes | UI E2E |

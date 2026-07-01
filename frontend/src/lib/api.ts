@@ -46,7 +46,6 @@ export type Place = {
   averageRating: number | null;
   ratingCount: number;
   currentUserRating: number | null;
-  currentUserTried: boolean;
   currentUserListIds: string[];
   currentUserListNames: string[];
   currentUserListCount: number;
@@ -110,9 +109,9 @@ export type ProfilePublicListSummary = {
 
 export type Profile = {
   listsCount: number;
-  triedRestaurantCount: number;
-  triedCafeCount: number;
-  triedIceCreamCount: number;
+  ratedRestaurantCount: number;
+  ratedCafeCount: number;
+  ratedIceCreamCount: number;
   ratingsCount: number;
   userRatings: ProfileRating[];
   publicListsSummary: ProfilePublicListSummary[];

@@ -1,9 +1,8 @@
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import conflict, not_found
-from app.modules.lists.models import ListItem, UserList
 from app.modules.places.models import Place
 from app.modules.ratings.models import Rating
 from app.modules.ratings.schemas import RatingCreateRequest, RatingUpdateRequest
@@ -14,21 +13,6 @@ def normalize_notes(notes: str | None) -> str | None:
         return None
     normalized = notes.strip()
     return normalized if normalized else None
-
-
-async def remove_place_from_user_lists(
-    db: AsyncSession,
-    *,
-    user_id: str,
-    place_id: str,
-) -> None:
-    owned_list_ids = select(UserList.id).where(UserList.user_id == user_id)
-    await db.execute(
-        delete(ListItem).where(
-            ListItem.place_id == place_id,
-            ListItem.list_id.in_(owned_list_ids),
-        )
-    )
 
 
 async def create_or_update_rating(
@@ -58,7 +42,6 @@ async def create_or_update_rating(
         notes=normalize_notes(payload.notes),
     )
     db.add(rating)
-    await remove_place_from_user_lists(db, user_id=user_id, place_id=payload.place_id)
 
     try:
         await db.commit()

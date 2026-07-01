@@ -67,7 +67,7 @@ async def _post_rating(
     )
 
 
-async def test_rating_creates_tried_status_and_removes_place_from_all_user_lists(
+async def test_rating_a_listed_place_keeps_it_in_all_user_lists(
     client: AsyncClient,
 ) -> None:
     token = await _token(client, "owner@example.com")
@@ -85,7 +85,7 @@ async def test_rating_creates_tried_status_and_removes_place_from_all_user_lists
     place_detail = await client.get(f"/api/v1/places/{place['id']}", headers=auth_header(token))
     assert place_detail.status_code == 200
     place_body = place_detail.json()
-    assert place_body["currentUserTried"] is True
+    assert "currentUserTried" not in place_body
     assert place_body["currentUserRating"] == 8.5
     assert place_body["averageRating"] == 8.5
     assert place_body["ratingCount"] == 1
@@ -94,24 +94,40 @@ async def test_rating_creates_tried_status_and_removes_place_from_all_user_lists
     second_detail = await client.get(
         f"/api/v1/lists/{second_list['id']}", headers=auth_header(token)
     )
-    assert first_detail.json()["items"] == []
-    assert second_detail.json()["items"] == []
+    assert [item["place"]["id"] for item in first_detail.json()["items"]] == [place["id"]]
+    assert [item["place"]["id"] for item in second_detail.json()["items"]] == [place["id"]]
 
 
-async def test_tried_place_can_be_readded_without_creating_second_rating(
+async def test_rating_an_unlisted_place_creates_no_list_membership(
     client: AsyncClient,
 ) -> None:
     token = await _token(client, "owner@example.com")
     place = await _create_place(client, token, name="Nara Cafe", place_type="cafe")
     user_list = await _create_list(client, token)
-    await _add_place_to_list(client, token, user_list["id"], place["id"])
     await _rate_place(client, token, place["id"], 7)
 
-    readded_item = await _add_place_to_list(client, token, user_list["id"], place["id"])
+    list_detail = await client.get(f"/api/v1/lists/{user_list['id']}", headers=auth_header(token))
     profile = await client.get("/api/v1/profile", headers=auth_header(token))
 
-    assert readded_item["place"]["currentUserTried"] is True
-    assert readded_item["place"]["currentUserRating"] == 7
+    assert list_detail.status_code == 200
+    assert list_detail.json()["items"] == []
+    assert profile.status_code == 200
+    assert profile.json()["ratingsCreatedCount"] == 1
+
+
+async def test_rated_place_can_be_added_to_a_list_without_creating_second_rating(
+    client: AsyncClient,
+) -> None:
+    token = await _token(client, "owner@example.com")
+    place = await _create_place(client, token, name="Nara Cafe", place_type="cafe")
+    user_list = await _create_list(client, token)
+    await _rate_place(client, token, place["id"], 7)
+
+    added_item = await _add_place_to_list(client, token, user_list["id"], place["id"])
+    profile = await client.get("/api/v1/profile", headers=auth_header(token))
+
+    assert added_item["place"]["currentUserRating"] == 7
+    assert "currentUserTried" not in added_item["place"]
     assert profile.status_code == 200
     assert profile.json()["ratingsCreatedCount"] == 1
 
@@ -119,8 +135,10 @@ async def test_tried_place_can_be_readded_without_creating_second_rating(
 async def test_rating_upsert_and_patch_update_existing_rating(client: AsyncClient) -> None:
     token = await _token(client, "owner@example.com")
     place = await _create_place(client, token, name="Nara Cafe", place_type="cafe")
+    user_list = await _create_list(client, token)
 
     created = await _rate_place(client, token, place["id"], 6, "")
+    await _add_place_to_list(client, token, user_list["id"], place["id"])
     upsert_response = await _post_rating(client, token, place["id"], 9, "updated")
     upserted = upsert_response.json()
     patched = await client.patch(
@@ -130,6 +148,7 @@ async def test_rating_upsert_and_patch_update_existing_rating(client: AsyncClien
     )
     profile = await client.get("/api/v1/profile", headers=auth_header(token))
     place_detail = await client.get(f"/api/v1/places/{place['id']}", headers=auth_header(token))
+    list_detail = await client.get(f"/api/v1/lists/{user_list['id']}", headers=auth_header(token))
 
     assert created["notes"] is None
     assert upsert_response.status_code == 200
@@ -141,6 +160,7 @@ async def test_rating_upsert_and_patch_update_existing_rating(client: AsyncClien
     assert profile.json()["ratingsCreatedCount"] == 1
     assert place_detail.json()["averageRating"] == 7.0
     assert place_detail.json()["ratingCount"] == 1
+    assert [item["place"]["id"] for item in list_detail.json()["items"]] == [place["id"]]
 
 
 async def test_notes_privacy_and_community_rating_aggregates(client: AsyncClient) -> None:
@@ -254,8 +274,11 @@ async def test_profile_statistics_are_calculated_from_user_data(client: AsyncCli
     assert response.status_code == 200
     body = response.json()
     assert body["listCount"] == 2
-    assert body["triedRestaurantCount"] == 1
-    assert body["triedCafeCount"] == 1
+    assert body["ratedRestaurantCount"] == 1
+    assert body["ratedCafeCount"] == 1
+    assert "triedRestaurantCount" not in body
+    assert "triedCafeCount" not in body
+    assert "triedIceCreamCount" not in body
     assert body["ratingsCreatedCount"] == 2
     assert len(body["userRatings"]) == 2
     assert "triedPlaces" not in body
@@ -270,9 +293,12 @@ async def test_profile_counts_ice_cream_places(client: AsyncClient) -> None:
 
     assert response.status_code == 200
     body = response.json()
-    assert body["triedIceCreamCount"] == 1
-    assert body["triedRestaurantCount"] == 0
-    assert body["triedCafeCount"] == 0
+    assert body["ratedIceCreamCount"] == 1
+    assert body["ratedRestaurantCount"] == 0
+    assert body["ratedCafeCount"] == 0
+    assert "triedIceCreamCount" not in body
+    assert "triedRestaurantCount" not in body
+    assert "triedCafeCount" not in body
     assert body["ratingsCreatedCount"] == 1
 
 

@@ -53,7 +53,6 @@ def _place_response(
         average_rating=round(float(average_rating), 1) if average_rating is not None else None,
         rating_count=rating_count,
         current_user_rating=current_user_rating,
-        current_user_tried=current_user_rating is not None,
         current_user_list_ids=current_relationship.list_ids,
         current_user_list_names=current_relationship.list_names,
         current_user_list_count=len(current_relationship.list_ids),
