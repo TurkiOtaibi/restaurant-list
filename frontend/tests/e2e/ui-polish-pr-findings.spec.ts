@@ -15,17 +15,23 @@ async function dispatchInstallPrompt(page: import("@playwright/test").Page) {
 }
 
 test.describe("PR review UI polish findings", () => {
-  test("renders bottom-sheet grabber on mobile sheets without adding one to desktop modals", async ({
+  test("renders bottom-sheet grabber on mobile sheets", async ({
     page,
     placesHarness
   }) => {
-    let dataset = await placesHarness.resetFeature("PLACE-HARNESS");
+    const dataset = await placesHarness.resetFeature("PLACE-HARNESS");
 
     await page.setViewportSize({ height: 844, width: 390 });
     await placesHarness.loadRatingState(dataset.places.restaurantBurger.id);
     await expect(page.locator(".ds-bottom-sheet .ds-bottom-sheet__grabber")).toBeVisible();
+  });
 
-    dataset = await placesHarness.resetFeature("PLACE-HARNESS");
+  test("renders desktop modals without bottom-sheet grabbers", async ({
+    page,
+    placesHarness
+  }) => {
+    const dataset = await placesHarness.resetFeature("PLACE-HARNESS");
+
     await page.setViewportSize({ height: 768, width: 1024 });
     await placesHarness.loadRatingState(dataset.places.restaurantBurger.id);
     await expect(page.locator(".ds-modal")).toBeVisible();

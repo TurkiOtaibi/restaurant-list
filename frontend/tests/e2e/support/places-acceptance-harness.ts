@@ -109,8 +109,8 @@ export const test = base.extend<PlacesFixtures>({
   }
 });
 
-test.afterAll(() => {
-  stopE2eApiServer();
+test.afterAll(async () => {
+  await stopE2eApiServer();
 });
 
 export { expect };
@@ -125,6 +125,7 @@ export class PlacesAcceptanceHarness {
 
   async resetFeature(featureId: PlacesFeatureId): Promise<PlacesDataset> {
     const runId = makeRunId(featureId);
+    await this.page.goto("about:blank");
     await this.context.clearCookies();
     const user = await registerApiUser(runId);
     await installRefreshCookie(this.context, user.refreshCookie);
@@ -384,10 +385,16 @@ async function apiRequest<T = unknown>(
   }
   headers.set("Authorization", `Bearer ${accessToken}`);
 
-  const response = await fetch(`${API_BASE_URL}/api/v1${path}`, {
-    ...options,
-    headers
-  });
+  const url = `${API_BASE_URL}/api/v1${path}`;
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers
+    });
+  } catch (error) {
+    throw new Error(`API request failed to reach ${options.method ?? "GET"} ${url}: ${String(error)}`);
+  }
 
   if (!response.ok) {
     throw new Error(`API request failed ${options.method ?? "GET"} ${path}: ${response.status} ${await response.text()}`);

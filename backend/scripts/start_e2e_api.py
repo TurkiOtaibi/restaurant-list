@@ -19,6 +19,8 @@ os.environ.setdefault("JWT_ACCESS_SECRET", "e2e-access-secret")
 os.environ.setdefault("JWT_REFRESH_SECRET", "e2e-refresh-secret")
 os.environ.setdefault("APP_ENV", "e2e")
 os.environ.setdefault("REFRESH_COOKIE_SECURE", "false")
+os.environ.setdefault("AUTH_RATE_LIMIT_REQUESTS", "200")
+os.environ.setdefault("AUTH_RATE_LIMIT_WINDOW_SECONDS", "60")
 os.environ.setdefault(
     "CORS_ORIGINS",
     '["http://127.0.0.1:3000","http://localhost:3000"]',

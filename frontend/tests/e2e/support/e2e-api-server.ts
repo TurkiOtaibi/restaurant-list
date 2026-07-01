@@ -6,6 +6,7 @@ let apiProcess: ChildProcessWithoutNullStreams | undefined;
 let apiOutput = "";
 let apiExited = false;
 let apiReady = false;
+const API_BASE_URL = process.env.E2E_API_BASE_URL ?? "http://localhost:8000";
 
 export async function ensureE2eApiServer(): Promise<void> {
   if (apiReady && (await isReady())) {
@@ -47,6 +48,7 @@ export async function ensureE2eApiServer(): Promise<void> {
       }
       apiExited = true;
       apiReady = false;
+      apiProcess = undefined;
       apiOutput += `\nAPI exited with code ${code ?? "null"} and signal ${signal ?? "null"}.`;
     });
   }
@@ -55,12 +57,24 @@ export async function ensureE2eApiServer(): Promise<void> {
   apiReady = true;
 }
 
-export function stopE2eApiServer(): void {
+export async function stopE2eApiServer(): Promise<void> {
   const currentProcess = apiProcess;
   apiProcess = undefined;
   apiReady = false;
+  if (!currentProcess || currentProcess.exitCode !== null) {
+    apiExited = false;
+    return;
+  }
+
+  await new Promise<void>((resolve) => {
+    const timeout = setTimeout(resolve, 5_000);
+    currentProcess.once("exit", () => {
+      clearTimeout(timeout);
+      resolve();
+    });
+    currentProcess.kill();
+  });
   apiExited = false;
-  currentProcess?.kill();
 }
 
 async function waitForApi(): Promise<void> {
@@ -81,7 +95,7 @@ async function waitForApi(): Promise<void> {
 
 async function isReady(): Promise<boolean> {
   try {
-    const response = await fetch("http://localhost:8000/health/ready");
+    const response = await fetch(`${API_BASE_URL}/health/ready`);
     return response.ok;
   } catch {
     return false;

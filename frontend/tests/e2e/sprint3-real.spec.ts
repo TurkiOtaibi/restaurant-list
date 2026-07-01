@@ -1,45 +1,10 @@
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
-import path from "node:path";
-import { setTimeout as delay } from "node:timers/promises";
-
 import { expect, test, type Page } from "@playwright/test";
 
 import { PlacesAcceptanceHarness } from "./support/places-acceptance-harness";
-
-let apiProcess: ChildProcessWithoutNullStreams | undefined;
-let apiOutput = "";
-let apiExited = false;
+import { ensureE2eApiServer } from "./support/e2e-api-server";
 
 test.beforeAll(async () => {
-  const backendScript = path.resolve(
-    process.cwd(),
-    "..",
-    "backend",
-    "scripts",
-    "start_e2e_api.py"
-  );
-
-  apiProcess = spawn(process.env.PYTHON ?? "python", [backendScript], {
-    env: { ...process.env },
-    stdio: "pipe"
-  });
-
-  apiProcess.stdout.on("data", (chunk) => {
-    apiOutput += chunk.toString();
-  });
-  apiProcess.stderr.on("data", (chunk) => {
-    apiOutput += chunk.toString();
-  });
-  apiProcess.on("exit", (code, signal) => {
-    apiExited = true;
-    apiOutput += `\nAPI exited with code ${code ?? "null"} and signal ${signal ?? "null"}.`;
-  });
-
-  await waitForApi();
-});
-
-test.afterAll(() => {
-  apiProcess?.kill();
+  await ensureE2eApiServer();
 });
 
 test("real frontend and api complete auth, create, search, and detail flow", async ({ page }) => {
@@ -355,30 +320,6 @@ test("technical shell stories expose manifest headers and legacy redirects", asy
   await page.goto("/cafes");
   await expect(page).toHaveURL(/\/places\?type=cafe/);
 });
-
-async function waitForApi() {
-  for (let attempt = 0; attempt < 240; attempt += 1) {
-    if (apiExited) {
-      throw new Error(apiOutput);
-    }
-
-    try {
-      // Gate on readiness (DB-backed), not liveness, so the API can actually
-      // serve a database-backed request before the test proceeds. This mirrors
-      // the production healthCheckPath and avoids racing the first cold request.
-      const response = await fetch("http://localhost:8000/health/ready");
-      if (response.ok) {
-        return;
-      }
-    } catch {
-      // Keep waiting while the Python process starts Uvicorn.
-    }
-
-    await delay(500);
-  }
-
-  throw new Error(`Timed out waiting for the real API.\n${apiOutput}`);
-}
 
 async function waitForPlaceLibraryReady(page: Page) {
   await expect(page.locator(".place-library-loading")).toHaveCount(0, { timeout: 30_000 });
