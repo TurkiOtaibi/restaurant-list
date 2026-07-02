@@ -51,13 +51,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
 ) {
   return (
     <Field error={error} helper={helper} id={id} label={label}>
-      <input
-        aria-describedby={descriptionIds(id, helper, error)}
-        aria-invalid={Boolean(error)}
-        id={id}
-        ref={ref}
-        {...props}
-      />
+      <input {...fieldControlProps(id, helper, error)} ref={ref} {...props} />
     </Field>
   );
 });
@@ -65,14 +59,17 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
 export function TextArea({ error, helper, id, label, ...props }: TextAreaProps) {
   return (
     <Field error={error} helper={helper} id={id} label={label}>
-      <textarea
-        aria-describedby={descriptionIds(id, helper, error)}
-        aria-invalid={Boolean(error)}
-        id={id}
-        {...props}
-      />
+      <textarea {...fieldControlProps(id, helper, error)} {...props} />
     </Field>
   );
+}
+
+function fieldControlProps(id: string, helper?: string, error?: string) {
+  return {
+    "aria-describedby": descriptionIds(id, helper, error),
+    "aria-invalid": Boolean(error),
+    id
+  };
 }
 
 function descriptionIds(id: string | undefined, helper?: string, error?: string): string | undefined {
