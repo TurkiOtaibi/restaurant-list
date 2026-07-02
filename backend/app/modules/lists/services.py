@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import cast
+from datetime import datetime
+from typing import TypedDict, cast
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -36,6 +37,15 @@ class ListCollectionResult:
 class PublicListCollectionResult:
     items: list[PublicListResponse]
     total: int
+
+
+class _ListResponseFields(TypedDict):
+    id: str
+    name: str
+    visibility: ListVisibility
+    place_count: int
+    created_at: datetime
+    updated_at: datetime
 
 
 async def get_owned_list(db: AsyncSession, *, list_id: str, user_id: str) -> UserList:
@@ -348,25 +358,24 @@ async def _get_list_item_by_place(
 
 
 def _list_response(user_list: UserList, place_count: int) -> ListResponse:
-    return ListResponse(
-        id=user_list.id,
-        name=user_list.name,
-        visibility=cast(ListVisibility, user_list.visibility),
-        place_count=place_count,
-        created_at=user_list.created_at,
-        updated_at=user_list.updated_at,
-    )
+    return ListResponse(**_list_response_fields(user_list, place_count))
 
 
 def _public_list_response(
     user_list: UserList, place_count: int, owner_display_name: str
 ) -> PublicListResponse:
     return PublicListResponse(
-        id=user_list.id,
-        name=user_list.name,
-        visibility=cast(ListVisibility, user_list.visibility),
+        **_list_response_fields(user_list, place_count),
         owner_display_name=owner_display_name,
-        place_count=place_count,
-        created_at=user_list.created_at,
-        updated_at=user_list.updated_at,
     )
+
+
+def _list_response_fields(user_list: UserList, place_count: int) -> _ListResponseFields:
+    return {
+        "id": user_list.id,
+        "name": user_list.name,
+        "visibility": cast(ListVisibility, user_list.visibility),
+        "place_count": place_count,
+        "created_at": user_list.created_at,
+        "updated_at": user_list.updated_at,
+    }
