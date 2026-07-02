@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { cx } from "@/lib/ui";
 
@@ -21,21 +21,9 @@ export function ActionMenu({ items, label, trigger }: ActionMenuProps) {
   const [open, setOpen] = useState(false);
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
+  const closeMenu = useCallback(() => setOpen(false), []);
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    function closeOnOutsideClick(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", closeOnOutsideClick);
-    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
-  }, [open]);
+  useCloseOnOutsideClick(open, rootRef, closeMenu);
 
   return (
     <div className="ds-action-menu" ref={rootRef}>
@@ -48,7 +36,7 @@ export function ActionMenu({ items, label, trigger }: ActionMenuProps) {
         onClick={() => setOpen((current) => !current)}
         onKeyDown={(event) => {
           if (event.key === "Escape") {
-            setOpen(false);
+            closeMenu();
           }
         }}
         type="button"
@@ -62,7 +50,7 @@ export function ActionMenu({ items, label, trigger }: ActionMenuProps) {
               className={cx(item.destructive && "is-destructive")}
               key={item.label}
               onClick={() => {
-                setOpen(false);
+                closeMenu();
                 item.onSelect();
               }}
               role="menuitem"
@@ -75,4 +63,25 @@ export function ActionMenu({ items, label, trigger }: ActionMenuProps) {
       ) : null}
     </div>
   );
+}
+
+function useCloseOnOutsideClick(
+  open: boolean,
+  rootRef: { current: HTMLDivElement | null },
+  closeMenu: () => void
+) {
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    function closeOnOutsideClick(event: MouseEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        closeMenu();
+      }
+    }
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, [closeMenu, open, rootRef]);
 }
