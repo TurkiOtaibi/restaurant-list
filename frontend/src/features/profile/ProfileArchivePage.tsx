@@ -2,15 +2,18 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type { CSSProperties } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
+  ActionMenu,
   BidiText,
   Button,
   ButtonLink,
   EmptyState,
-  ListCard,
   LoadingState,
+  MoreVerticalIcon,
+  NumberText,
   PlaceTypeIcon,
   RatingDisplay,
   StatusMessage
@@ -30,15 +33,23 @@ import { loginHrefForReturn } from "@/lib/authReturn";
 import { formatNumber, formatOutOfTen } from "@/lib/numerals";
 
 type ProfileStat = {
+  ariaLabel: string;
   label: string;
-  unit: string;
-  value: number;
+  value: string;
 };
 
 const ARCHIVE_VIRTUALIZATION_THRESHOLD = 80;
 const ARCHIVE_ROW_HEIGHT = 104;
 const ARCHIVE_OVERSCAN = 4;
 const RATING_NOTE_SESSION_PREFIX = "restaurantWishlist.ratingNote.";
+const DEFAULT_DISPLAY_NAME = "مستخدم سجل";
+const AVATAR_COLORS = [
+  ["#0f8f5f", "#35d18e"],
+  ["#1b6f8f", "#5dd5f1"],
+  ["#8f6a1b", "#f2c95a"],
+  ["#7c3f8f", "#d48df1"],
+  ["#8f3d4a", "#ef8b98"]
+] as const;
 
 export function ProfileArchivePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -86,37 +97,18 @@ export function ProfileArchivePage() {
     void loadProfile();
   }, [loadProfile]);
 
+  const displayName = profileDisplayName(profile);
   const stats = profile ? profileStats(profile) : [];
   const hasRatings = profile ? profile.userRatings.length > 0 : false;
-  const publicLists = profile?.publicListsSummary ?? [];
 
   return (
     <main className="content profile-page">
-      <section className="profile-hero" aria-labelledby="profile-title">
-        <div className="profile-hero__copy">
-          <h1 id="profile-title">صفحتي</h1>
-          <p className="muted">قوائمك وتقييماتك</p>
-        </div>
-        {!needsAuth ? (
-          <Button onClick={() => void handleLogout()} type="button" variant="secondary">
-            تسجيل الخروج
-          </Button>
-        ) : null}
-        {profile ? (
-          <div className="profile-stats" aria-label="ملخص الصفحة">
-            {stats.map((stat) => (
-              <div
-                aria-label={`${stat.label}: ${formatNumber(stat.value)} ${stat.unit}`}
-                className="profile-stat"
-                key={stat.label}
-              >
-                <span className="profile-stat__value">{formatNumber(stat.value)}</span>
-                <span className="profile-stat__label">{stat.label}</span>
-              </div>
-            ))}
-          </div>
-        ) : null}
-      </section>
+      <ProfileHeader
+        canLogout={!needsAuth}
+        onLogout={() => {
+          void handleLogout();
+        }}
+      />
 
       {needsAuth ? (
         <StatusMessage tone="notice">
@@ -138,54 +130,101 @@ export function ProfileArchivePage() {
       ) : null}
 
       {!loading && profile ? (
-        <section className="profile-section" aria-labelledby="profile-ratings-title">
-          <div className="library-section__header">
-            <h2 id="profile-ratings-title">تقييماتك</h2>
-          </div>
-          {hasRatings ? (
-            <RatingArchiveList ratings={profile.userRatings} />
-          ) : (
-            <EmptyState
-              action={<ButtonLink href="/places">الأماكن</ButtonLink>}
-              title="لا توجد تقييمات"
-            />
-          )}
-        </section>
-      ) : null}
+        <>
+          <ProfileIdentityCard displayName={displayName} />
+          <ProfileStats stats={stats} />
 
-      {!loading && profile ? (
-        <section className="profile-section" aria-labelledby="profile-public-title">
-          <div className="library-section__header library-section__header--inline">
-            <div>
-              <h2 id="profile-public-title">قوائم عامة</h2>
+          <section className="profile-section" aria-labelledby="profile-ratings-title">
+            <div className="library-section__header">
+              <h2 id="profile-ratings-title">الأماكن التي قيّمتها</h2>
             </div>
-            <ButtonLink href="/lists/public" variant="secondary">
-              القوائم العامة
-            </ButtonLink>
-          </div>
-          {publicLists.length === 0 ? (
-            <EmptyState
-              action={<ButtonLink href="/lists/public">القوائم العامة</ButtonLink>}
-              body="عندما تنشر قائمة عامة ستظهر هنا لسهولة الرجوع إليها."
-              title="لا توجد قوائم عامة حالياً"
-            />
-          ) : (
-            <div className="library-grid" aria-label="قوائمك العامة">
-              {publicLists.map((list) => (
-                <ListCard
-                  context="viewer"
-                  href={`/lists/public/${list.id}`}
-                  isEmpty={list.placeCount === 0}
-                  key={list.id}
-                  list={{ ...list, visibility: "public" }}
-                  placeCount={list.placeCount}
-                />
-              ))}
+            {hasRatings ? (
+              <RatingArchiveList ratings={profile.userRatings} />
+            ) : (
+              <EmptyState
+                action={<ButtonLink href="/places">استكشف الأماكن</ButtonLink>}
+                body="ابدأ من صفحة الأماكن، افتح مكانًا يعجبك، ثم أضف تقييمك الأول."
+                title="لم تقيّم أي مكان بعد"
+              />
+            )}
+          </section>
+
+          <section className="profile-section" aria-labelledby="profile-lists-title">
+            <div className="profile-section-link">
+              <div>
+                <h2 id="profile-lists-title">قوائمي</h2>
+                <p className="muted">كل قوائمك الخاصة والعامة في مكان واحد.</p>
+              </div>
+              <ButtonLink href="/lists" variant="secondary">
+                عرض القوائم
+              </ButtonLink>
             </div>
-          )}
-        </section>
+          </section>
+        </>
       ) : null}
     </main>
+  );
+}
+
+function ProfileHeader({
+  canLogout,
+  onLogout
+}: {
+  canLogout: boolean;
+  onLogout: () => void;
+}) {
+  return (
+    <header className="profile-topbar" aria-labelledby="profile-title">
+      <h1 id="profile-title">صفحتي</h1>
+      {canLogout ? (
+        <ActionMenu
+          items={[{ destructive: true, label: "تسجيل الخروج", onSelect: onLogout }]}
+          label="إجراءات صفحتي"
+          trigger={<MoreVerticalIcon />}
+        />
+      ) : null}
+    </header>
+  );
+}
+
+function ProfileIdentityCard({ displayName }: { displayName: string }) {
+  const initials = displayInitials(displayName);
+  const [avatarStart, avatarEnd] = avatarPalette(displayName);
+
+  return (
+    <section className="profile-identity-card" aria-labelledby="profile-identity-name">
+      <div
+        aria-hidden="true"
+        className="profile-avatar"
+        style={{
+          "--profile-avatar-a": avatarStart,
+          "--profile-avatar-b": avatarEnd
+        } as CSSProperties}
+      >
+        {initials}
+      </div>
+      <div className="profile-identity-card__copy">
+        <p className="eyebrow">الملف الشخصي</p>
+        <h2 id="profile-identity-name">
+          <BidiText>{displayName}</BidiText>
+        </h2>
+      </div>
+    </section>
+  );
+}
+
+function ProfileStats({ stats }: { stats: ProfileStat[] }) {
+  return (
+    <section className="profile-stats" aria-label="ملخص صفحتي">
+      {stats.map((stat) => (
+        <div aria-label={stat.ariaLabel} className="profile-stat" key={stat.label}>
+          <span className="profile-stat__value">
+            <NumberText>{stat.value}</NumberText>
+          </span>
+          <span className="profile-stat__label">{stat.label}</span>
+        </div>
+      ))}
+    </section>
   );
 }
 
@@ -208,7 +247,7 @@ function RatingArchiveList({ ratings }: { ratings: ProfileRating[] }) {
 
   if (ratings.length <= ARCHIVE_VIRTUALIZATION_THRESHOLD) {
     return (
-      <div className="profile-rating-list" aria-label="تقييماتك الخاصة">
+      <div className="profile-rating-list" aria-label="الأماكن التي قيّمتها">
         {ratings.map((rating) => (
           <RatingArchiveCard key={rating.id} rating={rating} />
         ))}
@@ -224,7 +263,7 @@ function RatingArchiveList({ ratings }: { ratings: ProfileRating[] }) {
 
   return (
     <div
-      aria-label="تقييماتك الخاصة"
+      aria-label="الأماكن التي قيّمتها"
       className="profile-rating-list profile-rating-list--virtualized"
       onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
       ref={containerRef}
@@ -324,18 +363,63 @@ function RatingArchiveCard({ rating }: { rating: ProfileRating }) {
 function ProfileLoadingState() {
   return (
     <section className="profile-loading" aria-label="جاري تحميل صفحتك">
-      <LoadingState count={4} delayMs={0} label="جاري تحميل إحصاءات الملف" variant="text" />
-      <LoadingState count={3} delayMs={0} label="جاري تحميل تقييماتك" />
+      <LoadingState count={2} delayMs={0} label="جاري تحميل هوية الصفحة" variant="text" />
+      <LoadingState count={3} delayMs={0} label="جاري تحميل الأماكن التي قيّمتها" />
     </section>
   );
 }
 
 function profileStats(profile: Profile): ProfileStat[] {
-  return [
-    { label: "قوائم", unit: "قائمة", value: profile.listsCount ?? profile.listCount ?? 0 },
-    { label: "مطاعم قيّمتها", unit: "مطعم", value: profile.ratedRestaurantCount },
-    { label: "مقاهٍ قيّمتها", unit: "مقهى", value: profile.ratedCafeCount },
-    { label: "آيس كريم قيّمته", unit: "محل", value: profile.ratedIceCreamCount },
-    { label: "تقييمات", unit: "تقييم", value: profile.ratingsCount ?? profile.ratingsCreatedCount ?? 0 }
+  const ratingsCount = profile.ratingsCount ?? profile.ratingsCreatedCount ?? 0;
+  const listsCount = profile.listsCount ?? profile.listCount ?? 0;
+  const averageRating = completeAverageRating(profile, ratingsCount);
+  const stats: ProfileStat[] = [
+    {
+      ariaLabel: `التقييمات: ${formatNumber(ratingsCount)}`,
+      label: "التقييمات",
+      value: formatNumber(ratingsCount)
+    },
+    {
+      ariaLabel: `القوائم: ${formatNumber(listsCount)}`,
+      label: "القوائم",
+      value: formatNumber(listsCount)
+    }
   ];
+
+  if (averageRating !== null) {
+    stats.push({
+      ariaLabel: `متوسط التقييم: ${formatOutOfTen(averageRating)}`,
+      label: "متوسط التقييم",
+      value: formatOutOfTen(averageRating)
+    });
+  }
+
+  return stats;
+}
+
+function completeAverageRating(profile: Profile, ratingsCount: number): number | null {
+  if (ratingsCount === 0 || profile.userRatings.length !== ratingsCount) {
+    return null;
+  }
+
+  const total = profile.userRatings.reduce((sum, rating) => sum + rating.rating, 0);
+  return Number((total / ratingsCount).toFixed(1));
+}
+
+function profileDisplayName(profile: Profile | null): string {
+  return profile?.publicListsSummary?.[0]?.ownerDisplayName ?? DEFAULT_DISPLAY_NAME;
+}
+
+function displayInitials(displayName: string): string {
+  const parts = displayName.trim().split(/\s+/).filter(Boolean);
+  const initials = parts.slice(0, 2).map((part) => Array.from(part)[0] ?? "");
+  return initials.join("") || "س";
+}
+
+function avatarPalette(value: string): (typeof AVATAR_COLORS)[number] {
+  let hash = 0;
+  for (const char of value) {
+    hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  }
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
 }
