@@ -15,6 +15,8 @@ type PlaceLibraryUrlState = {
   type: PlaceType;
 };
 
+const URL_PLACE_TYPES: readonly PlaceType[] = ["restaurant", "cafe", "ice_cream"];
+
 export function parsePlaceLibraryUrlState(
   search: string,
   initialType: PlaceType
@@ -69,7 +71,7 @@ export function buildPlaceLibraryUrl({
 }
 
 function parsePlaceType(type: string | null): PlaceType | null {
-  return type === "restaurant" || type === "cafe" || type === "ice_cream" ? type : null;
+  return type && URL_PLACE_TYPES.includes(type as PlaceType) ? (type as PlaceType) : null;
 }
 
 function parseSubtype(type: PlaceType, subtype: string | null): SubtypeFilterValue {
