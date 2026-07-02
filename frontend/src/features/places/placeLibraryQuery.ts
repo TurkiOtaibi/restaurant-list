@@ -39,7 +39,7 @@ export function buildPlaceLibraryApiQuery({
   type
 }: PlaceLibraryApiQuery): string {
   const params = new URLSearchParams({ type });
-  const normalizedSearch = q.trim();
+  const normalizedSearch = normalizeSearchQuery(q);
   if (normalizedSearch) {
     params.set("q", normalizedSearch);
   }
@@ -62,10 +62,15 @@ export function buildPlaceLibraryUrl({
   if (subtype !== "all" && type !== "ice_cream") {
     params.set("subtype", subtype);
   }
-  if (q.trim()) {
-    params.set("q", q.trim());
+  const normalizedSearch = normalizeSearchQuery(q);
+  if (normalizedSearch) {
+    params.set("q", normalizedSearch);
   }
   return `/places?${params.toString()}`;
+}
+
+function normalizeSearchQuery(q: string): string {
+  return q.trim();
 }
 
 function parseSubtype(type: PlaceType, subtype: string | null): SubtypeFilterValue {
