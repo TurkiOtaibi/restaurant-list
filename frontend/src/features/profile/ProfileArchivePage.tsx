@@ -25,6 +25,7 @@ import { placeSubtypeLabel, placeTypeLabel } from "@/features/places/taxonomy";
 import {
   ApiError,
   Profile,
+  ProfileFavoritePlace,
   ProfileRating,
   apiRequest,
   clearTokens,
@@ -143,6 +144,11 @@ export function ProfileArchivePage() {
             onEdit={() => setEditOpen(true)}
           />
           <ProfileStats stats={stats} />
+          <FavoritePlacesStrip
+            favorites={profile.favoritePlaces}
+            onUpdated={setProfile}
+            ratedPlaces={profile.userRatings}
+          />
 
           <section className="profile-section" aria-labelledby="profile-ratings-title">
             <div className="library-section__header">
@@ -378,6 +384,298 @@ function EditProfileDialog({
           </Button>
         </div>
       </form>
+    </ResponsiveDialog>
+  );
+}
+
+function FavoritePlacesStrip({
+  favorites,
+  onUpdated,
+  ratedPlaces
+}: {
+  favorites: ProfileFavoritePlace[];
+  onUpdated: (profile: Profile) => void;
+  ratedPlaces: ProfileRating[];
+}) {
+  const [editing, setEditing] = useState(false);
+  const hasRatedPlaces = ratedPlaces.length > 0;
+
+  return (
+    <section className="profile-section profile-favorites" aria-labelledby="profile-favorites-title">
+      <div className="library-section__header library-section__header--inline">
+        <h2 id="profile-favorites-title">المفضلة</h2>
+        {hasRatedPlaces ? (
+          <Button onClick={() => setEditing(true)} type="button" variant="secondary">
+            تعديل المفضلة
+          </Button>
+        ) : null}
+      </div>
+      {favorites.length > 0 ? (
+        <div className="profile-favorites-grid" aria-label="الأماكن المفضلة">
+          {favorites.map((favorite) => (
+            <FavoritePlaceCard favorite={favorite} key={favorite.id} />
+          ))}
+        </div>
+      ) : (
+        <FavoritePlacesEmptyState
+          canOpenPicker={hasRatedPlaces}
+          onOpenPicker={() => setEditing(true)}
+        />
+      )}
+      {hasRatedPlaces ? (
+        <EditFavoritesDialog
+          favorites={favorites}
+          onClose={() => setEditing(false)}
+          onUpdated={(profile) => {
+            onUpdated(profile);
+            setEditing(false);
+          }}
+          open={editing}
+          ratedPlaces={ratedPlaces}
+        />
+      ) : null}
+    </section>
+  );
+}
+
+function FavoritePlaceCard({ favorite }: { favorite: ProfileFavoritePlace }) {
+  return (
+    <ButtonLink
+      aria-label={`${favorite.name}، تقييمك ${formatOutOfTen(favorite.rating)}`}
+      className="profile-favorite-card"
+      href={`/places/${favorite.id}`}
+      variant="secondary"
+    >
+      <PlaceTypeIcon type={favorite.type} />
+      <span className="profile-favorite-card__name">
+        <BidiText>{favorite.name}</BidiText>
+      </span>
+      <RatingDisplay
+        className="profile-favorite-card__rating"
+        label="تقييمك"
+        variant="outOfTen"
+        value={favorite.rating}
+      />
+    </ButtonLink>
+  );
+}
+
+function FavoritePlacesEmptyState({
+  canOpenPicker,
+  onOpenPicker
+}: {
+  canOpenPicker: boolean;
+  onOpenPicker: () => void;
+}) {
+  return (
+    <div className="profile-favorites-empty">
+      <div aria-hidden="true" className="profile-favorites-placeholders">
+        {Array.from({ length: 4 }, (_, index) => (
+          <span className="profile-favorite-placeholder" key={index} />
+        ))}
+      </div>
+      {canOpenPicker ? (
+        <Button onClick={onOpenPicker} type="button" variant="secondary">
+          أضف مفضلتك الأولى
+        </Button>
+      ) : (
+        <p className="muted">قيّم أماكن أولًا لتضيفها إلى المفضلة.</p>
+      )}
+    </div>
+  );
+}
+
+function EditFavoritesDialog({
+  favorites,
+  onClose,
+  onUpdated,
+  open,
+  ratedPlaces
+}: {
+  favorites: ProfileFavoritePlace[];
+  onClose: () => void;
+  onUpdated: (profile: Profile) => void;
+  open: boolean;
+  ratedPlaces: ProfileRating[];
+}) {
+  const [selectedIds, setSelectedIds] = useState<string[]>(favorites.map((favorite) => favorite.id));
+  const [query, setQuery] = useState("");
+  const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [serverError, setServerError] = useState("");
+  const candidates = ratedPlaces.map((rating) => ({
+    id: rating.place.id,
+    name: rating.place.name,
+    rating: rating.rating,
+    subtype: rating.place.subtype,
+    type: rating.place.type
+  }));
+  const candidateById = new Map(candidates.map((candidate) => [candidate.id, candidate]));
+  const selectedFavorites = selectedIds
+    .map((id) => candidateById.get(id))
+    .filter((candidate): candidate is NonNullable<typeof candidate> => Boolean(candidate));
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredCandidates = normalizedQuery
+    ? candidates.filter((candidate) => candidate.name.toLowerCase().includes(normalizedQuery))
+    : candidates;
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    setSelectedIds(favorites.map((favorite) => favorite.id));
+    setQuery("");
+    setMessage("");
+    setServerError("");
+    setSaving(false);
+  }, [favorites, open]);
+
+  function toggleFavorite(placeId: string) {
+    setServerError("");
+    setSelectedIds((current) => {
+      if (current.includes(placeId)) {
+        setMessage("");
+        return current.filter((id) => id !== placeId);
+      }
+
+      if (current.length >= 4) {
+        setMessage("يمكنك اختيار ٤ أماكن كحد أقصى.");
+        return current;
+      }
+
+      setMessage("");
+      return [...current, placeId];
+    });
+  }
+
+  function moveSelected(placeId: string, direction: -1 | 1) {
+    setSelectedIds((current) => {
+      const index = current.indexOf(placeId);
+      const nextIndex = index + direction;
+      if (index === -1 || nextIndex < 0 || nextIndex >= current.length) {
+        return current;
+      }
+
+      const next = [...current];
+      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+      return next;
+    });
+  }
+
+  async function saveFavorites() {
+    setSaving(true);
+    setServerError("");
+    setMessage("");
+    try {
+      const updatedProfile = await apiRequest<Profile>("/profile/favorites", {
+        body: JSON.stringify({ placeIds: selectedIds }),
+        method: "PUT"
+      });
+      onUpdated(updatedProfile);
+    } catch (caught) {
+      setServerError(caught instanceof ApiError ? caught.message : "تعذر حفظ المفضلة.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <ResponsiveDialog
+      closeLabel="إغلاق تعديل المفضلة"
+      initialFocusSelector="#favorite-search"
+      labelledBy="edit-favorites-title"
+      onClose={onClose}
+      open={open}
+      title="تعديل المفضلة"
+    >
+      <div className="profile-favorites-dialog">
+        <TextInput
+          id="favorite-search"
+          label="البحث في الأماكن التي قيّمتها"
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="ابحث باسم المكان"
+          value={query}
+        />
+        <p className="profile-favorites-dialog__count" aria-live="polite">
+          اخترت <NumberText>{formatNumber(selectedIds.length)}</NumberText> من{" "}
+          <NumberText>{formatNumber(4)}</NumberText>
+        </p>
+        {message ? <StatusMessage tone="notice">{message}</StatusMessage> : null}
+        {serverError ? <StatusMessage tone="error">{serverError}</StatusMessage> : null}
+
+        {selectedFavorites.length > 0 ? (
+          <div className="profile-favorites-selected" aria-label="ترتيب المفضلة المختارة">
+            {selectedFavorites.map((favorite, index) => (
+              <div className="profile-favorites-selected__row" key={favorite.id}>
+                <span>
+                  <NumberText>{formatNumber(index + 1)}</NumberText>.{" "}
+                  <BidiText>{favorite.name}</BidiText>
+                </span>
+                <div className="actions">
+                  <Button
+                    aria-label={`ارفع ${favorite.name}`}
+                    disabled={index === 0}
+                    onClick={() => moveSelected(favorite.id, -1)}
+                    type="button"
+                    variant="secondary"
+                  >
+                    أعلى
+                  </Button>
+                  <Button
+                    aria-label={`أنزل ${favorite.name}`}
+                    disabled={index === selectedFavorites.length - 1}
+                    onClick={() => moveSelected(favorite.id, 1)}
+                    type="button"
+                    variant="secondary"
+                  >
+                    أسفل
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        <div className="profile-favorite-picker-list" aria-label="الأماكن التي قيّمتها">
+          {filteredCandidates.map((candidate) => {
+            const selected = selectedIds.includes(candidate.id);
+            return (
+              <button
+                aria-pressed={selected}
+                className="profile-favorite-picker-item"
+                key={candidate.id}
+                onClick={() => toggleFavorite(candidate.id)}
+                type="button"
+              >
+                <PlaceTypeIcon type={candidate.type} />
+                <span className="profile-favorite-picker-item__main">
+                  <span className="profile-favorite-picker-item__name">
+                    <BidiText>{candidate.name}</BidiText>
+                  </span>
+                  <RatingDisplay
+                    className="profile-favorite-picker-item__rating"
+                    label="تقييمك"
+                    variant="outOfTen"
+                    value={candidate.rating}
+                  />
+                </span>
+                <span className="profile-favorite-picker-item__state">
+                  {selected ? "مختار" : "اختيار"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="actions">
+          <Button onClick={onClose} type="button" variant="secondary">
+            إلغاء
+          </Button>
+          <Button isLoading={saving} loadingLabel="جاري حفظ المفضلة" onClick={() => void saveFavorites()} type="button">
+            حفظ المفضلة
+          </Button>
+        </div>
+      </div>
     </ResponsiveDialog>
   );
 }
