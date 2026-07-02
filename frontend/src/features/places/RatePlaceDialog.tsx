@@ -110,7 +110,7 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
     try {
       const payload = {
         rating,
-        notes: notes.trim() ? notes.trim() : null
+        notes: normalizeRatingNotes(notes)
       };
       const response = place?.currentUserRating
         ? await apiRequest<Rating>(`/ratings/${placeId}`, {
@@ -211,4 +211,9 @@ export function RatePlaceDialog({ onClose, open, placeId }: RatePlaceDialogProps
       </form>
     </ResponsiveDialog>
   );
+}
+
+function normalizeRatingNotes(notes: string): string | null {
+  const normalized = notes.trim();
+  return normalized ? normalized : null;
 }
