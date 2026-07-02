@@ -307,94 +307,12 @@ export class FeatureAccessibilityHarness {
   }
 
   async activeElementSummary(): Promise<KeyboardTraversalStep> {
-    return this.page.evaluate(() => {
-      const accessibleName = (element: HTMLElement) => {
-        const labelledBy = element.getAttribute("aria-labelledby");
-        if (labelledBy) {
-          const value = labelledBy
-            .split(/\s+/)
-            .map((id) => document.getElementById(id)?.textContent?.trim() ?? "")
-            .filter(Boolean)
-            .join(" ");
-          if (value) {
-            return value;
-          }
-        }
-
-        const ariaLabel = element.getAttribute("aria-label");
-        if (ariaLabel) {
-          return ariaLabel.trim();
-        }
-
-        if (
-          element instanceof HTMLInputElement ||
-          element instanceof HTMLTextAreaElement ||
-          element instanceof HTMLSelectElement
-        ) {
-          if (element.labels && element.labels.length > 0) {
-            return Array.from(element.labels)
-              .map((label) => label.textContent?.trim() ?? "")
-              .filter(Boolean)
-              .join(" ");
-          }
-        }
-
-        return element.textContent?.trim().replace(/\s+/g, " ") ?? "";
-      };
-      const roleFor = (element: HTMLElement) => {
-        const explicit = element.getAttribute("role");
-        if (explicit) {
-          return explicit;
-        }
-        const tagName = element.tagName.toLowerCase();
-        if (tagName === "a" && element.hasAttribute("href")) {
-          return "link";
-        }
-        if (tagName === "button") {
-          return "button";
-        }
-        if (tagName === "main") {
-          return "main";
-        }
-        if (tagName === "nav") {
-          return "navigation";
-        }
-        if (/^h[1-6]$/.test(tagName)) {
-          return "heading";
-        }
-        if (tagName === "dialog") {
-          return "dialog";
-        }
-        if (tagName === "select") {
-          return "combobox";
-        }
-        if (tagName === "textarea") {
-          return "textbox";
-        }
-        if (tagName === "input") {
-          const type = (element.getAttribute("type") ?? "text").toLowerCase();
-          if (["button", "submit", "reset"].includes(type)) {
-            return "button";
-          }
-          if (type === "checkbox") {
-            return "checkbox";
-          }
-          if (type === "radio") {
-            return "radio";
-          }
-          if (type === "range") {
-            return "slider";
-          }
-          return "textbox";
-        }
-        return undefined;
-      };
-      const element = document.activeElement;
-      if (!(element instanceof HTMLElement)) {
-        return { name: "", role: undefined };
-      }
-      return { name: accessibleName(element), role: roleFor(element) };
-    });
+    const handle = await this.page.evaluateHandle(() => document.activeElement);
+    try {
+      return await this.page.evaluate(summarizeElementForBrowser, handle);
+    } finally {
+      await handle.dispose();
+    }
   }
 
   async elementSummary(locator: Locator): Promise<KeyboardTraversalStep> {
@@ -403,93 +321,96 @@ export class FeatureAccessibilityHarness {
       throw new Error("Element was not available for accessibility summary.");
     }
 
-    return this.page.evaluate((element) => {
-      const accessibleName = (target: HTMLElement) => {
-        const labelledBy = target.getAttribute("aria-labelledby");
-        if (labelledBy) {
-          const value = labelledBy
-            .split(/\s+/)
-            .map((id) => document.getElementById(id)?.textContent?.trim() ?? "")
-            .filter(Boolean)
-            .join(" ");
-          if (value) {
-            return value;
-          }
-        }
-
-        const ariaLabel = target.getAttribute("aria-label");
-        if (ariaLabel) {
-          return ariaLabel.trim();
-        }
-
-        if (
-          target instanceof HTMLInputElement ||
-          target instanceof HTMLTextAreaElement ||
-          target instanceof HTMLSelectElement
-        ) {
-          if (target.labels && target.labels.length > 0) {
-            return Array.from(target.labels)
-              .map((label) => label.textContent?.trim() ?? "")
-              .filter(Boolean)
-              .join(" ");
-          }
-        }
-
-        return target.textContent?.trim().replace(/\s+/g, " ") ?? "";
-      };
-      const roleFor = (target: HTMLElement) => {
-        const explicit = target.getAttribute("role");
-        if (explicit) {
-          return explicit;
-        }
-        const tagName = target.tagName.toLowerCase();
-        if (tagName === "a" && target.hasAttribute("href")) {
-          return "link";
-        }
-        if (tagName === "button") {
-          return "button";
-        }
-        if (tagName === "main") {
-          return "main";
-        }
-        if (tagName === "nav") {
-          return "navigation";
-        }
-        if (/^h[1-6]$/.test(tagName)) {
-          return "heading";
-        }
-        if (tagName === "dialog") {
-          return "dialog";
-        }
-        if (tagName === "select") {
-          return "combobox";
-        }
-        if (tagName === "textarea") {
-          return "textbox";
-        }
-        if (tagName === "input") {
-          const type = (target.getAttribute("type") ?? "text").toLowerCase();
-          if (["button", "submit", "reset"].includes(type)) {
-            return "button";
-          }
-          if (type === "checkbox") {
-            return "checkbox";
-          }
-          if (type === "radio") {
-            return "radio";
-          }
-          if (type === "range") {
-            return "slider";
-          }
-          return "textbox";
-        }
-        return undefined;
-      };
-
-      if (!(element instanceof HTMLElement)) {
-        return { name: "", role: undefined };
-      }
-      return { name: accessibleName(element), role: roleFor(element) };
-    }, handle);
+    return this.page.evaluate(summarizeElementForBrowser, handle);
   }
+}
+
+function summarizeElementForBrowser(element: Element | null): KeyboardTraversalStep {
+  const accessibleNameForBrowser = (target: HTMLElement): string => {
+    const labelledBy = target.getAttribute("aria-labelledby");
+    if (labelledBy) {
+      const value = labelledBy
+        .split(/\s+/)
+        .map((id) => document.getElementById(id)?.textContent?.trim() ?? "")
+        .filter(Boolean)
+        .join(" ");
+      if (value) {
+        return value;
+      }
+    }
+
+    const ariaLabel = target.getAttribute("aria-label");
+    if (ariaLabel) {
+      return ariaLabel.trim();
+    }
+
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target instanceof HTMLSelectElement
+    ) {
+      if (target.labels && target.labels.length > 0) {
+        return Array.from(target.labels)
+          .map((label) => label.textContent?.trim() ?? "")
+          .filter(Boolean)
+          .join(" ");
+      }
+    }
+
+    return target.textContent?.trim().replace(/\s+/g, " ") ?? "";
+  };
+
+  const roleForBrowser = (target: HTMLElement): string | undefined => {
+    const explicit = target.getAttribute("role");
+    if (explicit) {
+      return explicit;
+    }
+    const tagName = target.tagName.toLowerCase();
+    if (tagName === "a" && target.hasAttribute("href")) {
+      return "link";
+    }
+    if (tagName === "button") {
+      return "button";
+    }
+    if (tagName === "main") {
+      return "main";
+    }
+    if (tagName === "nav") {
+      return "navigation";
+    }
+    if (/^h[1-6]$/.test(tagName)) {
+      return "heading";
+    }
+    if (tagName === "dialog") {
+      return "dialog";
+    }
+    if (tagName === "select") {
+      return "combobox";
+    }
+    if (tagName === "textarea") {
+      return "textbox";
+    }
+    if (tagName === "input") {
+      const type = (target.getAttribute("type") ?? "text").toLowerCase();
+      if (["button", "submit", "reset"].includes(type)) {
+        return "button";
+      }
+      if (type === "checkbox") {
+        return "checkbox";
+      }
+      if (type === "radio") {
+        return "radio";
+      }
+      if (type === "range") {
+        return "slider";
+      }
+      return "textbox";
+    }
+    return undefined;
+  };
+
+  if (!(element instanceof HTMLElement)) {
+    return { name: "", role: undefined };
+  }
+  return { name: accessibleNameForBrowser(element), role: roleForBrowser(element) };
 }
