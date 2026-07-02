@@ -27,6 +27,14 @@ class ProfilePublicListSummaryResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
+class ProfileFavoritePlaceResponse(BaseModel):
+    id: str
+    name: str
+    type: str
+    subtype: str | None
+    rating: float
+
+
 class ProfileResponse(BaseModel):
     display_name: str = Field(serialization_alias="displayName")
     bio: str | None
@@ -36,6 +44,9 @@ class ProfileResponse(BaseModel):
     rated_cafe_count: int = Field(serialization_alias="ratedCafeCount")
     rated_ice_cream_count: int = Field(serialization_alias="ratedIceCreamCount")
     ratings_count: int = Field(serialization_alias="ratingsCount")
+    favorite_places: list[ProfileFavoritePlaceResponse] = Field(
+        serialization_alias="favoritePlaces"
+    )
     user_ratings: list[ProfileRatingResponse] = Field(serialization_alias="userRatings")
     public_lists_summary: list[ProfilePublicListSummaryResponse] = Field(
         serialization_alias="publicListsSummary"
@@ -51,5 +62,11 @@ class ProfileResponse(BaseModel):
 class ProfileUpdateRequest(BaseModel):
     display_name: str | None = Field(default=None, alias="displayName")
     bio: str | None = None
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class ProfileFavoritesUpdateRequest(BaseModel):
+    place_ids: list[str] = Field(alias="placeIds")
 
     model_config = ConfigDict(populate_by_name=True)
