@@ -4,6 +4,7 @@ from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.elements import ColumnElement
 
+from app.core.text import collapse_whitespace
 from app.db.base import Base
 from app.db.utils import new_id, utc_now
 
@@ -70,7 +71,7 @@ def normalize_email(email: str) -> str:
 
 
 def normalize_display_name(display_name: str | None) -> str:
-    normalized = " ".join((display_name or "").split())
+    normalized = collapse_whitespace(display_name or "")
     return normalized if normalized else "مستخدم سجل"
 
 

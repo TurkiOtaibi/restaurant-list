@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import cast
+from datetime import datetime
+from typing import TypedDict, cast
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -38,14 +39,18 @@ class PublicListCollectionResult:
     total: int
 
 
+class _ListResponseFields(TypedDict):
+    id: str
+    name: str
+    visibility: ListVisibility
+    place_count: int
+    created_at: datetime
+    updated_at: datetime
+
+
 async def get_owned_list(db: AsyncSession, *, list_id: str, user_id: str) -> UserList:
     result = await db.scalar(
-        select(UserList)
-        .where(UserList.id == list_id, UserList.user_id == user_id)
-        .options(
-            selectinload(UserList.user),
-            selectinload(UserList.items).selectinload(ListItem.place),
-        )
+        _list_detail_statement().where(UserList.id == list_id, UserList.user_id == user_id)
     )
     if result is None:
         not_found("List")
@@ -54,11 +59,9 @@ async def get_owned_list(db: AsyncSession, *, list_id: str, user_id: str) -> Use
 
 async def get_public_user_list(db: AsyncSession, *, list_id: str) -> UserList:
     result = await db.scalar(
-        select(UserList)
-        .where(UserList.id == list_id, UserList.visibility == "public")
-        .options(
-            selectinload(UserList.user),
-            selectinload(UserList.items).selectinload(ListItem.place),
+        _list_detail_statement().where(
+            UserList.id == list_id,
+            UserList.visibility == "public",
         )
     )
     if result is None:
@@ -186,6 +189,13 @@ async def delete_place_from_owned_list(
 class _ListSummaryRows:
     items: list[tuple[UserList, int, str]]
     total: int
+
+
+def _list_detail_statement() -> Select[tuple[UserList]]:
+    return select(UserList).options(
+        selectinload(UserList.user),
+        selectinload(UserList.items).selectinload(ListItem.place),
+    )
 
 
 async def _list_summary_rows(
@@ -348,25 +358,24 @@ async def _get_list_item_by_place(
 
 
 def _list_response(user_list: UserList, place_count: int) -> ListResponse:
-    return ListResponse(
-        id=user_list.id,
-        name=user_list.name,
-        visibility=cast(ListVisibility, user_list.visibility),
-        place_count=place_count,
-        created_at=user_list.created_at,
-        updated_at=user_list.updated_at,
-    )
+    return ListResponse(**_list_response_fields(user_list, place_count))
 
 
 def _public_list_response(
     user_list: UserList, place_count: int, owner_display_name: str
 ) -> PublicListResponse:
     return PublicListResponse(
-        id=user_list.id,
-        name=user_list.name,
-        visibility=cast(ListVisibility, user_list.visibility),
+        **_list_response_fields(user_list, place_count),
         owner_display_name=owner_display_name,
-        place_count=place_count,
-        created_at=user_list.created_at,
-        updated_at=user_list.updated_at,
     )
+
+
+def _list_response_fields(user_list: UserList, place_count: int) -> _ListResponseFields:
+    return {
+        "id": user_list.id,
+        "name": user_list.name,
+        "visibility": cast(ListVisibility, user_list.visibility),
+        "place_count": place_count,
+        "created_at": user_list.created_at,
+        "updated_at": user_list.updated_at,
+    }

@@ -3,6 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.core.text import strip_if_string
 from app.modules.places.schemas import PlaceCollectionResponse
 
 ListVisibility = Literal["public", "private"]
@@ -15,9 +16,7 @@ class ListCreateRequest(BaseModel):
     @field_validator("name", mode="before")
     @classmethod
     def normalize_name(cls, value: object) -> object:
-        if isinstance(value, str):
-            return value.strip()
-        return value
+        return strip_if_string(value)
 
 
 class ListUpdateRequest(BaseModel):
@@ -26,9 +25,7 @@ class ListUpdateRequest(BaseModel):
     @field_validator("name", mode="before")
     @classmethod
     def normalize_name(cls, value: object) -> object:
-        if isinstance(value, str):
-            return value.strip()
-        return value
+        return strip_if_string(value)
 
 
 class ListVisibilityUpdateRequest(BaseModel):

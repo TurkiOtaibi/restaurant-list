@@ -5,7 +5,9 @@ import { usePathname } from "next/navigation";
 
 import { ArchiveIcon, RestaurantIcon, ShelfIcon, TasteMarkIcon } from "./ui/Icon";
 
-const links = [
+const AUTH_SCREEN_PATHS = new Set(["/login", "/register"]);
+
+const NAV_LINKS = [
   { href: "/lists", icon: ShelfIcon, label: "قوائمي" },
   { href: "/places", icon: RestaurantIcon, label: "الأماكن" },
   { href: "/profile", icon: ArchiveIcon, label: "صفحتي" }
@@ -13,9 +15,8 @@ const links = [
 
 export function AppNav() {
   const pathname = usePathname();
-  const isAuthScreen = pathname === "/login" || pathname === "/register";
 
-  if (isAuthScreen) {
+  if (isAuthScreen(pathname)) {
     return null;
   }
 
@@ -29,7 +30,7 @@ export function AppNav() {
         <span className="app-nav__tagline">سجل الأماكن</span>
       </div>
       <div className="app-nav__links">
-        {links.map((link) => {
+        {NAV_LINKS.map((link) => {
           const Icon = link.icon;
           return (
             <Link
@@ -46,6 +47,10 @@ export function AppNav() {
       </div>
     </nav>
   );
+}
+
+function isAuthScreen(pathname: string): boolean {
+  return AUTH_SCREEN_PATHS.has(pathname);
 }
 
 function isActive(pathname: string, href: string): boolean {
