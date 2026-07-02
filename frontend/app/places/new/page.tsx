@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { StatusMessage } from "@/components/ui";
 import { CreatePlaceDialog } from "@/features/places/CreatePlaceDialog";
-import type { PlaceType } from "@/features/places/taxonomy";
+import { parsePlaceType, type PlaceType } from "@/features/places/taxonomy";
 import { ensureSession, isSessionRecoveryError } from "@/lib/api";
 import { currentReturnPath, loginHrefForReturn } from "@/lib/authReturn";
 
@@ -67,12 +67,7 @@ function initialTypeFromUrl(): PlaceType {
     return "restaurant";
   }
 
-  const type = new URLSearchParams(window.location.search).get("type");
-  if (type === "cafe" || type === "ice_cream") {
-    return type;
-  }
-
-  return "restaurant";
+  return parsePlaceType(new URLSearchParams(window.location.search).get("type")) ?? "restaurant";
 }
 
 function initialNameFromUrl(): string {

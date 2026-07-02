@@ -3,6 +3,8 @@ import type { Place } from "@/lib/api";
 export type PlaceType = Place["type"];
 export type PlaceSubtype = NonNullable<Place["subtype"]>;
 
+export const PLACE_TYPES: readonly PlaceType[] = ["restaurant", "cafe", "ice_cream"];
+
 export const placeTypeOptions: Array<{ label: string; value: PlaceType }> = [
   { label: "المطاعم", value: "restaurant" },
   { label: "المقاهي", value: "cafe" },
@@ -84,6 +86,10 @@ export function placeTypeLabel(type: PlaceType): string {
   }
 
   return "آيس كريم";
+}
+
+export function parsePlaceType(value: string | null): PlaceType | null {
+  return value && PLACE_TYPES.includes(value as PlaceType) ? (value as PlaceType) : null;
 }
 
 export function placeSubtypeLabel(subtype: Place["subtype"]): string | null {

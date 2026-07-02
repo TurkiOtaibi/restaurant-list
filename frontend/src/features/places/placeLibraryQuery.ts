@@ -1,4 +1,4 @@
-import { isSubtypeValidForType, PlaceType, SubtypeFilterValue } from "./taxonomy";
+import { isSubtypeValidForType, parsePlaceType, PlaceType, SubtypeFilterValue } from "./taxonomy";
 
 type PlaceLibraryApiQuery = {
   limit: number;
@@ -14,8 +14,6 @@ type PlaceLibraryUrlState = {
   subtype: SubtypeFilterValue;
   type: PlaceType;
 };
-
-const URL_PLACE_TYPES: readonly PlaceType[] = ["restaurant", "cafe", "ice_cream"];
 
 export function parsePlaceLibraryUrlState(
   search: string,
@@ -68,10 +66,6 @@ export function buildPlaceLibraryUrl({
     params.set("q", q.trim());
   }
   return `/places?${params.toString()}`;
-}
-
-function parsePlaceType(type: string | null): PlaceType | null {
-  return type && URL_PLACE_TYPES.includes(type as PlaceType) ? (type as PlaceType) : null;
 }
 
 function parseSubtype(type: PlaceType, subtype: string | null): SubtypeFilterValue {
