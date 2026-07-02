@@ -7,3 +7,13 @@ export function composeDescriptionIds(
 ): string | undefined {
   return ids.filter(Boolean).join(" ") || undefined;
 }
+
+type FeedbackTone = "error" | "notice" | "success";
+
+export function statusRoleForTone(tone: FeedbackTone): "alert" | "status" {
+  return tone === "error" ? "alert" : "status";
+}
+
+export function liveRegionForTone(tone: FeedbackTone): "assertive" | "polite" {
+  return tone === "error" ? "assertive" : "polite";
+}
