@@ -4,6 +4,13 @@ import { cx } from "@/lib/ui";
 
 type BadgeVariant = "neutral" | "public" | "private" | "rating";
 
+const BADGE_VARIANT_CLASSES: Record<BadgeVariant, string> = {
+  neutral: "",
+  private: "ds-badge--private",
+  public: "ds-badge--public",
+  rating: "ds-badge--rating"
+};
+
 type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
   children: ReactNode;
   icon?: ReactNode;
@@ -20,17 +27,5 @@ export function Badge({ children, className, icon, variant = "neutral", ...props
 }
 
 function badgeClass(variant: BadgeVariant): string {
-  if (variant === "public") {
-    return "ds-badge--public";
-  }
-
-  if (variant === "private") {
-    return "ds-badge--private";
-  }
-
-  if (variant === "rating") {
-    return "ds-badge--rating";
-  }
-
-  return "";
+  return BADGE_VARIANT_CLASSES[variant];
 }

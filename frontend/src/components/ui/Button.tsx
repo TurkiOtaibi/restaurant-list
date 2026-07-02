@@ -5,6 +5,13 @@ import { cx } from "@/lib/ui";
 
 type ButtonVariant = "primary" | "secondary" | "destructive" | "icon";
 
+const BUTTON_VARIANT_CLASSES: Record<ButtonVariant, string> = {
+  destructive: "ds-button--destructive",
+  icon: "ds-button--icon",
+  primary: "",
+  secondary: "ds-button--secondary"
+};
+
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   isLoading?: boolean;
   loadingLabel?: string;
@@ -63,17 +70,5 @@ export function ButtonLink({
 }
 
 function variantClass(variant: ButtonVariant): string {
-  if (variant === "secondary") {
-    return "ds-button--secondary";
-  }
-
-  if (variant === "destructive") {
-    return "ds-button--destructive";
-  }
-
-  if (variant === "icon") {
-    return "ds-button--icon";
-  }
-
-  return "";
+  return BUTTON_VARIANT_CLASSES[variant];
 }
