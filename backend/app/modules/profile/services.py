@@ -25,7 +25,7 @@ class _ProfileRatingCounts:
 
 
 async def get_profile_for_user(db: AsyncSession, user: User) -> ProfileResponse:
-    list_count = await db.scalar(select(func.count(UserList.id)).where(UserList.user_id == user.id))
+    list_count = await _list_count_for_user(db, user)
     counts = await _rating_counts_for_user(db, user)
     ratings = await _ratings_for_user(db, user)
     user_ratings = await _profile_rating_responses(db, user, ratings)
@@ -33,10 +33,17 @@ async def get_profile_for_user(db: AsyncSession, user: User) -> ProfileResponse:
 
     return _profile_response(
         counts=counts,
-        list_count=int(list_count or 0),
+        list_count=list_count,
         public_lists_summary=public_lists_summary,
         user_ratings=user_ratings,
     )
+
+
+async def _list_count_for_user(db: AsyncSession, user: User) -> int:
+    list_count: int | None = await db.scalar(
+        select(func.count(UserList.id)).where(UserList.user_id == user.id)
+    )
+    return int(list_count or 0)
 
 
 async def _rating_counts_for_user(db: AsyncSession, user: User) -> _ProfileRatingCounts:
