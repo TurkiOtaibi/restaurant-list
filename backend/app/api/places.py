@@ -26,6 +26,11 @@ from app.modules.places.services import (
 router = APIRouter(prefix="/places", tags=["places"])
 CurrentUser = Annotated[User, Depends(get_current_user)]
 DatabaseSession = Annotated[AsyncSession, Depends(get_db)]
+PLACE_SUBTYPES_BY_TYPE: dict[PlaceType, set[str]] = {
+    "cafe": CAFE_SUBTYPES,
+    "ice_cream": set(),
+    "restaurant": RESTAURANT_SUBTYPES,
+}
 
 
 @router.get("", response_model=CollectionResponse[PlaceCollectionResponse])
@@ -104,10 +109,7 @@ def validate_place_filter(place_type: PlaceType | None, subtype: str | None) -> 
             },
         )
 
-    if place_type == "restaurant" and subtype in RESTAURANT_SUBTYPES:
-        return cast(PlaceSubtype, subtype)
-
-    if place_type == "cafe" and subtype in CAFE_SUBTYPES:
+    if subtype in PLACE_SUBTYPES_BY_TYPE[place_type]:
         return cast(PlaceSubtype, subtype)
 
     raise HTTPException(
