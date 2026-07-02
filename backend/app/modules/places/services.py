@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import conflict
+from app.core.text import collapse_whitespace
 from app.modules.lists.models import ListItem, UserList
 from app.modules.places.models import Place
 from app.modules.places.schemas import PlaceCreateRequest, PlaceResponse, PlaceSubtype, PlaceType
@@ -26,7 +27,7 @@ class UserPlaceRelationship:
 
 
 def canonical_place_name(name: str) -> str:
-    return " ".join(name.strip().split())
+    return collapse_whitespace(name)
 
 
 def normalized_place_name(name: str) -> str:
@@ -83,7 +84,7 @@ def _normalize_search_query(query: str | None) -> str | None:
     if query is None:
         return None
 
-    normalized = " ".join(query.strip().split()).lower()
+    normalized = collapse_whitespace(query).lower()
     return normalized or None
 
 
