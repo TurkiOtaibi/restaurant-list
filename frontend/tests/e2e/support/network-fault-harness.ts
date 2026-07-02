@@ -81,39 +81,19 @@ export class NetworkFaultHarness {
   }
 
   forced500(options: FaultEnvelopeOptions = {}): NetworkFaultStep {
-    return this.httpStatus(500, {
-      code: options.code ?? "INTERNAL_ERROR",
-      delayMs: options.delayMs,
-      message: options.message ?? "Internal server error.",
-      requestId: options.requestId
-    });
+    return forcedStatus(500, options);
   }
 
   forced401(options: FaultEnvelopeOptions = {}): NetworkFaultStep {
-    return this.httpStatus(401, {
-      code: options.code ?? "UNAUTHENTICATED",
-      delayMs: options.delayMs,
-      message: options.message ?? "Authentication is required.",
-      requestId: options.requestId
-    });
+    return forcedStatus(401, options);
   }
 
   forced403(options: FaultEnvelopeOptions = {}): NetworkFaultStep {
-    return this.httpStatus(403, {
-      code: options.code ?? "FORBIDDEN",
-      delayMs: options.delayMs,
-      message: options.message ?? "Access is forbidden.",
-      requestId: options.requestId
-    });
+    return forcedStatus(403, options);
   }
 
   forced404(options: FaultEnvelopeOptions = {}): NetworkFaultStep {
-    return this.httpStatus(404, {
-      code: options.code ?? "NOT_FOUND",
-      delayMs: options.delayMs,
-      message: options.message ?? "Resource was not found.",
-      requestId: options.requestId
-    });
+    return forcedStatus(404, options);
   }
 
   delayedJson(status: number, body: unknown, delayMs: number): NetworkFaultStep {
@@ -176,6 +156,26 @@ type FaultEnvelopeOptions = {
   message?: string;
   requestId?: string;
 };
+
+const FORCED_STATUS_DEFAULTS = {
+  401: { code: "UNAUTHENTICATED", message: "Authentication is required." },
+  403: { code: "FORBIDDEN", message: "Access is forbidden." },
+  404: { code: "NOT_FOUND", message: "Resource was not found." },
+  500: { code: "INTERNAL_ERROR", message: "Internal server error." }
+} as const satisfies Record<401 | 403 | 404 | 500, { code: string; message: string }>;
+
+function forcedStatus(status: 401 | 403 | 404 | 500, options: FaultEnvelopeOptions): NetworkFaultStep {
+  const defaults = FORCED_STATUS_DEFAULTS[status];
+  return jsonResponse(
+    status,
+    errorEnvelope(status, {
+      code: options.code ?? defaults.code,
+      message: options.message ?? defaults.message,
+      requestId: options.requestId
+    }),
+    options.delayMs
+  );
+}
 
 function jsonResponse(status: number, body: unknown, delayMs = 0): NetworkFaultStep {
   return {
