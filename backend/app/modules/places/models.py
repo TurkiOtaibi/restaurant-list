@@ -66,5 +66,6 @@ class Place(Base):
     )
 
     created_by_user = relationship("User", back_populates="places_created")
+    favorite_entries = relationship("UserFavoritePlace", back_populates="place")
     list_items = relationship("ListItem", back_populates="place")
     ratings = relationship("Rating", back_populates="place")
