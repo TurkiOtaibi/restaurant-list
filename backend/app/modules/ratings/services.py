@@ -15,6 +15,18 @@ def normalize_notes(notes: str | None) -> str | None:
     return normalized if normalized else None
 
 
+async def get_user_rating(
+    db: AsyncSession,
+    *,
+    user_id: str,
+    place_id: str,
+) -> Rating | None:
+    rating: Rating | None = await db.scalar(
+        select(Rating).where(Rating.user_id == user_id, Rating.place_id == place_id)
+    )
+    return rating
+
+
 async def create_or_update_rating(
     db: AsyncSession,
     *,
@@ -25,9 +37,7 @@ async def create_or_update_rating(
     if place is None:
         not_found("Place")
 
-    existing = await db.scalar(
-        select(Rating).where(Rating.user_id == user_id, Rating.place_id == payload.place_id)
-    )
+    existing = await get_user_rating(db, user_id=user_id, place_id=payload.place_id)
     if existing is not None:
         existing.rating = payload.rating
         existing.notes = normalize_notes(payload.notes)
@@ -60,9 +70,7 @@ async def update_existing_rating(
     payload: RatingUpdateRequest,
     user_id: str,
 ) -> Rating:
-    rating = await db.scalar(
-        select(Rating).where(Rating.user_id == user_id, Rating.place_id == place_id)
-    )
+    rating = await get_user_rating(db, user_id=user_id, place_id=place_id)
     if rating is None:
         not_found("Rating")
 
