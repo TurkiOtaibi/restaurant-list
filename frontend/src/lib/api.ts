@@ -108,6 +108,9 @@ export type ProfilePublicListSummary = {
 };
 
 export type Profile = {
+  displayName: string;
+  bio: string | null;
+  averageRating: number | null;
   listsCount: number;
   ratedRestaurantCount: number;
   ratedCafeCount: number;
