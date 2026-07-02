@@ -44,18 +44,26 @@ export const allSubtypeOption: { label: string; value: "all" } = {
   value: "all"
 };
 
+const subtypeOptionsByType: Record<
+  PlaceType,
+  Array<{ label: string; value: SubtypeFilterValue }>
+> = {
+  cafe: [allSubtypeOption, ...cafeSubtypeOptions],
+  ice_cream: [],
+  restaurant: [allSubtypeOption, ...restaurantSubtypeOptions]
+};
+
+const placeSubtypeLabels = new Map<PlaceSubtype, string>(
+  [...restaurantSubtypeOptions, ...cafeSubtypeOptions].map((option) => [
+    option.value,
+    option.label
+  ])
+);
+
 export function subtypeOptionsForType(
   type: PlaceType
 ): Array<{ label: string; value: SubtypeFilterValue }> {
-  if (type === "restaurant") {
-    return [allSubtypeOption, ...restaurantSubtypeOptions];
-  }
-
-  if (type === "cafe") {
-    return [allSubtypeOption, ...cafeSubtypeOptions];
-  }
-
-  return [];
+  return [...subtypeOptionsByType[type]];
 }
 
 export function isSubtypeValidForType(type: PlaceType, subtype: SubtypeFilterValue): boolean {
@@ -83,9 +91,5 @@ export function placeSubtypeLabel(subtype: Place["subtype"]): string | null {
     return null;
   }
 
-  const option = [...restaurantSubtypeOptions, ...cafeSubtypeOptions].find(
-    (item) => item.value === subtype
-  );
-
-  return option?.label ?? null;
+  return placeSubtypeLabels.get(subtype) ?? null;
 }
