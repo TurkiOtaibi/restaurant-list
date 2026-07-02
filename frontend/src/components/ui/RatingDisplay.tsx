@@ -4,13 +4,20 @@ import { cx } from "@/lib/ui";
 
 import { NumberText } from "./NumberText";
 
+type RatingDisplayVariant = "average" | "outOfTen";
+
+const RATING_FORMATTERS: Record<RatingDisplayVariant, (value: number) => string> = {
+  average: formatAverageRating,
+  outOfTen: formatOutOfTen
+};
+
 type RatingDisplayProps = {
   ariaLabel?: string;
   className?: string;
   label?: string;
   suffix?: string;
   value: number;
-  variant?: "average" | "outOfTen";
+  variant?: RatingDisplayVariant;
 };
 
 export function RatingDisplay({
@@ -21,7 +28,7 @@ export function RatingDisplay({
   value,
   variant = "average"
 }: RatingDisplayProps) {
-  const formatted = variant === "outOfTen" ? formatOutOfTen(value) : formatAverageRating(value);
+  const formatted = RATING_FORMATTERS[variant](value);
 
   return (
     <span aria-label={ariaLabel} className={cx("ds-rating-display", className)}>
