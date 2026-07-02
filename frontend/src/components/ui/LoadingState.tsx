@@ -17,17 +17,7 @@ export function LoadingState({
   label = "جاري التحميل",
   variant = "card"
 }: LoadingStateProps) {
-  const [visible, setVisible] = useState(delayMs === 0);
-
-  useEffect(() => {
-    if (delayMs === 0) {
-      setVisible(true);
-      return;
-    }
-
-    const timer = window.setTimeout(() => setVisible(true), delayMs);
-    return () => window.clearTimeout(timer);
-  }, [delayMs]);
+  const visible = useDelayedVisibility(delayMs);
 
   if (!visible) {
     return null;
@@ -44,4 +34,20 @@ export function LoadingState({
       ))}
     </div>
   );
+}
+
+function useDelayedVisibility(delayMs: number) {
+  const [visible, setVisible] = useState(delayMs === 0);
+
+  useEffect(() => {
+    if (delayMs === 0) {
+      setVisible(true);
+      return;
+    }
+
+    const timer = window.setTimeout(() => setVisible(true), delayMs);
+    return () => window.clearTimeout(timer);
+  }, [delayMs]);
+
+  return visible;
 }
