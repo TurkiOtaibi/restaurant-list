@@ -1,3 +1,5 @@
+import { E2E_TEST_PASSWORD, e2eApiRequest, registerE2eApiUser } from "./e2e-api-client";
+
 export type DeterministicDatasetId =
   | "empty-catalog"
   | "places-20"
@@ -94,9 +96,6 @@ type DatasetRecipe = {
   ratingMode?: "high" | "low" | "none" | "spread";
   visibilityState?: DeterministicVisibilityState;
 };
-
-const API_BASE_URL = process.env.E2E_API_BASE_URL ?? "http://localhost:8000";
-const TEST_PASSWORD = "password123";
 
 export const DETERMINISTIC_DATASET_RECIPES: Record<DeterministicDatasetId, DatasetRecipe> = {
   "empty-catalog": { categoryMode: "mixed", count: 0 },
@@ -224,14 +223,6 @@ type SeededPlace = {
 
 type SeededList = {
   id: string;
-};
-
-type AuthResponse = {
-  accessToken: string;
-  user: {
-    displayName: string;
-    email: string;
-  };
 };
 
 export function buildDeterministicDataset(
@@ -400,19 +391,14 @@ function sanitizeNamespace(value: string): string {
 async function registerApiUser(namespace: string): Promise<SeededDeterministicDataset["user"]> {
   const email = `${namespace}@example.com`;
   const displayName = `QA ${namespace}`;
-  const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
-    body: JSON.stringify({ displayName, email, password: TEST_PASSWORD }),
-    headers: { "Content-Type": "application/json" },
-    method: "POST"
+  const user = await registerE2eApiUser({
+    displayName,
+    email,
+    failureMessage: "Failed to register deterministic QA user",
+    password: E2E_TEST_PASSWORD
   });
-
-  if (!response.ok) {
-    throw new Error(`Failed to register deterministic QA user: ${response.status} ${await response.text()}`);
-  }
-
-  const payload = (await response.json()) as AuthResponse;
   return {
-    accessToken: payload.accessToken,
+    accessToken: user.accessToken,
     displayName,
     email
   };
@@ -423,20 +409,11 @@ async function apiRequest<T = unknown>(
   path: string,
   options: RequestInit
 ): Promise<T> {
-  const headers = new Headers(options.headers);
-  if (options.body !== undefined && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-  headers.set("Authorization", `Bearer ${accessToken}`);
-
-  const response = await fetch(`${API_BASE_URL}/api/v1${path}`, {
-    ...options,
-    headers
+  return e2eApiRequest<T>({
+    accessToken,
+    path,
+    requestInit: options,
+    responseFailureMessage: (method, requestPath, response, body) =>
+      `Deterministic data API request failed ${method} ${requestPath}: ${response.status} ${body}`
   });
-
-  if (!response.ok) {
-    throw new Error(`Deterministic data API request failed ${options.method ?? "GET"} ${path}: ${response.status} ${await response.text()}`);
-  }
-
-  return (await response.json()) as T;
 }

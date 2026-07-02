@@ -1,10 +1,9 @@
 import { expect, test as base, type BrowserContext, type Page } from "@playwright/test";
 
+import { E2E_API_BASE_URL, E2E_TEST_PASSWORD, e2eApiRequest, registerE2eApiUser } from "./e2e-api-client";
 import { ensureE2eApiServer, stopE2eApiServer } from "./e2e-api-server";
 
-const API_BASE_URL = process.env.E2E_API_BASE_URL ?? "http://localhost:8000";
 const SESSION_MARKER_KEY = "restaurantWishlist.hasSession";
-const TEST_PASSWORD = "password123";
 
 export type PlacesFeatureId =
   | "PLACE-001"
@@ -85,15 +84,6 @@ export type PlacesDataset = {
   lists: {
     ownedPrivate: ApiList;
     ownedPublic: ApiList;
-  };
-};
-
-type AuthResponse = {
-  accessToken: string;
-  user: {
-    displayName: string;
-    email: string;
-    id: string;
   };
 };
 
@@ -221,27 +211,25 @@ async function registerApiUser(runId: string): Promise<{
 }> {
   const email = `${runId}@example.com`;
   const displayName = `QA ${runId}`;
-  const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
-    body: JSON.stringify({ displayName, email, password: TEST_PASSWORD }),
-    headers: { "Content-Type": "application/json" },
-    method: "POST"
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to register Places QA user: ${response.status} ${await response.text()}`);
-  }
-
-  const payload = (await response.json()) as AuthResponse;
-  return {
-    accessToken: payload.accessToken,
+  const user = await registerE2eApiUser({
     displayName,
     email,
-    refreshCookie: extractRefreshCookie(response.headers)
+    failureMessage: "Failed to register Places QA user",
+    includeRefreshCookie: true
+  });
+  if (!user.refreshCookie) {
+    throw new Error("Auth API response did not include the refresh cookie.");
+  }
+  return {
+    accessToken: user.accessToken,
+    displayName,
+    email,
+    refreshCookie: user.refreshCookie
   };
 }
 
 async function installRefreshCookie(context: BrowserContext, refreshCookie: string): Promise<void> {
-  const apiUrl = new URL(API_BASE_URL);
+  const apiUrl = new URL(E2E_API_BASE_URL);
   const [nameValue] = refreshCookie.split(";");
   const separator = nameValue.indexOf("=");
   if (separator < 1) {
@@ -379,38 +367,14 @@ async function apiRequest<T = unknown>(
   accessToken: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const headers = new Headers(options.headers);
-  if (options.body !== undefined && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-  headers.set("Authorization", `Bearer ${accessToken}`);
-
-  const url = `${API_BASE_URL}/api/v1${path}`;
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      ...options,
-      headers
-    });
-  } catch (error) {
-    throw new Error(`API request failed to reach ${options.method ?? "GET"} ${url}: ${String(error)}`);
-  }
-
-  if (!response.ok) {
-    throw new Error(`API request failed ${options.method ?? "GET"} ${path}: ${response.status} ${await response.text()}`);
-  }
-
-  return (await response.json()) as T;
-}
-
-function extractRefreshCookie(headers: Headers): string {
-  const headerWithGetSetCookie = headers as Headers & { getSetCookie?: () => string[] };
-  const cookies = headerWithGetSetCookie.getSetCookie?.() ?? [headers.get("set-cookie")].filter(Boolean);
-  const refreshCookie = cookies.find((cookie) => cookie.startsWith("restaurant_refresh_token="));
-  if (!refreshCookie) {
-    throw new Error("Auth API response did not include the refresh cookie.");
-  }
-  return refreshCookie;
+  return e2eApiRequest<T>({
+    accessToken,
+    path,
+    requestInit: options,
+    responseFailureMessage: (method, requestPath, response, body) =>
+      `API request failed ${method} ${requestPath}: ${response.status} ${body}`,
+    unreachableMessage: (method, url, error) => `API request failed to reach ${method} ${url}: ${String(error)}`
+  });
 }
 
 function makeRunId(featureId: string): string {
@@ -419,18 +383,13 @@ function makeRunId(featureId: string): string {
 }
 
 export async function createApiUser(email: string): Promise<string> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
-    body: JSON.stringify({ displayName: "QA API User", email, password: TEST_PASSWORD }),
-    headers: { "Content-Type": "application/json" },
-    method: "POST"
+  const user = await registerE2eApiUser({
+    displayName: "QA API User",
+    email,
+    failureMessage: "Failed to create API user",
+    password: E2E_TEST_PASSWORD
   });
-
-  if (!response.ok) {
-    throw new Error(`Failed to create API user: ${response.status} ${await response.text()}`);
-  }
-
-  const payload = (await response.json()) as AuthResponse;
-  return payload.accessToken;
+  return user.accessToken;
 }
 
 export async function createApiPlace(
