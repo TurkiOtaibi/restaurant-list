@@ -4,7 +4,9 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.modules.auth.models import User
+from app.core.errors import api_error
+from app.core.text import collapse_whitespace
+from app.modules.auth.models import User, normalize_display_name
 from app.modules.lists.models import ListItem, UserList
 from app.modules.places.models import Place
 from app.modules.places.services import get_place_summaries_by_id
@@ -12,8 +14,13 @@ from app.modules.profile.schemas import (
     ProfilePublicListSummaryResponse,
     ProfileRatingResponse,
     ProfileResponse,
+    ProfileUpdateRequest,
 )
 from app.modules.ratings.models import Rating
+
+MAX_PROFILE_DISPLAY_NAME_LENGTH = 80
+MAX_PROFILE_BIO_LENGTH = 280
+VALIDATION_STATUS_CODE = 422
 
 
 @dataclass(frozen=True)
@@ -36,7 +43,30 @@ async def get_profile_for_user(db: AsyncSession, user: User) -> ProfileResponse:
         list_count=list_count,
         public_lists_summary=public_lists_summary,
         user_ratings=user_ratings,
+        user=user,
     )
+
+
+async def update_profile_for_user(
+    db: AsyncSession,
+    user: User,
+    payload: ProfileUpdateRequest,
+) -> ProfileResponse:
+    updated = False
+
+    if "display_name" in payload.model_fields_set:
+        user.display_name = _validated_display_name(payload.display_name)
+        updated = True
+
+    if "bio" in payload.model_fields_set:
+        user.bio = _validated_bio(payload.bio)
+        updated = True
+
+    if updated:
+        await db.commit()
+        await db.refresh(user)
+
+    return await get_profile_for_user(db, user)
 
 
 async def _list_count_for_user(db: AsyncSession, user: User) -> int:
@@ -102,9 +132,13 @@ def _profile_response(
     list_count: int,
     public_lists_summary: list[ProfilePublicListSummaryResponse],
     user_ratings: list[ProfileRatingResponse],
+    user: User,
 ) -> ProfileResponse:
 
     return ProfileResponse(
+        display_name=user.display_name,
+        bio=user.bio,
+        average_rating=_average_rating(user_ratings),
         lists_count=list_count,
         list_count=list_count,
         rated_restaurant_count=counts.rated_restaurant_count,
@@ -115,6 +149,51 @@ def _profile_response(
         user_ratings=user_ratings,
         public_lists_summary=public_lists_summary,
     )
+
+
+def _average_rating(user_ratings: list[ProfileRatingResponse]) -> float | None:
+    if not user_ratings:
+        return None
+
+    return round(sum(rating.rating for rating in user_ratings) / len(user_ratings), 1)
+
+
+def _validated_display_name(display_name: str | None) -> str:
+    normalized_input = collapse_whitespace(display_name or "")
+    if not normalized_input:
+        api_error(
+            VALIDATION_STATUS_CODE,
+            "PROFILE_DISPLAY_NAME_REQUIRED",
+            "Display name is required.",
+        )
+
+    normalized = normalize_display_name(normalized_input)
+    if len(normalized) > MAX_PROFILE_DISPLAY_NAME_LENGTH:
+        api_error(
+            VALIDATION_STATUS_CODE,
+            "PROFILE_DISPLAY_NAME_TOO_LONG",
+            "Display name must be 80 characters or fewer.",
+        )
+
+    return normalized
+
+
+def _validated_bio(bio: str | None) -> str | None:
+    if bio is None:
+        return None
+
+    normalized = bio.strip()
+    if not normalized:
+        return None
+
+    if len(normalized) > MAX_PROFILE_BIO_LENGTH:
+        api_error(
+            VALIDATION_STATUS_CODE,
+            "PROFILE_BIO_TOO_LONG",
+            "Bio must be 280 characters or fewer.",
+        )
+
+    return normalized
 
 
 async def _public_lists_summary_for_user(

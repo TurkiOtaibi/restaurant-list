@@ -127,10 +127,15 @@ const emptyListDetail = {
 };
 
 const profile = {
+  averageRating: 8.0,
+  bio: "ملف شخصي عربي قصير لاختبار الاستجابة.",
+  displayName: "تركي العتيبي",
   listCount: 3,
+  listsCount: 3,
   ratedCafeCount: 1,
   ratedIceCreamCount: 0,
   ratedRestaurantCount: 1,
+  ratingsCount: 2,
   ratingsCreatedCount: 2,
   userRatings: [
     {

@@ -261,18 +261,22 @@ async def test_public_private_list_visibility_and_guest_denial(client: AsyncClie
 
 
 async def test_profile_statistics_are_calculated_from_user_data(client: AsyncClient) -> None:
-    token = await _token(client, "owner@example.com")
+    token = await _token_with_display_name(client, "owner@example.com", "تركي العتيبي")
     restaurant = await _create_place(client, token, name="Nara Grill", place_type="restaurant")
     cafe = await _create_place(client, token, name="Nara Cafe", place_type="cafe")
     await _create_list(client, token, name="First")
     await _create_list(client, token, name="Second")
-    await _rate_place(client, token, restaurant["id"], 9, "great")
+    await _rate_place(client, token, restaurant["id"], 10, "great")
     await _rate_place(client, token, cafe["id"], 8, "calm")
 
     response = await client.get("/api/v1/profile", headers=auth_header(token))
 
     assert response.status_code == 200
     body = response.json()
+    assert body["displayName"] == "تركي العتيبي"
+    assert body["bio"] is None
+    assert body["averageRating"] == 9.0
+    assert body["listsCount"] == 2
     assert body["listCount"] == 2
     assert body["ratedRestaurantCount"] == 1
     assert body["ratedCafeCount"] == 1
@@ -282,6 +286,96 @@ async def test_profile_statistics_are_calculated_from_user_data(client: AsyncCli
     assert body["ratingsCreatedCount"] == 2
     assert len(body["userRatings"]) == 2
     assert "triedPlaces" not in body
+
+
+async def test_profile_average_rating_is_null_when_user_has_no_ratings(
+    client: AsyncClient,
+) -> None:
+    token = await _token(client, "empty-average@example.com")
+
+    response = await client.get("/api/v1/profile", headers=auth_header(token))
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["averageRating"] is None
+    assert body["ratingsCount"] == 0
+
+
+async def test_profile_patch_updates_display_name_and_bio(client: AsyncClient) -> None:
+    token = await _token(client, "profile-edit@example.com")
+
+    name_only = await client.patch(
+        "/api/v1/profile",
+        json={"displayName": "  تركي   العتيبي  "},
+        headers=auth_header(token),
+    )
+    bio_only = await client.patch(
+        "/api/v1/profile",
+        json={"bio": "  أرتب الأماكن التي تستحق الرجوع.  "},
+        headers=auth_header(token),
+    )
+    both = await client.patch(
+        "/api/v1/profile",
+        json={"displayName": "سجل جديد", "bio": "سطر قصير"},
+        headers=auth_header(token),
+    )
+
+    assert name_only.status_code == 200
+    assert name_only.json()["displayName"] == "تركي العتيبي"
+    assert name_only.json()["bio"] is None
+    assert bio_only.status_code == 200
+    assert bio_only.json()["displayName"] == "تركي العتيبي"
+    assert bio_only.json()["bio"] == "أرتب الأماكن التي تستحق الرجوع."
+    assert both.status_code == 200
+    assert both.json()["displayName"] == "سجل جديد"
+    assert both.json()["bio"] == "سطر قصير"
+
+
+async def test_profile_patch_empty_bio_is_stored_as_null(client: AsyncClient) -> None:
+    token = await _token(client, "profile-empty-bio@example.com")
+
+    response = await client.patch(
+        "/api/v1/profile",
+        json={"bio": "   "},
+        headers=auth_header(token),
+    )
+
+    assert response.status_code == 200
+    assert response.json()["bio"] is None
+
+
+async def test_profile_patch_requires_authentication(client: AsyncClient) -> None:
+    response = await client.patch("/api/v1/profile", json={"displayName": "تركي"})
+
+    assert response.status_code == 401
+    assert response.json()["error"]["code"] == "UNAUTHENTICATED"
+
+
+async def test_profile_patch_validates_identity_limits(client: AsyncClient) -> None:
+    token = await _token(client, "profile-limits@example.com")
+
+    empty_name = await client.patch(
+        "/api/v1/profile",
+        json={"displayName": "   "},
+        headers=auth_header(token),
+    )
+    long_name = await client.patch(
+        "/api/v1/profile",
+        json={"displayName": "س" * 81},
+        headers=auth_header(token),
+    )
+    long_bio = await client.patch(
+        "/api/v1/profile",
+        json={"bio": "x" * 281},
+        headers=auth_header(token),
+    )
+
+    assert empty_name.status_code == 422
+    assert empty_name.json()["error"]["code"] == "PROFILE_DISPLAY_NAME_REQUIRED"
+    assert long_name.status_code == 422
+    assert long_name.json()["error"]["code"] == "PROFILE_DISPLAY_NAME_TOO_LONG"
+    assert long_bio.status_code == 422
+    assert long_bio.json()["error"]["code"] == "PROFILE_BIO_TOO_LONG"
 
 
 async def test_profile_counts_ice_cream_places(client: AsyncClient) -> None:
