@@ -28,6 +28,9 @@ class ProfilePublicListSummaryResponse(BaseModel):
 
 
 class ProfileResponse(BaseModel):
+    display_name: str = Field(serialization_alias="displayName")
+    bio: str | None
+    average_rating: float | None = Field(serialization_alias="averageRating")
     lists_count: int = Field(serialization_alias="listsCount")
     rated_restaurant_count: int = Field(serialization_alias="ratedRestaurantCount")
     rated_cafe_count: int = Field(serialization_alias="ratedCafeCount")
@@ -41,5 +44,12 @@ class ProfileResponse(BaseModel):
     # contract transition. The frontend consumes the approved fields above.
     list_count: int = Field(serialization_alias="listCount")
     ratings_created_count: int = Field(serialization_alias="ratingsCreatedCount")
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class ProfileUpdateRequest(BaseModel):
+    display_name: str | None = Field(default=None, alias="displayName")
+    bio: str | None = None
 
     model_config = ConfigDict(populate_by_name=True)
