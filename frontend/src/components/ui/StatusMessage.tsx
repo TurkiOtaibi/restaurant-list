@@ -1,12 +1,11 @@
 import type { ReactNode } from "react";
 
+import type { FeedbackTone } from "@/lib/ui";
 import { cx, statusRoleForTone } from "@/lib/ui";
-
-type StatusTone = "error" | "notice" | "success";
 
 type StatusMessageProps = {
   children: ReactNode;
-  tone: StatusTone;
+  tone: FeedbackTone;
 };
 
 export function StatusMessage({ children, tone }: StatusMessageProps) {

@@ -8,7 +8,7 @@ export function composeDescriptionIds(
   return ids.filter(Boolean).join(" ") || undefined;
 }
 
-type FeedbackTone = "error" | "notice" | "success";
+export type FeedbackTone = "error" | "notice" | "success";
 
 export function statusRoleForTone(tone: FeedbackTone): "alert" | "status" {
   return tone === "error" ? "alert" : "status";

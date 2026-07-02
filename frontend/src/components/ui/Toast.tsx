@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 
+import type { FeedbackTone } from "@/lib/ui";
 import { liveRegionForTone, statusRoleForTone } from "@/lib/ui";
 
 type ToastProps = {
   action?: ReactNode;
   children: ReactNode;
-  tone?: "success" | "notice" | "error";
+  tone?: FeedbackTone;
 };
 
 export function Toast({ action, children, tone = "success" }: ToastProps) {
