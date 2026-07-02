@@ -1,7 +1,12 @@
 from typing import Any, cast
 
+import pytest
 from httpx import AsyncClient, Response
+from sqlalchemy import delete
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.modules.places.models import Place
 from tests.api.test_auth import auth_header, register_user
 from tests.api.test_places_and_lists import _create_list, _create_place, collection_data
 
@@ -63,6 +68,18 @@ async def _post_rating(
     return await client.post(
         "/api/v1/ratings",
         json={"placeId": place_id, "rating": rating, "notes": notes},
+        headers=auth_header(token),
+    )
+
+
+async def _set_profile_favorites(
+    client: AsyncClient,
+    token: str,
+    place_ids: list[str],
+) -> Response:
+    return await client.put(
+        "/api/v1/profile/favorites",
+        json={"placeIds": place_ids},
         headers=auth_header(token),
     )
 
@@ -376,6 +393,104 @@ async def test_profile_patch_validates_identity_limits(client: AsyncClient) -> N
     assert long_name.json()["error"]["code"] == "PROFILE_DISPLAY_NAME_TOO_LONG"
     assert long_bio.status_code == 422
     assert long_bio.json()["error"]["code"] == "PROFILE_BIO_TOO_LONG"
+
+
+async def test_profile_favorites_set_replace_reorder_and_clear(client: AsyncClient) -> None:
+    token = await _token(client, "favorites@example.com")
+    places = [
+        await _create_place(client, token, name=f"Favorite {index}", place_type="restaurant")
+        for index in range(1, 5)
+    ]
+    for index, place in enumerate(places, start=1):
+        await _rate_place(client, token, place["id"], float(index + 5))
+
+    initial = await _set_profile_favorites(client, token, [places[1]["id"], places[0]["id"]])
+    replaced = await _set_profile_favorites(client, token, [places[2]["id"], places[0]["id"]])
+    reordered = await _set_profile_favorites(client, token, [places[0]["id"], places[2]["id"]])
+    cleared = await _set_profile_favorites(client, token, [])
+
+    assert initial.status_code == 200
+    assert [favorite["id"] for favorite in initial.json()["favoritePlaces"]] == [
+        places[1]["id"],
+        places[0]["id"],
+    ]
+    assert [favorite["rating"] for favorite in initial.json()["favoritePlaces"]] == [7.0, 6.0]
+    assert replaced.status_code == 200
+    assert [favorite["id"] for favorite in replaced.json()["favoritePlaces"]] == [
+        places[2]["id"],
+        places[0]["id"],
+    ]
+    assert reordered.status_code == 200
+    assert [favorite["id"] for favorite in reordered.json()["favoritePlaces"]] == [
+        places[0]["id"],
+        places[2]["id"],
+    ]
+    assert cleared.status_code == 200
+    assert cleared.json()["favoritePlaces"] == []
+
+
+async def test_profile_favorites_accepts_four_rated_places(client: AsyncClient) -> None:
+    token = await _token(client, "favorites-four@example.com")
+    places = [
+        await _create_place(client, token, name=f"Top {index}", place_type="restaurant")
+        for index in range(1, 5)
+    ]
+    for place in places:
+        await _rate_place(client, token, place["id"], 8)
+
+    response = await _set_profile_favorites(client, token, [place["id"] for place in places])
+
+    assert response.status_code == 200
+    assert [favorite["id"] for favorite in response.json()["favoritePlaces"]] == [
+        place["id"] for place in places
+    ]
+
+
+async def test_profile_favorites_validation_errors(client: AsyncClient) -> None:
+    token = await _token(client, "favorites-validation@example.com")
+    places = [
+        await _create_place(client, token, name=f"Validation {index}", place_type="restaurant")
+        for index in range(1, 6)
+    ]
+    for place in places:
+        await _rate_place(client, token, place["id"], 8)
+    unrated = await _create_place(client, token, name="Unrated favorite", place_type="cafe")
+
+    too_many = await _set_profile_favorites(client, token, [place["id"] for place in places])
+    duplicate = await _set_profile_favorites(client, token, [places[0]["id"], places[0]["id"]])
+    unknown = await _set_profile_favorites(client, token, ["missing-place-id"])
+    unrated_response = await _set_profile_favorites(client, token, [unrated["id"]])
+
+    assert too_many.status_code == 422
+    assert too_many.json()["error"]["code"] == "PROFILE_FAVORITES_LIMIT_EXCEEDED"
+    assert duplicate.status_code == 422
+    assert duplicate.json()["error"]["code"] == "PROFILE_FAVORITES_DUPLICATE_PLACE"
+    assert unknown.status_code == 422
+    assert unknown.json()["error"]["code"] == "PROFILE_FAVORITE_PLACE_NOT_FOUND"
+    assert unrated_response.status_code == 422
+    assert unrated_response.json()["error"]["code"] == "PROFILE_FAVORITE_PLACE_NOT_RATED"
+
+
+async def test_profile_favorites_requires_authentication(client: AsyncClient) -> None:
+    response = await client.put("/api/v1/profile/favorites", json={"placeIds": []})
+
+    assert response.status_code == 401
+    assert response.json()["error"]["code"] == "UNAUTHENTICATED"
+
+
+async def test_profile_favorite_restricts_place_deletion(
+    client: AsyncClient,
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    token = await _token(client, "favorites-restrict@example.com")
+    place = await _create_place(client, token, name="Restrict Favorite", place_type="restaurant")
+    await _rate_place(client, token, place["id"], 8)
+    response = await _set_profile_favorites(client, token, [place["id"]])
+    assert response.status_code == 200
+
+    async with session_factory() as session:
+        with pytest.raises(IntegrityError):
+            await session.execute(delete(Place).where(Place.id == place["id"]))
 
 
 async def test_profile_counts_ice_cream_places(client: AsyncClient) -> None:

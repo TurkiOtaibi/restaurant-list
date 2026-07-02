@@ -130,6 +130,7 @@ const profile = {
   averageRating: 8.0,
   bio: "ملف شخصي عربي قصير لاختبار الاستجابة.",
   displayName: "تركي العتيبي",
+  favoritePlaces: [],
   listCount: 3,
   listsCount: 3,
   ratedCafeCount: 1,
