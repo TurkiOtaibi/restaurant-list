@@ -30,6 +30,7 @@ import {
   isSessionRecoveryError
 } from "@/lib/api";
 import { loginHrefForReturn } from "@/lib/authReturn";
+import { listVisibilityLabel } from "@/lib/listVisibility";
 import { placeCountLabel } from "@/lib/numerals";
 
 // How long the undo affordance stays available after a removal. This is a
@@ -166,7 +167,7 @@ export default function ListDetailPage() {
           </h1>
           {list ? (
             <div className="collection-topbar__meta">
-              <Badge variant={list.visibility}>{visibilityLabel(list.visibility)}</Badge>
+              <Badge variant={list.visibility}>{listVisibilityLabel(list.visibility)}</Badge>
               <span>{placeCountLabel(placeCount)}</span>
             </div>
           ) : null}
@@ -305,6 +306,3 @@ export default function ListDetailPage() {
   );
 }
 
-function visibilityLabel(visibility: "public" | "private"): string {
-  return visibility === "public" ? "عامة" : "خاصة";
-}

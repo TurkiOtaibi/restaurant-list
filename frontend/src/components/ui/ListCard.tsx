@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import type { UserList } from "@/lib/api";
+import { listVisibilityLabel } from "@/lib/listVisibility";
 import { placeCountLabel } from "@/lib/numerals";
 import { cx } from "@/lib/ui";
 
@@ -26,7 +27,7 @@ export function ListCard({
   list,
   placeCount = 0
 }: ListCardProps) {
-  const visibility = visibilityLabel(list.visibility);
+  const visibility = listVisibilityLabel(list.visibility);
   const count = placeCountLabel(placeCount);
   const owner = context === "viewer" ? `بواسطة: ${list.ownerDisplayName}` : "";
   const accessibleName = `${list.name}، ${count}، ${visibility}${
@@ -85,8 +86,4 @@ export function ListCard({
       {content}
     </Card>
   );
-}
-
-function visibilityLabel(visibility: UserList["visibility"]): string {
-  return visibility === "public" ? "عامة" : "خاصة";
 }
