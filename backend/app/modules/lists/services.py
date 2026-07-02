@@ -40,12 +40,7 @@ class PublicListCollectionResult:
 
 async def get_owned_list(db: AsyncSession, *, list_id: str, user_id: str) -> UserList:
     result = await db.scalar(
-        select(UserList)
-        .where(UserList.id == list_id, UserList.user_id == user_id)
-        .options(
-            selectinload(UserList.user),
-            selectinload(UserList.items).selectinload(ListItem.place),
-        )
+        _list_detail_statement().where(UserList.id == list_id, UserList.user_id == user_id)
     )
     if result is None:
         not_found("List")
@@ -54,11 +49,9 @@ async def get_owned_list(db: AsyncSession, *, list_id: str, user_id: str) -> Use
 
 async def get_public_user_list(db: AsyncSession, *, list_id: str) -> UserList:
     result = await db.scalar(
-        select(UserList)
-        .where(UserList.id == list_id, UserList.visibility == "public")
-        .options(
-            selectinload(UserList.user),
-            selectinload(UserList.items).selectinload(ListItem.place),
+        _list_detail_statement().where(
+            UserList.id == list_id,
+            UserList.visibility == "public",
         )
     )
     if result is None:
@@ -186,6 +179,13 @@ async def delete_place_from_owned_list(
 class _ListSummaryRows:
     items: list[tuple[UserList, int, str]]
     total: int
+
+
+def _list_detail_statement() -> Select[tuple[UserList]]:
+    return select(UserList).options(
+        selectinload(UserList.user),
+        selectinload(UserList.items).selectinload(ListItem.place),
+    )
 
 
 async def _list_summary_rows(
