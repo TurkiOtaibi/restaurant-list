@@ -1,20 +1,16 @@
 import type { ReactNode } from "react";
 
-import { cx } from "@/lib/ui";
-
-type StatusTone = "error" | "notice" | "success";
+import type { FeedbackTone } from "@/lib/ui";
+import { cx, statusRoleForTone } from "@/lib/ui";
 
 type StatusMessageProps = {
   children: ReactNode;
-  tone: StatusTone;
+  tone: FeedbackTone;
 };
 
 export function StatusMessage({ children, tone }: StatusMessageProps) {
   return (
-    <p
-      className={cx("ds-status", `ds-status--${tone}`)}
-      role={tone === "error" ? "alert" : "status"}
-    >
+    <p className={cx("ds-status", `ds-status--${tone}`)} role={statusRoleForTone(tone)}>
       {children}
     </p>
   );

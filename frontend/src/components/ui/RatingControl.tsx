@@ -4,6 +4,7 @@ import type { CSSProperties } from "react";
 import { useId } from "react";
 
 import { formatOutOfTen } from "@/lib/numerals";
+import { composeDescriptionIds } from "@/lib/ui";
 
 import { NumberText } from "./NumberText";
 
@@ -35,13 +36,13 @@ export function RatingControl({
   const inputId = `${controlId}-input`;
   const consequenceId = consequenceMessage ? `${controlId}-consequence` : undefined;
   const validationId = error ? errorId ?? `${controlId}-error` : undefined;
-  const describedBy = [consequenceId, validationId].filter(Boolean).join(" ");
+  const describedBy = composeDescriptionIds(consequenceId, validationId);
   const currentValue = value ?? 1;
   const progress = `${((currentValue - 1) / 9) * 100}%`;
 
   return (
     <fieldset
-      aria-describedby={describedBy || undefined}
+      aria-describedby={describedBy}
       aria-invalid={Boolean(error)}
       className="ds-rating-control"
       id={controlId}

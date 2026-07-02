@@ -1,6 +1,8 @@
 import { forwardRef } from "react";
 import type { InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
 
+import { composeDescriptionIds } from "@/lib/ui";
+
 type FieldProps = {
   children: ReactNode;
   error?: string;
@@ -51,13 +53,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
 ) {
   return (
     <Field error={error} helper={helper} id={id} label={label}>
-      <input
-        aria-describedby={descriptionIds(id, helper, error)}
-        aria-invalid={Boolean(error)}
-        id={id}
-        ref={ref}
-        {...props}
-      />
+      <input {...fieldControlProps(id, helper, error)} ref={ref} {...props} />
     </Field>
   );
 });
@@ -65,25 +61,18 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
 export function TextArea({ error, helper, id, label, ...props }: TextAreaProps) {
   return (
     <Field error={error} helper={helper} id={id} label={label}>
-      <textarea
-        aria-describedby={descriptionIds(id, helper, error)}
-        aria-invalid={Boolean(error)}
-        id={id}
-        {...props}
-      />
+      <textarea {...fieldControlProps(id, helper, error)} {...props} />
     </Field>
   );
 }
 
-function descriptionIds(id: string | undefined, helper?: string, error?: string): string | undefined {
-  if (!id) {
-    return undefined;
-  }
-
-  return [
-    helper ? `${id}-helper` : undefined,
-    error ? `${id}-error` : undefined
-  ]
-    .filter(Boolean)
-    .join(" ") || undefined;
+function fieldControlProps(id: string, helper?: string, error?: string) {
+  return {
+    "aria-describedby": composeDescriptionIds(
+      helper ? `${id}-helper` : undefined,
+      error ? `${id}-error` : undefined
+    ),
+    "aria-invalid": Boolean(error),
+    id
+  };
 }

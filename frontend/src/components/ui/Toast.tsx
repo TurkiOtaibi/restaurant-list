@@ -1,17 +1,20 @@
 import type { ReactNode } from "react";
 
+import type { FeedbackTone } from "@/lib/ui";
+import { liveRegionForTone, statusRoleForTone } from "@/lib/ui";
+
 type ToastProps = {
   action?: ReactNode;
   children: ReactNode;
-  tone?: "success" | "notice" | "error";
+  tone?: FeedbackTone;
 };
 
 export function Toast({ action, children, tone = "success" }: ToastProps) {
   return (
     <div
-      aria-live={tone === "error" ? "assertive" : "polite"}
+      aria-live={liveRegionForTone(tone)}
       className="ds-toast"
-      role={tone === "error" ? "alert" : "status"}
+      role={statusRoleForTone(tone)}
     >
       <div>{children}</div>
       {action ? <div>{action}</div> : null}

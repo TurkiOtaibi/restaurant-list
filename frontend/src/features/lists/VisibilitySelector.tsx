@@ -1,28 +1,12 @@
-import type { UserList } from "@/lib/api";
-
-type VisibilityValue = UserList["visibility"];
+import { LIST_VISIBILITY_OPTIONS, ListVisibility } from "@/lib/listVisibility";
 
 type VisibilitySelectorProps = {
   disabled?: boolean;
   legend?: string;
   name: string;
-  onChange: (value: VisibilityValue) => void;
-  value: VisibilityValue;
+  onChange: (value: ListVisibility) => void;
+  value: ListVisibility;
 };
-
-const options: Array<{
-  label: string;
-  value: VisibilityValue;
-}> = [
-  {
-    label: "خاصة",
-    value: "private"
-  },
-  {
-    label: "عامة",
-    value: "public"
-  }
-];
 
 export function VisibilitySelector({
   disabled = false,
@@ -35,7 +19,7 @@ export function VisibilitySelector({
     <fieldset className="ds-visibility">
       <legend>{legend}</legend>
       <div className="ds-visibility__grid">
-        {options.map((option) => (
+        {LIST_VISIBILITY_OPTIONS.map((option) => (
           <label className="ds-visibility__option" key={option.value}>
             <input
               checked={value === option.value}

@@ -4,6 +4,7 @@ import type { InputHTMLAttributes } from "react";
 import { useId } from "react";
 
 import { formatNumber } from "@/lib/numerals";
+import { composeDescriptionIds } from "@/lib/ui";
 
 import { Button } from "./Button";
 import { ClearIcon } from "./Icon";
@@ -30,10 +31,10 @@ export function SearchField({
   const searchId = id ?? `place-search-${generatedId}`;
   const scopeId = `${searchId}-scope`;
   const resultId = `${searchId}-results`;
-  const describedBy =
-    [scopeLabel ? scopeId : undefined, resultCount !== undefined ? resultId : undefined]
-      .filter(Boolean)
-      .join(" ") || undefined;
+  const describedBy = composeDescriptionIds(
+    scopeLabel ? scopeId : undefined,
+    resultCount !== undefined ? resultId : undefined
+  );
 
   return (
     <div className="ds-search">

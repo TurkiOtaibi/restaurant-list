@@ -7,6 +7,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { Button, StatusMessage, TasteMarkIcon, TextInput } from "@/components/ui";
 import { ApiError, AuthResponse, apiRequest, saveAccessToken } from "@/lib/api";
 import { DEFAULT_AUTH_DESTINATION } from "@/lib/authReturn";
+import { validEmail } from "@/lib/authValidation";
 
 type FieldErrors = {
   displayName?: string;
@@ -161,6 +162,3 @@ function validateAuthFields(displayName: string, email: string, password: string
   };
 }
 
-function validEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-}
