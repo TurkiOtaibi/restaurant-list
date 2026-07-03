@@ -31,7 +31,7 @@ Existing fields and legacy aliases remain unchanged.
 - Added creator-only image upload and removal endpoints:
   - `PUT /api/v1/places/{place_id}/image`
   - `DELETE /api/v1/places/{place_id}/image`
-- Added image validation for content type, upload size, decoding, WebP processing, and stale-object cleanup.
+- Added image validation for upload size, decoded format, decompression-bomb rejection, WebP processing, and stale-object cleanup.
 - Added CORS preflight coverage for PUT/DELETE image routes.
 - Added focused backend tests for upload, replace, remove, auth, permissions, invalid uploads, unconfigured storage, and response propagation.
 
@@ -59,7 +59,11 @@ Production image storage requires these Render environment variables:
 - `STORAGE_SECRET_ACCESS_KEY`
 - `STORAGE_PUBLIC_BASE_URL`
 
-No secret values are stored in code, tests, or docs. Until production storage is configured, upload/remove image endpoints return `503 STORAGE_NOT_CONFIGURED`; the rest of the app continues to work and existing places return `imageUrl: null`.
+The frontend CSP must also be configured with:
+
+- `NEXT_PUBLIC_PLACE_IMAGE_BASE_URL`
+
+This public frontend value should use the same origin as `STORAGE_PUBLIC_BASE_URL`. No secret values are stored in code, tests, or docs. Until production storage is configured, upload/remove image endpoints return `503 STORAGE_NOT_CONFIGURED`; the rest of the app continues to work and existing places return `imageUrl: null`.
 
 ## Database Status
 
@@ -74,13 +78,13 @@ No secret values are stored in code, tests, or docs. Until production storage is
 - `python -m ruff check .`: PASS
 - `python -m mypy app tests`: PASS
 - `python -m pytest -q`: PASS, 71 passed, 1 skipped
-- `npm run lint`: PASS, 2 native `<img>` warnings
+- `npm run lint`: PASS
 - `npm run typecheck`: PASS
-- `npm run build`: PASS, 2 native `<img>` warnings
+- `npm run build`: PASS
 - `npm run test:e2e`: PASS, 49 passed
 - Focused `npx playwright test tests/e2e/place-images.spec.ts`: PASS, 2 passed
 
-The native `<img>` warnings are intentional for environment-configured object storage URLs and mandatory `onError` fallback behavior.
+Native `<img>` usage is intentionally documented inline because environment-configured object storage URLs and mandatory `onError` fallback behavior are required for this feature.
 
 ## Evidence Table
 
@@ -100,7 +104,7 @@ The native `<img>` warnings are intentional for environment-configured object st
 ## Remaining Risks
 
 - Production uploads remain dormant until Render storage env vars are configured.
-- The frontend uses native `<img>` to support arbitrary environment-configured storage origins and reliable `onError` fallback; this causes Next.js lint/build warnings but not gate failures.
+- The frontend uses native `<img>` to support environment-configured storage origins and reliable `onError` fallback; focused inline lint exceptions document this.
 - No image moderation exists in this phase by approved product decision.
 
 ## Release Recommendation

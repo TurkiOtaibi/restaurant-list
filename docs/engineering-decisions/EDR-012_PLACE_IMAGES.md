@@ -22,6 +22,12 @@ The backend stores image objects in external S3-compatible object storage in pro
 
 No secret values are stored in code, tests, or documentation.
 
+The frontend CSP allows only the configured public image origin through:
+
+- `NEXT_PUBLIC_PLACE_IMAGE_BASE_URL`
+
+This value must use the same public origin as `STORAGE_PUBLIC_BASE_URL`. If it is not configured, external storage images are blocked by CSP and the UI falls back to the existing place-type tile.
+
 If production storage is not configured, upload and delete image endpoints return HTTP 503 with EDR-001 code `STORAGE_NOT_CONFIGURED`. Read APIs continue working and return `imageUrl: null` where no image exists.
 
 Development and tests may use the local-disk storage backend. Production must not use local disk for place images.
@@ -65,11 +71,13 @@ Validation and authorization errors:
 The server normalizes uploads before storage:
 
 - Accepts JPEG, PNG, and WebP only.
+- Validates the decoded image format instead of trusting filename or multipart content type.
 - Applies EXIF orientation.
 - Converts to WebP.
 - Caps the long edge at 1200px.
 - Uses WebP quality around 80.
 - Strips metadata by writing a fresh WebP.
+- Enforces an explicit decoded pixel limit and rejects decompression-bomb style images.
 
 Object keys include a content hash:
 

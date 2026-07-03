@@ -68,6 +68,11 @@ async def test_place_image_upload_replace_and_remove(client: AsyncClient) -> Non
         assert stored.format == "WEBP"
         assert max(stored.size) <= 1200
 
+    identical = await _upload_image(client, token, place["id"])
+    identical_url = identical["imageUrl"]
+    assert identical_url == first_url
+    assert first_path.exists()
+
     replaced = await _upload_image(
         client,
         token,
@@ -126,7 +131,11 @@ async def test_place_image_validation_errors(client: AsyncClient) -> None:
 
     unsupported = await client.put(
         f"/api/v1/places/{place['id']}/image",
-        files=_upload_file(b"not an image", content_type="image/gif", filename="place.gif"),
+        files=_upload_file(
+            _image_bytes(image_format="GIF", size=(20, 20)),
+            content_type="image/png",
+            filename="place.png",
+        ),
         headers=auth_header(token),
     )
     assert unsupported.status_code == 422
@@ -147,6 +156,18 @@ async def test_place_image_validation_errors(client: AsyncClient) -> None:
     )
     assert too_large.status_code == 413
     assert too_large.json()["detail"]["code"] == "PLACE_IMAGE_TOO_LARGE"
+
+    decompression_bomb = await client.put(
+        f"/api/v1/places/{place['id']}/image",
+        files=_upload_file(
+            _image_bytes(image_format="PNG", size=(5000, 4000)),
+            content_type="image/png",
+            filename="huge.png",
+        ),
+        headers=auth_header(token),
+    )
+    assert decompression_bomb.status_code == 422
+    assert decompression_bomb.json()["detail"]["code"] == "PLACE_IMAGE_INVALID"
 
 
 async def test_place_image_storage_unconfigured_returns_503(

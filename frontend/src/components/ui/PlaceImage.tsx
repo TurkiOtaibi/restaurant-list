@@ -26,6 +26,7 @@ export function PlaceImage({ className, imageUrl, type }: PlaceImageProps) {
 
   return (
     <span className={cx("ds-place-image", className)} aria-hidden="true">
+      {/* eslint-disable-next-line @next/next/no-img-element -- User-uploaded storage URLs are configured at deploy time and require direct onError fallback. */}
       <img
         alt=""
         decoding="async"

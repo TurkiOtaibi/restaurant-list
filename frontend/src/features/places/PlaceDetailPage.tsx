@@ -390,6 +390,7 @@ function PlaceImageDialog({
         </label>
         {previewUrl ? (
           <span className="place-image-dialog__preview" aria-hidden="true">
+            {/* eslint-disable-next-line @next/next/no-img-element -- Local object URL previews need native image rendering before upload. */}
             <img alt="" src={previewUrl} />
           </span>
         ) : (

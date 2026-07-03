@@ -42,6 +42,10 @@ test("creator can upload a place image and non-creator cannot see image manageme
   await expect(page.getByRole("dialog", { name: "أضف صورة" })).toHaveCount(0);
   await expect(page.locator(".place-detail-hero__art img")).toHaveAttribute("src", /uploaded-place/);
 
+  await page.getByRole("button", { name: "خيارات المكان" }).click();
+  await page.getByRole("menuitem", { name: "إزالة الصورة" }).click();
+  await expect(page.locator(".place-detail-hero__art.ds-type-icon")).toBeVisible();
+
   await mockPlaceDetailApi(page, { creator: false, imageUrl: null });
   await page.goto("/places/image-place");
   await page.getByRole("button", { name: "خيارات المكان" }).click();
@@ -111,6 +115,15 @@ async function mockPlaceDetailApi(
 
     if (path === "/places/image-place/image" && request.method() === "PUT") {
       currentPlace = placePayload({ creator: true, imageUrl: `${imageDataUrl}#uploaded-place` });
+      return route.fulfill({
+        body: JSON.stringify(currentPlace),
+        contentType: "application/json",
+        status: 200
+      });
+    }
+
+    if (path === "/places/image-place/image" && request.method() === "DELETE") {
+      currentPlace = placePayload({ creator: true, imageUrl: null });
       return route.fulfill({
         body: JSON.stringify(currentPlace),
         contentType: "application/json",
