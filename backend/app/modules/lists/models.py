@@ -1,6 +1,15 @@
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    String,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -11,6 +20,13 @@ class UserList(Base):
     __tablename__ = "lists"
     __table_args__ = (
         CheckConstraint("visibility IN ('public', 'private')", name="ck_lists_visibility"),
+        Index(
+            "uq_lists_one_system_list_per_user",
+            "user_id",
+            unique=True,
+            sqlite_where=text("is_system = 1"),
+            postgresql_where=text("is_system = true"),
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
@@ -22,6 +38,12 @@ class UserList(Base):
     )
     name: Mapped[str] = mapped_column(String(80), nullable=False)
     visibility: Mapped[str] = mapped_column(String(20), nullable=False, default="private")
+    is_system: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="false",
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=utc_now,

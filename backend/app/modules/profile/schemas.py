@@ -36,6 +36,11 @@ class ProfileFavoritePlaceResponse(BaseModel):
     rating: float
 
 
+class ProfileWishlistResponse(BaseModel):
+    id: str
+    place_count: int = Field(serialization_alias="placeCount")
+
+
 class ProfileResponse(BaseModel):
     display_name: str = Field(serialization_alias="displayName")
     bio: str | None
@@ -48,6 +53,7 @@ class ProfileResponse(BaseModel):
     favorite_places: list[ProfileFavoritePlaceResponse] = Field(
         serialization_alias="favoritePlaces"
     )
+    wishlist: ProfileWishlistResponse | None
     user_ratings: list[ProfileRatingResponse] = Field(serialization_alias="userRatings")
     public_lists_summary: list[ProfilePublicListSummaryResponse] = Field(
         serialization_alias="publicListsSummary"
