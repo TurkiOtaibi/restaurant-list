@@ -169,6 +169,7 @@ async def _favorite_place_responses(
             name=place.name,
             type=place.type,
             subtype=place.subtype,
+            image_url=place.image_url,
             rating=float(rating),
         )
         for _favorite, place, rating in rows.tuples().all()

@@ -314,6 +314,7 @@ test("technical shell stories expose manifest headers and legacy redirects", asy
   expect(health.headers()["x-content-type-options"]).toBe("nosniff");
   expect(health.headers()["x-frame-options"]).toBe("DENY");
   expect(health.headers()["content-security-policy"]).toContain("default-src 'self'");
+  expect(health.headers()["content-security-policy"]).toContain("img-src 'self' data: blob:");
 
   await page.goto("/restaurants");
   await expect(page).toHaveURL(/\/places\?type=restaurant/);

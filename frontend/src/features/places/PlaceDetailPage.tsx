@@ -14,8 +14,9 @@ import {
   EmptyState,
   LoadingState,
   MoreVerticalIcon,
-  PlaceTypeIcon,
+  PlaceImage,
   RatingDisplay,
+  ResponsiveDialog,
   StatusMessage
 } from "@/components/ui";
 import {
@@ -42,6 +43,10 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
   const [error, setError] = useState("");
   const [needsAuth, setNeedsAuth] = useState(false);
   const [addToListOpen, setAddToListOpen] = useState(false);
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const [imageMessage, setImageMessage] = useState("");
+  const [imageError, setImageError] = useState("");
+  const [removingImage, setRemovingImage] = useState(false);
 
   const loadPlace = useCallback(async () => {
     setLoading(true);
@@ -115,6 +120,54 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
   }
 
   const subtype = placeSubtypeLabel(place.subtype);
+  const menuItems = [
+    {
+      label: "أضف إلى قائمة",
+      onSelect: () => setAddToListOpen(true)
+    },
+    {
+      label: place.currentUserRating ? "تعديل التقييم" : "قيّم المكان",
+      onSelect: () => {
+        window.location.href = `/places/${place.id}/rate`;
+      }
+    },
+    ...(place.currentUserIsCreator
+      ? [
+          {
+            label: place.imageUrl ? "تغيير الصورة" : "أضف صورة",
+            onSelect: () => setImageDialogOpen(true)
+          },
+          ...(place.imageUrl
+            ? [
+                {
+                  destructive: true,
+                  label: "إزالة الصورة",
+                  onSelect: () => {
+                    void removeImage(place.id);
+                  }
+                }
+              ]
+            : [])
+        ]
+      : [])
+  ];
+
+  async function removeImage(placeIdToRemove: string) {
+    setImageError("");
+    setImageMessage("");
+    setRemovingImage(true);
+    try {
+      const updatedPlace = await apiRequest<Place>(`/places/${placeIdToRemove}/image`, {
+        method: "DELETE"
+      });
+      setPlace(updatedPlace);
+      setImageMessage("تمت إزالة الصورة.");
+    } catch (caught) {
+      setImageError(caught instanceof ApiError ? caught.message : "تعذرت إزالة الصورة.");
+    } finally {
+      setRemovingImage(false);
+    }
+  }
 
   return (
     <main className="content place-detail-page">
@@ -123,24 +176,22 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
           <ArrowLeftIcon />
         </ButtonLink>
         <ActionMenu
-          items={[
-            {
-              label: "أضف إلى قائمة",
-              onSelect: () => setAddToListOpen(true)
-            },
-            {
-              label: place.currentUserRating ? "تعديل التقييم" : "قيّم المكان",
-              onSelect: () => {
-                window.location.href = `/places/${place.id}/rate`;
-              }
-            }
-          ]}
+          items={menuItems}
           label="خيارات المكان"
           trigger={<MoreVerticalIcon />}
         />
       </div>
+      {imageMessage ? <StatusMessage tone="success">{imageMessage}</StatusMessage> : null}
+      {imageError ? <StatusMessage tone="error">{imageError}</StatusMessage> : null}
+      {removingImage ? (
+        <StatusMessage tone="notice">جاري إزالة الصورة.</StatusMessage>
+      ) : null}
       <section aria-labelledby="place-detail-title" className="place-detail-hero">
-        <PlaceTypeIcon className="place-detail-hero__art" type={place.type} />
+        <PlaceImage
+          className="place-detail-hero__art"
+          imageUrl={place.imageUrl}
+          type={place.type}
+        />
         <div className="place-detail-hero__content">
           <h1 id="place-detail-title">
             <BidiText>{place.name}</BidiText>
@@ -230,6 +281,136 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
           place={place}
         />
       ) : null}
+      {imageDialogOpen ? (
+        <PlaceImageDialog
+          onClose={() => setImageDialogOpen(false)}
+          onSaved={(updatedPlace) => {
+            setPlace(updatedPlace);
+            setImageDialogOpen(false);
+            setImageMessage("تم حفظ الصورة.");
+          }}
+          open
+          place={place}
+        />
+      ) : null}
     </main>
+  );
+}
+
+function PlaceImageDialog({
+  onClose,
+  onSaved,
+  open,
+  place
+}: {
+  onClose: () => void;
+  onSaved: (place: Place) => void;
+  open: boolean;
+  place: Place;
+}) {
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl("");
+      return;
+    }
+
+    const nextPreviewUrl = URL.createObjectURL(file);
+    setPreviewUrl(nextPreviewUrl);
+    return () => URL.revokeObjectURL(nextPreviewUrl);
+  }, [file]);
+
+  function selectFile(nextFile: File | undefined) {
+    setError("");
+    if (!nextFile) {
+      setFile(null);
+      return;
+    }
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(nextFile.type)) {
+      setFile(null);
+      setError("الصورة يجب أن تكون JPEG أو PNG أو WebP.");
+      return;
+    }
+
+    if (nextFile.size > 5 * 1024 * 1024) {
+      setFile(null);
+      setError("حجم الصورة يجب ألا يتجاوز ٥ ميجابايت.");
+      return;
+    }
+
+    setFile(nextFile);
+  }
+
+  async function saveImage() {
+    if (!file) {
+      setError("اختر صورة أولًا.");
+      return;
+    }
+
+    const body = new FormData();
+    body.append("file", file);
+    setSaving(true);
+    setError("");
+    try {
+      const updatedPlace = await apiRequest<Place>(`/places/${place.id}/image`, {
+        body,
+        method: "PUT"
+      });
+      onSaved(updatedPlace);
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : "تعذر حفظ الصورة.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <ResponsiveDialog
+      closeLabel="إغلاق إدارة الصورة"
+      initialFocusSelector="#place-image-file"
+      labelledBy="place-image-dialog-title"
+      onClose={onClose}
+      open={open}
+      title={place.imageUrl ? "تغيير الصورة" : "أضف صورة"}
+    >
+      <div className="place-image-dialog">
+        <label className="place-image-dialog__picker" htmlFor="place-image-file">
+          <span>الصورة</span>
+          <input
+            accept="image/jpeg,image/png,image/webp"
+            id="place-image-file"
+            onChange={(event) => selectFile(event.target.files?.[0])}
+            type="file"
+          />
+        </label>
+        {previewUrl ? (
+          <span className="place-image-dialog__preview" aria-hidden="true">
+            {/* eslint-disable-next-line @next/next/no-img-element -- Local object URL previews need native image rendering before upload. */}
+            <img alt="" src={previewUrl} />
+          </span>
+        ) : (
+          <PlaceImage
+            className="place-image-dialog__preview"
+            imageUrl={place.imageUrl}
+            type={place.type}
+          />
+        )}
+        <p className="muted">JPEG أو PNG أو WebP، حتى ٥ ميجابايت.</p>
+        {error ? <StatusMessage tone="error">{error}</StatusMessage> : null}
+        <div className="actions">
+          <Button onClick={onClose} type="button" variant="secondary">
+            إلغاء
+          </Button>
+          <Button isLoading={saving} loadingLabel="جاري رفع الصورة" onClick={() => void saveImage()} type="button">
+            حفظ الصورة
+          </Button>
+        </div>
+      </div>
+    </ResponsiveDialog>
   );
 }

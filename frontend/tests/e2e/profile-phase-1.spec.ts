@@ -6,6 +6,7 @@ type MockFavoriteSource = {
   userRatings: Array<{
     place: {
       id: string;
+      imageUrl: string | null;
       name: string;
       subtype: string | null;
       type: string;
@@ -19,7 +20,13 @@ type MockProfileOptions = {
   bio?: string | null;
   displayName?: string;
   favoritePlaceIds?: string[];
-  ratings?: Array<{ id: string; name: string; rating: number; type: "restaurant" | "cafe" }>;
+  ratings?: Array<{
+    id: string;
+    imageUrl?: string | null;
+    name: string;
+    rating: number;
+    type: "restaurant" | "cafe";
+  }>;
 };
 
 test("profile renders identity header stats and primary sections from profile contract", async ({ page }) => {
@@ -128,6 +135,11 @@ test("profile favorites strip renders four manual favorites in order", async ({ 
   await expect(favorites.getByRole("link").nth(2)).toContainText("مفضل رابع");
   await expect(favorites.getByRole("link").nth(3)).toContainText("مفضل ثاني");
   await expect(favorites.getByRole("link").nth(0)).toHaveAttribute("href", "/places/place-r3");
+  await expect(favorites.getByRole("link").nth(0).locator("img")).toHaveAttribute(
+    "src",
+    /favorite-r3/
+  );
+  await expect(favorites.getByRole("link").nth(1).locator(".ds-type-icon")).toBeVisible();
   await expect(favorites.getByText("9/10")).toBeVisible();
 });
 
@@ -268,9 +280,11 @@ function profilePayload({
       currentUserListCount: 0,
       currentUserListIds: [],
       currentUserListNames: [],
+      currentUserIsCreator: true,
       currentUserRating: rating.rating,
       description: null,
       id: `place-${rating.id}`,
+      imageUrl: rating.imageUrl ?? null,
       name: rating.name,
       ratingCount: 1,
       subtype: rating.type === "restaurant" ? "burger" : "coffee",
@@ -317,9 +331,16 @@ function profilePayload({
 
 function favoriteRatings() {
   return [
-    { id: "r1", name: "مفضل أول", rating: 8, type: "restaurant" as const },
+    { id: "r1", imageUrl: null, name: "مفضل أول", rating: 8, type: "restaurant" as const },
     { id: "r2", name: "مفضل ثاني", rating: 7.5, type: "cafe" as const },
-    { id: "r3", name: "مفضل ثالث", rating: 9, type: "restaurant" as const },
+    {
+      id: "r3",
+      imageUrl:
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Crect width='20' height='20' fill='%230f8f59'/%3E%3C/svg%3E#favorite-r3",
+      name: "مفضل ثالث",
+      rating: 9,
+      type: "restaurant" as const
+    },
     { id: "r4", name: "مفضل رابع", rating: 8.5, type: "cafe" as const },
     { id: "r5", name: "مفضل خامس", rating: 6, type: "restaurant" as const }
   ];
@@ -336,6 +357,7 @@ function favoriteFromRating(
 
   return {
     id: rating.place.id,
+    imageUrl: rating.place.imageUrl,
     name: rating.place.name,
     rating: rating.rating,
     subtype: rating.place.subtype,

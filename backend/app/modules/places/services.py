@@ -38,6 +38,7 @@ def _place_response(
     place: Place,
     average_rating: float | None,
     rating_count: int,
+    current_user_id: str,
     current_user_rating: float | None,
     relationship: UserPlaceRelationship | None = None,
 ) -> PlaceResponse:
@@ -48,6 +49,7 @@ def _place_response(
         type=cast(PlaceType, place.type),
         subtype=cast(PlaceSubtype | None, place.subtype),
         description=place.description,
+        image_url=place.image_url,
         created_by_user_id=place.created_by_user_id,
         created_at=place.created_at,
         updated_at=place.updated_at,
@@ -57,6 +59,7 @@ def _place_response(
         current_user_list_ids=current_relationship.list_ids,
         current_user_list_names=current_relationship.list_names,
         current_user_list_count=len(current_relationship.list_ids),
+        current_user_is_creator=place.created_by_user_id == current_user_id,
     )
 
 
@@ -137,7 +140,10 @@ async def list_place_summaries(
     )
     total = int(await db.scalar(count_statement) or 0)
     return PlaceListResult(
-        items=[_place_response_from_summary_row(row, relationships) for row in row_items],
+        items=[
+            _place_response_from_summary_row(row, relationships, current_user_id)
+            for row in row_items
+        ],
         total=total,
     )
 
@@ -155,7 +161,7 @@ async def get_place_summary(
 
     place, average_rating, rating_count, current_user_rating = row
     relationships = await get_user_place_relationships(db, current_user_id, [place.id])
-    return _place_response_from_summary_row(row, relationships)
+    return _place_response_from_summary_row(row, relationships, current_user_id)
 
 
 async def get_place_summaries_by_id(
@@ -172,7 +178,11 @@ async def get_place_summaries_by_id(
     row_items = rows.all()
     relationships = await get_user_place_relationships(db, current_user_id, place_ids)
     return {
-        cast(Place, row[0]).id: _place_response_from_summary_row(row, relationships)
+        cast(Place, row[0]).id: _place_response_from_summary_row(
+            row,
+            relationships,
+            current_user_id,
+        )
         for row in row_items
     }
 
@@ -180,12 +190,14 @@ async def get_place_summaries_by_id(
 def _place_response_from_summary_row(
     row: Any,
     relationships: dict[str, UserPlaceRelationship],
+    current_user_id: str,
 ) -> PlaceResponse:
     place, average_rating, rating_count, current_user_rating = row
     return _place_response(
         place,
         average_rating,
         int(rating_count),
+        current_user_id,
         current_user_rating,
         relationships.get(place.id),
     )

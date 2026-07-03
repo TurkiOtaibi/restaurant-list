@@ -47,6 +47,7 @@ class Place(Base):
     type: Mapped[str] = mapped_column(String(20), nullable=False)
     subtype: Mapped[str | None] = mapped_column(String(30), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    image_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     created_by_user_id: Mapped[str] = mapped_column(
         String(36),
         ForeignKey("users.id", ondelete="RESTRICT"),

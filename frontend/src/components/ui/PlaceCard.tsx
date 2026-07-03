@@ -5,7 +5,7 @@ import { cx } from "@/lib/ui";
 
 import { BidiText } from "./BidiText";
 import { Card, CardLink } from "./Card";
-import { PlaceTypeIcon } from "./PlaceTypeIcon";
+import { PlaceImage } from "./PlaceImage";
 import { RatingDisplay } from "./RatingDisplay";
 
 type PlaceCardProps = {
@@ -15,6 +15,7 @@ type PlaceCardProps = {
     Place,
     | "averageRating"
     | "id"
+    | "imageUrl"
     | "name"
     | "ratingCount"
     | "subtype"
@@ -66,7 +67,7 @@ function PlaceCardContent({ place }: { place: PlaceCardProps["place"] }) {
           </div>
         ) : null}
       </div>
-      <PlaceTypeIcon type={place.type} />
+      <PlaceImage imageUrl={place.imageUrl} type={place.type} />
     </>
   );
 }

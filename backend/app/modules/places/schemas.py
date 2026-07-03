@@ -68,6 +68,7 @@ class PlaceResponse(BaseModel):
     type: PlaceType
     subtype: PlaceSubtype | None
     description: str | None
+    image_url: str | None = Field(serialization_alias="imageUrl")
     created_by_user_id: str = Field(serialization_alias="createdByUserId")
     created_at: datetime = Field(serialization_alias="createdAt")
     updated_at: datetime = Field(serialization_alias="updatedAt")
@@ -77,6 +78,7 @@ class PlaceResponse(BaseModel):
     current_user_list_ids: list[str] = Field(serialization_alias="currentUserListIds")
     current_user_list_names: list[str] = Field(serialization_alias="currentUserListNames")
     current_user_list_count: int = Field(serialization_alias="currentUserListCount")
+    current_user_is_creator: bool = Field(serialization_alias="currentUserIsCreator")
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
@@ -87,11 +89,13 @@ class PlaceCollectionResponse(BaseModel):
     type: PlaceType
     subtype: PlaceSubtype | None
     description: str | None
+    image_url: str | None = Field(serialization_alias="imageUrl")
     created_at: datetime = Field(serialization_alias="createdAt")
     updated_at: datetime = Field(serialization_alias="updatedAt")
     average_rating: float | None = Field(serialization_alias="averageRating")
     rating_count: int = Field(serialization_alias="ratingCount")
     current_user_rating: float | None = Field(serialization_alias="currentUserRating")
     current_user_list_count: int = Field(serialization_alias="currentUserListCount")
+    current_user_is_creator: bool = Field(serialization_alias="currentUserIsCreator")
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)

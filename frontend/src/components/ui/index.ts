@@ -27,6 +27,7 @@ export { ListCard } from "./ListCard";
 export { LoadingState } from "./LoadingState";
 export { NumberText } from "./NumberText";
 export { PlaceCard } from "./PlaceCard";
+export { PlaceImage } from "./PlaceImage";
 export { PlaceTypeIcon } from "./PlaceTypeIcon";
 export { RatingControl } from "./RatingControl";
 export { RatingDisplay } from "./RatingDisplay";

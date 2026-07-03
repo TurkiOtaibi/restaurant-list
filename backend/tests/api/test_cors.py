@@ -14,3 +14,19 @@ async def test_profile_favorites_put_preflight_is_allowed(client: AsyncClient) -
     assert response.status_code == 200
     assert "PUT" in response.headers["access-control-allow-methods"]
     assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
+
+
+async def test_place_image_put_and_delete_preflight_are_allowed(client: AsyncClient) -> None:
+    for method in ("PUT", "DELETE"):
+        response = await client.options(
+            "/api/v1/places/place-id/image",
+            headers={
+                "Access-Control-Request-Headers": "authorization,content-type",
+                "Access-Control-Request-Method": method,
+                "Origin": "http://localhost:3000",
+            },
+        )
+
+        assert response.status_code == 200
+        assert method in response.headers["access-control-allow-methods"]
+        assert response.headers["access-control-allow-origin"] == "http://localhost:3000"

@@ -14,7 +14,7 @@ import {
   LoadingState,
   MoreVerticalIcon,
   NumberText,
-  PlaceTypeIcon,
+  PlaceImage,
   RatingDisplay,
   ResponsiveDialog,
   StatusMessage,
@@ -446,7 +446,7 @@ function FavoritePlaceCard({ favorite }: { favorite: ProfileFavoritePlace }) {
       href={`/places/${favorite.id}`}
       variant="secondary"
     >
-      <PlaceTypeIcon type={favorite.type} />
+      <PlaceImage imageUrl={favorite.imageUrl} type={favorite.type} />
       <span className="profile-favorite-card__name">
         <BidiText>{favorite.name}</BidiText>
       </span>
@@ -507,6 +507,7 @@ function EditFavoritesDialog({
     id: rating.place.id,
     name: rating.place.name,
     rating: rating.rating,
+    imageUrl: rating.place.imageUrl,
     subtype: rating.place.subtype,
     type: rating.place.type
   }));
@@ -648,7 +649,7 @@ function EditFavoritesDialog({
                 onClick={() => toggleFavorite(candidate.id)}
                 type="button"
               >
-                <PlaceTypeIcon type={candidate.type} />
+                <PlaceImage imageUrl={candidate.imageUrl} type={candidate.type} />
                 <span className="profile-favorite-picker-item__main">
                   <span className="profile-favorite-picker-item__name">
                     <BidiText>{candidate.name}</BidiText>
@@ -793,7 +794,7 @@ function RatingArchiveCard({ rating }: { rating: ProfileRating }) {
       }`}
       className="profile-rating-card"
     >
-      <PlaceTypeIcon type={rating.place.type} />
+      <PlaceImage imageUrl={rating.place.imageUrl} type={rating.place.type} />
       <div className="profile-rating-card__main">
         <h3>
           <BidiText>{rating.place.name}</BidiText>

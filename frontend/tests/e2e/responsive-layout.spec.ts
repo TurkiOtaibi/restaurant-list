@@ -9,9 +9,11 @@ type MockPlace = {
   currentUserListCount: number;
   currentUserListIds: string[];
   currentUserListNames: string[];
+  currentUserIsCreator: boolean;
   currentUserRating: number | null;
   description: string | null;
   id: string;
+  imageUrl: string | null;
   name: string;
   ratingCount: number;
   subtype: string | null;
@@ -35,9 +37,11 @@ function makePlace(
     currentUserListCount: id === "p1" || id === "p4" ? 1 : 0,
     currentUserListIds: id === "p1" || id === "p4" ? ["list-pop"] : [],
     currentUserListNames: id === "p1" || id === "p4" ? ["برجر الرياض طويل الاسم"] : [],
+    currentUserIsCreator: true,
     currentUserRating,
     description: null,
     id,
+    imageUrl: id === "p1" ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Crect width='20' height='20' fill='%230f8f59'/%3E%3C/svg%3E" : null,
     name,
     ratingCount,
     subtype,

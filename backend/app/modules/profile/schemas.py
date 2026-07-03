@@ -32,6 +32,7 @@ class ProfileFavoritePlaceResponse(BaseModel):
     name: str
     type: str
     subtype: str | None
+    image_url: str | None = Field(serialization_alias="imageUrl")
     rating: float
 
 
