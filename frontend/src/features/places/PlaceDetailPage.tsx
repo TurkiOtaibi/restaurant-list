@@ -8,6 +8,7 @@ import {
   AddIcon,
   ArrowLeftIcon,
   BidiText,
+  BookmarkIcon,
   Button,
   ButtonLink,
   Chip,
@@ -21,7 +22,9 @@ import {
 } from "@/components/ui";
 import {
   ApiError,
+  ListDetail,
   Place,
+  Profile,
   apiRequest,
   clearTokens,
   ensureSession,
@@ -43,6 +46,10 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
   const [error, setError] = useState("");
   const [needsAuth, setNeedsAuth] = useState(false);
   const [addToListOpen, setAddToListOpen] = useState(false);
+  const [wishlistId, setWishlistId] = useState<string | null>(null);
+  const [wishlistMessage, setWishlistMessage] = useState("");
+  const [wishlistError, setWishlistError] = useState("");
+  const [updatingWishlist, setUpdatingWishlist] = useState(false);
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [imageMessage, setImageMessage] = useState("");
   const [imageError, setImageError] = useState("");
@@ -58,8 +65,12 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
         return;
       }
 
-      const placeResponse = await apiRequest<Place>(`/places/${placeId}`);
+      const [placeResponse, profileResponse] = await Promise.all([
+        apiRequest<Place>(`/places/${placeId}`),
+        apiRequest<Profile>("/profile")
+      ]);
       setPlace(placeResponse);
+      setWishlistId(profileResponse.wishlist?.id ?? null);
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 401) {
         clearTokens();
@@ -120,6 +131,7 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
   }
 
   const subtype = placeSubtypeLabel(place.subtype);
+  const isInWishlist = Boolean(wishlistId && place.currentUserListIds.includes(wishlistId));
   const menuItems = [
     {
       label: "أضف إلى قائمة",
@@ -169,6 +181,32 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
     }
   }
 
+  async function toggleWishlist() {
+    if (!place) {
+      return;
+    }
+
+    setWishlistError("");
+    setWishlistMessage("");
+    setUpdatingWishlist(true);
+    try {
+      const updatedWishlist = isInWishlist
+        ? await apiRequest<ListDetail>(`/wishlist/places/${place.id}`, { method: "DELETE" })
+        : await apiRequest<ListDetail>("/wishlist/places", {
+            body: JSON.stringify({ placeId: place.id }),
+            method: "POST"
+          });
+      setWishlistId(updatedWishlist.id);
+      const updatedPlace = await apiRequest<Place>(`/places/${place.id}`);
+      setPlace(updatedPlace);
+      setWishlistMessage(isInWishlist ? "أزيل من رغباتي." : "أضيف إلى رغباتي.");
+    } catch (caught) {
+      setWishlistError(caught instanceof ApiError ? caught.message : "تعذر تحديث رغباتي.");
+    } finally {
+      setUpdatingWishlist(false);
+    }
+  }
+
   return (
     <main className="content place-detail-page">
       <div className="place-detail-topbar" aria-label="إجراءات المكان">
@@ -183,6 +221,8 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
       </div>
       {imageMessage ? <StatusMessage tone="success">{imageMessage}</StatusMessage> : null}
       {imageError ? <StatusMessage tone="error">{imageError}</StatusMessage> : null}
+      {wishlistMessage ? <StatusMessage tone="success">{wishlistMessage}</StatusMessage> : null}
+      {wishlistError ? <StatusMessage tone="error">{wishlistError}</StatusMessage> : null}
       {removingImage ? (
         <StatusMessage tone="notice">جاري إزالة الصورة.</StatusMessage>
       ) : null}
@@ -204,6 +244,16 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
             <Button className="ds-button--full" onClick={() => setAddToListOpen(true)} type="button">
               <AddIcon />
               أضف إلى قائمة
+            </Button>
+            <Button
+              className="ds-button--full"
+              isLoading={updatingWishlist}
+              onClick={() => void toggleWishlist()}
+              type="button"
+              variant="secondary"
+            >
+              <BookmarkIcon />
+              {isInWishlist ? "في رغباتي" : "أضف إلى رغباتي"}
             </Button>
           </div>
         </div>

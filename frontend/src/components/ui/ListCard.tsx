@@ -7,6 +7,7 @@ import { placeCountLabel } from "@/lib/numerals";
 import { cx } from "@/lib/ui";
 
 import { BidiText } from "./BidiText";
+import { Badge } from "./Badge";
 import { Card, CardLink } from "./Card";
 import { ShelfIcon } from "./Icon";
 
@@ -15,7 +16,7 @@ type ListCardProps = {
   context?: "owner" | "viewer";
   href?: string;
   isEmpty?: boolean;
-  list: Pick<UserList, "id" | "name" | "ownerDisplayName" | "visibility" | "updatedAt">;
+  list: Pick<UserList, "id" | "isSystem" | "name" | "ownerDisplayName" | "visibility" | "updatedAt">;
   placeCount?: number;
 };
 
@@ -52,6 +53,7 @@ export function ListCard({
         <div className="ds-list-card__meta" aria-hidden="true">
           <span>{count}</span>
           <span>{visibility}</span>
+          {list.isSystem ? <Badge>نظامية</Badge> : null}
           {owner ? <span>{owner}</span> : null}
           {context === "viewer" ? <span>عرض فقط</span> : null}
         </div>

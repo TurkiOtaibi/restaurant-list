@@ -22,7 +22,8 @@ export function EditListDialog({ list, onClose, onUpdated, open }: EditListDialo
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const trimmedName = name.trim();
-  const hasUnsavedChanges = trimmedName !== list.name || visibility !== list.visibility;
+  const hasUnsavedChanges =
+    (!list.isSystem && trimmedName !== list.name) || visibility !== list.visibility;
 
   useEffect(() => {
     if (!open) {
@@ -46,7 +47,7 @@ export function EditListDialog({ list, onClose, onUpdated, open }: EditListDialo
     setNameError("");
     setFormError("");
 
-    if (!trimmedName) {
+    if (!list.isSystem && !trimmedName) {
       showNameRequired();
       return;
     }
@@ -55,7 +56,7 @@ export function EditListDialog({ list, onClose, onUpdated, open }: EditListDialo
     try {
       let nextList = list;
 
-      if (trimmedName !== list.name) {
+      if (!list.isSystem && trimmedName !== list.name) {
         const renamed = await apiRequest<UserList>(`/lists/${list.id}`, {
           method: "PATCH",
           body: JSON.stringify({ name: trimmedName })
@@ -96,31 +97,33 @@ export function EditListDialog({ list, onClose, onUpdated, open }: EditListDialo
     <ResponsiveDialog
       confirmCloseMessage="هناك تغييرات غير محفوظة. إغلاق؟"
       hasUnsavedChanges={hasUnsavedChanges && !submitting}
-      initialFocusSelector="#edit-list-name"
+      initialFocusSelector={list.isSystem ? undefined : "#edit-list-name"}
       labelledBy="edit-list-title"
       onClose={onClose}
       open={open}
       title="تعديل القائمة"
     >
       <form className="form-surface__form" noValidate onSubmit={handleSubmit}>
-        <TextInput
-          error={nameError}
-          id="edit-list-name"
-          label="اسم القائمة"
-          name="name"
-          onBlur={() => {
-            if (!trimmedName) {
-              showNameRequired(false);
-            }
-          }}
-          onChange={(event) => {
-            setName(event.target.value);
-            setNameError("");
-            setFormError("");
-          }}
-          ref={nameRef}
-          value={name}
-        />
+        {!list.isSystem ? (
+          <TextInput
+            error={nameError}
+            id="edit-list-name"
+            label="اسم القائمة"
+            name="name"
+            onBlur={() => {
+              if (!trimmedName) {
+                showNameRequired(false);
+              }
+            }}
+            onChange={(event) => {
+              setName(event.target.value);
+              setNameError("");
+              setFormError("");
+            }}
+            ref={nameRef}
+            value={name}
+          />
+        ) : null}
         <VisibilitySelector name="edit-list-visibility" onChange={setVisibility} value={visibility} />
         {formError ? <StatusMessage tone="error">{formError}</StatusMessage> : null}
         <div className="form-surface__footer">

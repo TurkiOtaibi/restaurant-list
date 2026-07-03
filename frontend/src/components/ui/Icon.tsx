@@ -69,6 +69,14 @@ export function ArchiveIcon(props: IconProps) {
   );
 }
 
+export function BookmarkIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M7 5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16l-5-3-5 3V5Z" />
+    </BaseIcon>
+  );
+}
+
 export function CheckIcon(props: IconProps) {
   return (
     <BaseIcon {...props}>

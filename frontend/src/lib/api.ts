@@ -58,6 +58,7 @@ export type UserList = {
   ownerDisplayName?: string;
   name: string;
   visibility: "public" | "private";
+  isSystem: boolean;
   placeCount: number;
   createdAt: string;
   updatedAt: string;
@@ -118,6 +119,11 @@ export type ProfileFavoritePlace = {
   rating: number;
 };
 
+export type ProfileWishlist = {
+  id: string;
+  placeCount: number;
+};
+
 export type Profile = {
   displayName: string;
   bio: string | null;
@@ -128,6 +134,7 @@ export type Profile = {
   ratedIceCreamCount: number;
   ratingsCount: number;
   favoritePlaces: ProfileFavoritePlace[];
+  wishlist: ProfileWishlist | null;
   userRatings: ProfileRating[];
   publicListsSummary: ProfilePublicListSummary[];
   listCount?: number;
