@@ -32,6 +32,11 @@ class User(Base):
     lists = relationship("UserList", back_populates="user")
     places_created = relationship("Place", back_populates="created_by_user")
     ratings = relationship("Rating", back_populates="user")
+    favorite_places = relationship(
+        "UserFavoritePlace",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
     refresh_tokens = relationship(
         "RefreshToken",
         back_populates="user",

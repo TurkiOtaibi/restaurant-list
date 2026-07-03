@@ -107,6 +107,14 @@ export type ProfilePublicListSummary = {
   updatedAt: string;
 };
 
+export type ProfileFavoritePlace = {
+  id: string;
+  name: string;
+  type: Place["type"];
+  subtype: Place["subtype"];
+  rating: number;
+};
+
 export type Profile = {
   displayName: string;
   bio: string | null;
@@ -116,6 +124,7 @@ export type Profile = {
   ratedCafeCount: number;
   ratedIceCreamCount: number;
   ratingsCount: number;
+  favoritePlaces: ProfileFavoritePlace[];
   userRatings: ProfileRating[];
   publicListsSummary: ProfilePublicListSummary[];
   listCount?: number;

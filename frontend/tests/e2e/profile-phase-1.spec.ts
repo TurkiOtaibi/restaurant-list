@@ -2,10 +2,23 @@ import { expect, test, type Page } from "@playwright/test";
 
 const now = new Date().toISOString();
 
+type MockFavoriteSource = {
+  userRatings: Array<{
+    place: {
+      id: string;
+      name: string;
+      subtype: string | null;
+      type: string;
+    };
+    rating: number;
+  }>;
+};
+
 type MockProfileOptions = {
   averageRating?: number | null;
   bio?: string | null;
   displayName?: string;
+  favoritePlaceIds?: string[];
   ratings?: Array<{ id: string; name: string; rating: number; type: "restaurant" | "cafe" }>;
 };
 
@@ -36,7 +49,7 @@ test("profile renders identity header stats and primary sections from profile co
   await expect(page.getByRole("menuitem", { name: "تسجيل الخروج" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Reviews");
   await expect(page.locator("body")).not.toContainText("قريبًا");
-  await expect(page.locator("body")).not.toContainText("المفضلة");
+  await expect(page.getByRole("heading", { level: 2, name: "المفضلة" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("قائمة الرغبات");
 });
 
@@ -99,6 +112,76 @@ test("profile edit dialog opens from both entry points validates and updates in 
   await expect(page.getByRole("heading", { level: 2, name: "نورة السجل" })).toBeVisible();
 });
 
+test("profile favorites strip renders four manual favorites in order", async ({ page }) => {
+  await mockProfileApi(page, {
+    favoritePlaceIds: ["r3", "r1", "r4", "r2"],
+    ratings: favoriteRatings()
+  });
+
+  await page.goto("/profile");
+
+  await expect(page.getByRole("heading", { level: 2, name: "المفضلة" })).toBeVisible();
+  const favorites = page.getByLabel("الأماكن المفضلة");
+  await expect(favorites.getByRole("link")).toHaveCount(4);
+  await expect(favorites.getByRole("link").nth(0)).toContainText("مفضل ثالث");
+  await expect(favorites.getByRole("link").nth(1)).toContainText("مفضل أول");
+  await expect(favorites.getByRole("link").nth(2)).toContainText("مفضل رابع");
+  await expect(favorites.getByRole("link").nth(3)).toContainText("مفضل ثاني");
+  await expect(favorites.getByRole("link").nth(0)).toHaveAttribute("href", "/places/place-r3");
+  await expect(favorites.getByText("9/10")).toBeVisible();
+});
+
+test("profile favorites empty states distinguish rated and unrated profiles", async ({ page }) => {
+  await mockProfileApi(page, {
+    ratings: favoriteRatings().slice(0, 1)
+  });
+
+  await page.goto("/profile");
+
+  await expect(page.locator(".profile-favorite-placeholder")).toHaveCount(4);
+  await expect(page.getByRole("button", { name: "أضف مفضلتك الأولى" })).toBeVisible();
+
+  await mockProfileApi(page, { ratings: [] });
+  await page.goto("/profile");
+
+  await expect(page.locator(".profile-favorite-placeholder")).toHaveCount(4);
+  await expect(page.getByText("قيّم أماكن أولًا لتضيفها إلى المفضلة.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "أضف مفضلتك الأولى" })).toHaveCount(0);
+});
+
+test("profile favorites picker searches limits reorders and updates the strip", async ({ page }) => {
+  await mockProfileApi(page, {
+    ratings: favoriteRatings()
+  });
+
+  await page.goto("/profile");
+
+  await page.getByRole("button", { name: "أضف مفضلتك الأولى" }).click();
+  await expect(page.getByRole("dialog", { name: "تعديل المفضلة" })).toBeVisible();
+  await page.getByLabel("البحث في الأماكن التي قيّمتها").fill("خامس");
+  await expect(page.getByRole("button", { name: /مفضل خامس/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /مفضل أول/ })).toHaveCount(0);
+
+  await page.getByLabel("البحث في الأماكن التي قيّمتها").fill("");
+  for (const name of ["مفضل أول", "مفضل ثاني", "مفضل ثالث", "مفضل رابع"]) {
+    await page.getByRole("button", { name: new RegExp(name) }).click();
+  }
+  await expect(page.getByText("اخترت 4 من 4")).toBeVisible();
+  await page.getByRole("button", { name: /مفضل خامس/ }).click();
+  await expect(page.getByText("يمكنك اختيار ٤ أماكن كحد أقصى.")).toBeVisible();
+
+  await page.getByRole("button", { name: /ارفع مفضل رابع/ }).click();
+  await page.getByRole("button", { name: "حفظ المفضلة" }).click();
+
+  await expect(page.getByRole("dialog", { name: "تعديل المفضلة" })).toHaveCount(0);
+  const favorites = page.getByLabel("الأماكن المفضلة");
+  await expect(favorites.getByRole("link")).toHaveCount(4);
+  await expect(favorites.getByRole("link").nth(0)).toContainText("مفضل أول");
+  await expect(favorites.getByRole("link").nth(1)).toContainText("مفضل ثاني");
+  await expect(favorites.getByRole("link").nth(2)).toContainText("مفضل رابع");
+  await expect(favorites.getByRole("link").nth(3)).toContainText("مفضل ثالث");
+});
+
 async function mockProfileApi(page: Page, options: MockProfileOptions) {
   await page.addInitScript(() => {
     window.localStorage.setItem("restaurantWishlist.hasSession", "1");
@@ -146,6 +229,19 @@ async function mockProfileApi(page: Page, options: MockProfileOptions) {
       });
     }
 
+    if (path === "/profile/favorites" && route.request().method() === "PUT") {
+      const payload = route.request().postDataJSON() as { placeIds: string[] };
+      currentProfile = {
+        ...currentProfile,
+        favoritePlaces: payload.placeIds.map((placeId) => favoriteFromRating(currentProfile, placeId))
+      };
+      return route.fulfill({
+        body: JSON.stringify(currentProfile),
+        contentType: "application/json",
+        status: 200
+      });
+    }
+
     return route.fulfill({
       body: JSON.stringify({ detail: { code: "MOCK_NOT_FOUND", message: path } }),
       contentType: "application/json",
@@ -158,6 +254,7 @@ function profilePayload({
   averageRating,
   bio = null,
   displayName = "تركي العتيبي",
+  favoritePlaceIds = [],
   ratings = []
 }: MockProfileOptions) {
   const userRatings = ratings.map((rating) => ({
@@ -194,6 +291,9 @@ function profilePayload({
     averageRating: averageRating === undefined ? computedAverage : averageRating,
     bio,
     displayName,
+    favoritePlaces: favoritePlaceIds.map((placeId) =>
+      favoriteFromRating({ userRatings }, `place-${placeId}`)
+    ),
     listsCount: 1,
     listCount: 1,
     publicListsSummary: [
@@ -212,5 +312,33 @@ function profilePayload({
     ratingsCount: userRatings.length,
     ratingsCreatedCount: userRatings.length,
     userRatings
+  };
+}
+
+function favoriteRatings() {
+  return [
+    { id: "r1", name: "مفضل أول", rating: 8, type: "restaurant" as const },
+    { id: "r2", name: "مفضل ثاني", rating: 7.5, type: "cafe" as const },
+    { id: "r3", name: "مفضل ثالث", rating: 9, type: "restaurant" as const },
+    { id: "r4", name: "مفضل رابع", rating: 8.5, type: "cafe" as const },
+    { id: "r5", name: "مفضل خامس", rating: 6, type: "restaurant" as const }
+  ];
+}
+
+function favoriteFromRating(
+  profile: MockFavoriteSource,
+  placeId: string
+) {
+  const rating = profile.userRatings.find((item) => item.place.id === placeId);
+  if (!rating) {
+    throw new Error(`Missing mocked rating for favorite ${placeId}`);
+  }
+
+  return {
+    id: rating.place.id,
+    name: rating.place.name,
+    rating: rating.rating,
+    subtype: rating.place.subtype,
+    type: rating.place.type
   };
 }
