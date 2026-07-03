@@ -24,7 +24,7 @@ test("profile renders wishlist empty and populated rows", async ({ page }) => {
 
   await page.goto("/profile");
 
-  await expect(page.getByRole("heading", { name: "رغباتي" })).toBeVisible();
+  await expect(page.locator(".profile-section-rows").getByText("رغباتي")).toBeVisible();
   await expect(page.getByText("أضف أماكن تود زيارتها من صفحة المكان.")).toBeVisible();
   await expect(page.locator(`a[href="/lists/${wishlistId}"]`)).toHaveCount(0);
   await expect(page.locator("body")).not.toContainText("الإعجابات");
@@ -33,7 +33,7 @@ test("profile renders wishlist empty and populated rows", async ({ page }) => {
   await mockProfileApi(page, { wishlist: { id: wishlistId, placeCount: 2 } });
   await page.goto("/profile");
 
-  await expect(page.getByRole("heading", { name: "رغباتي" })).toBeVisible();
+  await expect(page.locator(".profile-section-rows").getByText("رغباتي")).toBeVisible();
   await expect(page.locator(`a[href="/lists/${wishlistId}"]`)).toBeVisible();
 });
 

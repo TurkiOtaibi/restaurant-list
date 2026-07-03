@@ -163,7 +163,8 @@ test("real frontend and api complete list edit add remove delete and profile flo
   await expect(page).toHaveURL(/\/profile$/);
   await expect(page.getByRole("heading", { name: "صفحتي" })).toBeVisible();
   await expect(page.getByText(placeName)).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText("ملاحظة خاصة للاختبار")).toBeVisible();
+  await expect(page.getByText("ملاحظة خاصة للاختبار")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "عرض كل الأماكن التي قيّمتها" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("جربته");
   await expect(page.locator("body")).not.toContainText(/[٠-٩۰-۹]/);
 
