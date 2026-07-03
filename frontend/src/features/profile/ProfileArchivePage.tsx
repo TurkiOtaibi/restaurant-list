@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { CSSProperties, FormEvent } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   ActionMenu,
@@ -42,18 +42,15 @@ type ProfileStat = {
   value: string;
 };
 
-const ARCHIVE_VIRTUALIZATION_THRESHOLD = 80;
-const ARCHIVE_ROW_HEIGHT = 104;
-const ARCHIVE_OVERSCAN = 4;
-const RATING_NOTE_SESSION_PREFIX = "restaurantWishlist.ratingNote.";
 const PROFILE_DISPLAY_NAME_MAX_LENGTH = 80;
 const PROFILE_BIO_MAX_LENGTH = 280;
+const PROFILE_RATING_PREVIEW_LIMIT = 4;
 const AVATAR_COLORS = [
   ["#0f8f5f", "#35d18e"],
-  ["#1b6f8f", "#5dd5f1"],
-  ["#8f6a1b", "#f2c95a"],
-  ["#7c3f8f", "#d48df1"],
-  ["#8f3d4a", "#ef8b98"]
+  ["#0c7f67", "#43d7a5"],
+  ["#0a6d50", "#2fcf88"],
+  ["#156b5a", "#5be2b0"],
+  ["#0f7258", "#37c988"]
 ] as const;
 
 export function ProfileArchivePage() {
@@ -62,6 +59,7 @@ export function ProfileArchivePage() {
   const [error, setError] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const [needsAuth, setNeedsAuth] = useState(false);
+  const [showAllRatings, setShowAllRatings] = useState(false);
   const router = useRouter();
 
   async function handleLogout() {
@@ -150,12 +148,32 @@ export function ProfileArchivePage() {
             ratedPlaces={profile.userRatings}
           />
 
-          <section className="profile-section" aria-labelledby="profile-ratings-title">
+          <section
+            className="profile-section profile-rated-preview"
+            aria-labelledby="profile-ratings-title"
+          >
             <div className="library-section__header">
-              <h2 id="profile-ratings-title">الأماكن التي قيّمتها</h2>
+              <h2 id="profile-ratings-title">آخر الأماكن التي قيّمتها</h2>
             </div>
             {hasRatings ? (
-              <RatingArchiveList ratings={profile.userRatings} />
+              <>
+                <RatingPreviewList
+                  ratings={
+                    showAllRatings
+                      ? profile.userRatings
+                      : latestProfileRatings(profile.userRatings)
+                  }
+                />
+                <Button
+                  aria-expanded={showAllRatings}
+                  className="profile-rated-preview__all"
+                  onClick={() => setShowAllRatings((current) => !current)}
+                  type="button"
+                  variant="secondary"
+                >
+                  {showAllRatings ? "عرض أحدث الأماكن التي قيّمتها" : "عرض كل الأماكن التي قيّمتها"}
+                </Button>
+              </>
             ) : (
               <EmptyState
                 action={<ButtonLink href="/places">استكشف الأماكن</ButtonLink>}
@@ -165,18 +183,7 @@ export function ProfileArchivePage() {
             )}
           </section>
 
-          <section className="profile-section" aria-labelledby="profile-lists-title">
-            <div className="profile-section-link">
-              <div>
-                <h2 id="profile-lists-title">قوائمي</h2>
-                <p className="muted">كل قوائمك الخاصة والعامة في مكان واحد.</p>
-              </div>
-              <ButtonLink href="/lists" variant="secondary">
-                عرض القوائم
-              </ButtonLink>
-            </div>
-          </section>
-          <ProfileWishlistSection profile={profile} />
+          <ProfileSectionRows profile={profile} />
           <EditProfileDialog
             onClose={() => setEditOpen(false)}
             onUpdated={(updatedProfile) => {
@@ -192,27 +199,46 @@ export function ProfileArchivePage() {
   );
 }
 
-function ProfileWishlistSection({ profile }: { profile: Profile }) {
+function ProfileSectionRows({ profile }: { profile: Profile }) {
   const wishlist = profile.wishlist;
   const hasWishlistItems = Boolean(wishlist && wishlist.placeCount > 0);
+  const listCount = profile.listsCount ?? profile.listCount ?? 0;
 
   return (
-    <section className="profile-section" aria-labelledby="profile-wishlist-title">
-      <div className="profile-section-link">
-        <div>
-          <h2 id="profile-wishlist-title">رغباتي</h2>
-          {hasWishlistItems && wishlist ? (
-            <p className="muted">{placeCountLabel(wishlist.placeCount)}</p>
-          ) : (
-            <p className="muted">أضف أماكن تود زيارتها من صفحة المكان.</p>
-          )}
+    <section className="profile-section profile-section-rows" aria-label="روابط صفحتي">
+      <Link className="profile-section-row" href="/lists">
+        <span className="profile-section-row__copy">
+          <span className="profile-section-row__title">قوائمي</span>
+          <span className="profile-section-row__meta">{placeCountLabel(listCount)}</span>
+        </span>
+        <span className="profile-section-row__count">
+          <NumberText>{formatNumber(listCount)}</NumberText>
+        </span>
+      </Link>
+
+      {hasWishlistItems && wishlist ? (
+        <Link className="profile-section-row" href={`/lists/${wishlist.id}`}>
+          <span className="profile-section-row__copy">
+            <span className="profile-section-row__title">رغباتي</span>
+            <span className="profile-section-row__meta">{placeCountLabel(wishlist.placeCount)}</span>
+          </span>
+          <span className="profile-section-row__count">
+            <NumberText>{formatNumber(wishlist.placeCount)}</NumberText>
+          </span>
+        </Link>
+      ) : (
+        <div className="profile-section-row profile-section-row--static">
+          <span className="profile-section-row__copy">
+            <span className="profile-section-row__title">رغباتي</span>
+            <span className="profile-section-row__meta">
+              أضف أماكن تود زيارتها من صفحة المكان.
+            </span>
+          </span>
+          <span className="profile-section-row__count">
+            <NumberText>{formatNumber(0)}</NumberText>
+          </span>
         </div>
-        {hasWishlistItems && wishlist ? (
-          <ButtonLink href={`/lists/${wishlist.id}`} variant="secondary">
-            عرض رغباتي
-          </ButtonLink>
-        ) : null}
-      </div>
+      )}
     </section>
   );
 }
@@ -439,9 +465,18 @@ function FavoritePlacesStrip({
       </div>
       {favorites.length > 0 ? (
         <div className="profile-favorites-grid" aria-label="الأماكن المفضلة">
-          {favorites.map((favorite) => (
-            <FavoritePlaceCard favorite={favorite} key={favorite.id} />
-          ))}
+          {Array.from({ length: 4 }, (_, index) => {
+            const favorite = favorites[index];
+            return favorite ? (
+              <FavoritePlaceCard favorite={favorite} key={favorite.id} />
+            ) : (
+              <span
+                aria-hidden="true"
+                className="profile-favorite-placeholder"
+                key={`empty-${index}`}
+              />
+            );
+          })}
         </div>
       ) : (
         <FavoritePlacesEmptyState
@@ -479,7 +514,6 @@ function FavoritePlaceCard({ favorite }: { favorite: ProfileFavoritePlace }) {
       </span>
       <RatingDisplay
         className="profile-favorite-card__rating"
-        label="تقييمك"
         variant="outOfTen"
         value={favorite.rating}
       />
@@ -723,103 +757,26 @@ function ProfileStats({ stats }: { stats: ProfileStat[] }) {
   );
 }
 
-function RatingArchiveList({ ratings }: { ratings: ProfileRating[] }) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [scrollTop, setScrollTop] = useState(0);
-  const [viewportHeight, setViewportHeight] = useState(520);
-
-  useEffect(() => {
-    const current = containerRef.current;
-    if (!current || ratings.length <= ARCHIVE_VIRTUALIZATION_THRESHOLD) {
-      return;
-    }
-    const updateHeight = () => setViewportHeight(current.clientHeight || 520);
-    updateHeight();
-    const observer = new ResizeObserver(updateHeight);
-    observer.observe(current);
-    return () => observer.disconnect();
-  }, [ratings.length]);
-
-  if (ratings.length <= ARCHIVE_VIRTUALIZATION_THRESHOLD) {
-    return (
-      <div className="profile-rating-list" aria-label="الأماكن التي قيّمتها">
-        {ratings.map((rating) => (
-          <RatingArchiveCard key={rating.id} rating={rating} />
-        ))}
-      </div>
-    );
-  }
-
-  const { startIndex, visibleRatings } = profileRatingWindow({
-    ratings,
-    scrollTop,
-    viewportHeight
-  });
-
+function RatingPreviewList({ ratings }: { ratings: ProfileRating[] }) {
   return (
-    <div
-      aria-label="الأماكن التي قيّمتها"
-      className="profile-rating-list profile-rating-list--virtualized"
-      onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
-      ref={containerRef}
-    >
-      <div
-        aria-hidden="true"
-        className="profile-rating-list__spacer"
-        style={{ height: ratings.length * ARCHIVE_ROW_HEIGHT }}
-      />
-      <div
-        className="profile-rating-list__window"
-        style={{ transform: `translateY(${startIndex * ARCHIVE_ROW_HEIGHT}px)` }}
-      >
-        {visibleRatings.map((rating) => (
-          <RatingArchiveCard key={rating.id} rating={rating} />
-        ))}
-      </div>
+    <div className="profile-rating-list" aria-label="آخر الأماكن التي قيّمتها">
+      {ratings.map((rating) => (
+        <RatingPreviewCard key={rating.id} rating={rating} />
+      ))}
     </div>
   );
 }
 
-function profileRatingWindow({
-  ratings,
-  scrollTop,
-  viewportHeight
-}: {
-  ratings: ProfileRating[];
-  scrollTop: number;
-  viewportHeight: number;
-}) {
-  const startIndex = Math.max(0, Math.floor(scrollTop / ARCHIVE_ROW_HEIGHT) - ARCHIVE_OVERSCAN);
-  const visibleCount = Math.ceil(viewportHeight / ARCHIVE_ROW_HEIGHT) + ARCHIVE_OVERSCAN * 2;
-  const endIndex = Math.min(ratings.length, startIndex + visibleCount);
-
-  return {
-    startIndex,
-    visibleRatings: ratings.slice(startIndex, endIndex)
-  };
-}
-
-function RatingArchiveCard({ rating }: { rating: ProfileRating }) {
+function RatingPreviewCard({ rating }: { rating: ProfileRating }) {
   const metadata = [placeTypeLabel(rating.place.type), placeSubtypeLabel(rating.place.subtype)]
     .filter(Boolean)
     .join(" · ");
 
-  function rememberPrivateNote() {
-    if (typeof window === "undefined") {
-      return;
-    }
-    window.sessionStorage.setItem(
-      `${RATING_NOTE_SESSION_PREFIX}${rating.place.id}`,
-      rating.notes ?? ""
-    );
-  }
-
   return (
-    <article
-      aria-label={`${rating.place.name}، تقييمك ${formatOutOfTen(rating.rating)}${
-        rating.notes ? "، ملاحظة خاصة" : ""
-      }`}
+    <Link
+      aria-label={`${rating.place.name}، تقييمك ${formatOutOfTen(rating.rating)}`}
       className="profile-rating-card"
+      href={`/places/${rating.place.id}`}
     >
       <PlaceImage imageUrl={rating.place.imageUrl} type={rating.place.type} />
       <div className="profile-rating-card__main">
@@ -827,31 +784,15 @@ function RatingArchiveCard({ rating }: { rating: ProfileRating }) {
           <BidiText>{rating.place.name}</BidiText>
         </h3>
         <div className="profile-rating-card__meta">
-          <RatingDisplay
-            className="profile-rating-card__score"
-            label="تقييمك"
-            variant="outOfTen"
-            value={rating.rating}
-          />
           {metadata ? <span className="profile-rating-card__type-meta">{metadata}</span> : null}
         </div>
       </div>
-      {rating.notes ? (
-        <p className="profile-private-note">
-          <span>ملاحظتك الخاصة</span>
-          <BidiText>{rating.notes}</BidiText>
-        </p>
-      ) : null}
-      <div className="actions">
-        <ButtonLink
-          href={`/places/${rating.place.id}/rate`}
-          onClick={rememberPrivateNote}
-          variant="secondary"
-        >
-          تعديل
-        </ButtonLink>
-      </div>
-    </article>
+      <RatingDisplay
+        className="profile-rating-card__score"
+        variant="outOfTen"
+        value={rating.rating}
+      />
+    </Link>
   );
 }
 
@@ -889,6 +830,10 @@ function profileStats(profile: Profile): ProfileStat[] {
   }
 
   return stats;
+}
+
+function latestProfileRatings(ratings: ProfileRating[]): ProfileRating[] {
+  return ratings.slice(0, PROFILE_RATING_PREVIEW_LIMIT);
 }
 
 function displayInitials(displayName: string): string {

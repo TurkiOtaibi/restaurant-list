@@ -47,9 +47,12 @@ test("profile renders identity header stats and primary sections from profile co
   await expect(page.getByLabel("التقييمات: 2")).toBeVisible();
   await expect(page.getByLabel("القوائم: 1")).toBeVisible();
   await expect(page.getByLabel("متوسط التقييم: 8.5/10")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 2, name: "الأماكن التي قيّمتها" })).toBeVisible();
-  await expect(page.getByRole("heading", { level: 2, name: "قوائمي" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "عرض القوائم" })).toHaveAttribute("href", "/lists");
+  await expect(page.getByRole("heading", { level: 2, name: "آخر الأماكن التي قيّمتها" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "عرض كل الأماكن التي قيّمتها" })).toBeVisible();
+  await expect(page.locator(".profile-rating-list").getByRole("link")).toHaveCount(2);
+  await expect(
+    page.locator(".profile-section-rows").getByRole("link", { name: /قوائمي/ })
+  ).toHaveAttribute("href", "/lists");
 
   await page.getByRole("button", { name: "إجراءات صفحتي" }).click();
   await expect(page.getByRole("menuitem", { name: "تعديل الملف الشخصي" })).toBeVisible();
@@ -78,7 +81,7 @@ test("profile shows a friendly empty ratings state", async ({ page }) => {
 
   await page.goto("/profile");
 
-  await expect(page.getByRole("heading", { level: 2, name: "الأماكن التي قيّمتها" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "آخر الأماكن التي قيّمتها" })).toBeVisible();
   await expect(page.getByText("لم تقيّم أي مكان بعد")).toBeVisible();
   await expect(page.getByRole("link", { name: "استكشف الأماكن" })).toHaveAttribute("href", "/places");
   await expect(page.getByLabel("التقييمات: 0")).toBeVisible();
@@ -141,6 +144,30 @@ test("profile favorites strip renders four manual favorites in order", async ({ 
   );
   await expect(favorites.getByRole("link").nth(1).locator(".ds-type-icon")).toBeVisible();
   await expect(favorites.getByText("9/10")).toBeVisible();
+});
+
+test("profile dashboard limits rated places preview to four rows without archive-only details", async ({
+  page
+}) => {
+  await mockProfileApi(page, {
+    ratings: [
+      { id: "r1", name: "مطعم أول", rating: 5, type: "restaurant" },
+      { id: "r2", name: "مطعم ثاني", rating: 6, type: "restaurant" },
+      { id: "r3", name: "مطعم ثالث", rating: 7, type: "restaurant" },
+      { id: "r4", name: "مطعم رابع", rating: 8, type: "restaurant" },
+      { id: "r5", name: "مطعم خامس", rating: 9, type: "restaurant" }
+    ]
+  });
+
+  await page.goto("/profile");
+
+  const preview = page.locator(".profile-rating-list");
+  await expect(preview.getByRole("link")).toHaveCount(4);
+  await expect(preview).toContainText("مطعم أول");
+  await expect(preview).not.toContainText("مطعم خامس");
+  await expect(preview).not.toContainText("ملاحظتك الخاصة");
+  await expect(preview).not.toContainText("تعديل");
+  await expect(page.getByRole("button", { name: "عرض كل الأماكن التي قيّمتها" })).toBeVisible();
 });
 
 test("profile favorites empty states distinguish rated and unrated profiles", async ({ page }) => {
