@@ -40,6 +40,7 @@ export type Place = {
     | "tea"
     | null;
   description: string | null;
+  imageUrl: string | null;
   createdByUserId: string;
   createdAt: string;
   updatedAt: string;
@@ -49,6 +50,7 @@ export type Place = {
   currentUserListIds: string[];
   currentUserListNames: string[];
   currentUserListCount: number;
+  currentUserIsCreator: boolean;
 };
 
 export type UserList = {
@@ -112,6 +114,7 @@ export type ProfileFavoritePlace = {
   name: string;
   type: Place["type"];
   subtype: Place["subtype"];
+  imageUrl: string | null;
   rating: number;
 };
 
@@ -306,7 +309,7 @@ export async function apiCollection<T>(
 async function performRequest(path: string, options: ApiRequestOptions): Promise<Response> {
   const headers = new Headers(options.headers);
 
-  if (options.body !== undefined && !headers.has("Content-Type")) {
+  if (options.body !== undefined && !headers.has("Content-Type") && !(options.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
 

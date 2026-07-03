@@ -8,7 +8,7 @@ import {
   Button,
   EmptyState,
   LoadingState,
-  PlaceTypeIcon,
+  PlaceImage,
   ResponsiveDialog,
   SearchField,
   StatusMessage
@@ -153,7 +153,7 @@ export function AddPlaceDialog({
 
               return (
                 <article className="place-save-dialog__list" key={place.id}>
-                  <PlaceTypeIcon type={place.type} />
+                  <PlaceImage imageUrl={place.imageUrl} type={place.type} />
                   <div>
                     <h3>
                       <BidiText>{place.name}</BidiText>
