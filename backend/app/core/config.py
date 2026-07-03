@@ -48,6 +48,15 @@ class Settings(BaseSettings):
     )
     cors_allow_origin_regex: str | None = Field(default=None, alias="CORS_ALLOW_ORIGIN_REGEX")
     redis_url: str | None = Field(default=None, alias="REDIS_URL")
+    storage_endpoint_url: str | None = Field(default=None, alias="STORAGE_ENDPOINT_URL")
+    storage_bucket: str | None = Field(default=None, alias="STORAGE_BUCKET")
+    storage_access_key_id: str | None = Field(default=None, alias="STORAGE_ACCESS_KEY_ID")
+    storage_secret_access_key: str | None = Field(default=None, alias="STORAGE_SECRET_ACCESS_KEY")
+    storage_public_base_url: str | None = Field(default=None, alias="STORAGE_PUBLIC_BASE_URL")
+    storage_local_dir: str = Field(
+        default=".local-storage/place-images",
+        alias="STORAGE_LOCAL_DIR",
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",

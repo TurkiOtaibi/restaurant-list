@@ -1,6 +1,6 @@
 from typing import Annotated, Literal, cast
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import internal_error, not_found
@@ -8,6 +8,7 @@ from app.core.schemas import CollectionResponse, collection_response
 from app.db.session import get_db
 from app.modules.auth.dependencies import get_current_user
 from app.modules.auth.models import User
+from app.modules.places.image_service import delete_place_image, upload_place_image
 from app.modules.places.schemas import (
     CAFE_SUBTYPES,
     RESTAURANT_SUBTYPES,
@@ -26,6 +27,7 @@ from app.modules.places.services import (
 router = APIRouter(prefix="/places", tags=["places"])
 CurrentUser = Annotated[User, Depends(get_current_user)]
 DatabaseSession = Annotated[AsyncSession, Depends(get_db)]
+PlaceImageUpload = Annotated[UploadFile, File(...)]
 PLACE_SUBTYPES_BY_TYPE: dict[PlaceType, set[str]] = {
     "cafe": CAFE_SUBTYPES,
     "ice_cream": set(),
@@ -94,6 +96,30 @@ async def create_place(
     if place_response is None:
         internal_error()
     return place_response
+
+
+@router.put("/{place_id}/image", response_model=PlaceResponse)
+async def upload_image(
+    place_id: str,
+    current_user: CurrentUser,
+    db: DatabaseSession,
+    file: PlaceImageUpload,
+) -> PlaceResponse:
+    return await upload_place_image(
+        db,
+        current_user=current_user,
+        file=file,
+        place_id=place_id,
+    )
+
+
+@router.delete("/{place_id}/image", response_model=PlaceResponse)
+async def delete_image(
+    place_id: str,
+    current_user: CurrentUser,
+    db: DatabaseSession,
+) -> PlaceResponse:
+    return await delete_place_image(db, current_user=current_user, place_id=place_id)
 
 
 def validate_place_filter(place_type: PlaceType | None, subtype: str | None) -> PlaceSubtype | None:
