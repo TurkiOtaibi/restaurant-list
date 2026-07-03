@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import not_found
 from app.db.session import get_db
 from app.modules.auth.dependencies import get_current_user
 from app.modules.auth.models import User
@@ -14,6 +15,7 @@ from app.modules.lists.services import (
     get_wishlist_for_user,
     list_detail_response,
 )
+from app.modules.places.models import Place
 
 router = APIRouter(prefix="/wishlist", tags=["wishlist"])
 CurrentUser = Annotated[User, Depends(get_current_user)]
@@ -27,6 +29,9 @@ async def add_wishlist_place(
     db: DatabaseSession,
 ) -> ListDetailResponse:
     current_user_id = current_user.id
+    if await db.get(Place, payload.place_id) is None:
+        not_found("Place")
+
     wishlist = await get_or_create_wishlist_for_user(db, user_id=current_user_id)
     await add_place_to_list(
         db,

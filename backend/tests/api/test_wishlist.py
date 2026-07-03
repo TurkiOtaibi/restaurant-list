@@ -101,11 +101,16 @@ async def test_wishlist_validation_and_authentication(client: AsyncClient) -> No
         json={"placeId": "missing-place"},
         headers=auth_header(token),
     )
+    profile_after_unknown_place = await client.get("/api/v1/profile", headers=auth_header(token))
+    lists_after_unknown_place = await client.get("/api/v1/lists", headers=auth_header(token))
 
     assert unauthenticated.status_code == 401
     assert unauthenticated.json()["error"]["code"] == "UNAUTHENTICATED"
     assert unknown_place.status_code == 404
     assert unknown_place.json()["error"]["code"] == "PLACE_NOT_FOUND"
+    assert profile_after_unknown_place.status_code == 200
+    assert profile_after_unknown_place.json()["wishlist"] is None
+    assert collection_data(lists_after_unknown_place) == []
 
 
 async def test_system_list_cannot_be_renamed_or_deleted_but_visibility_can_change(
