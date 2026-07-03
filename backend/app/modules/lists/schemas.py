@@ -52,6 +52,7 @@ class ListResponse(BaseModel):
     id: str
     name: str
     visibility: ListVisibility
+    is_system: bool = Field(default=False, serialization_alias="isSystem")
     place_count: int = Field(default=0, serialization_alias="placeCount")
     created_at: datetime = Field(serialization_alias="createdAt")
     updated_at: datetime = Field(serialization_alias="updatedAt")

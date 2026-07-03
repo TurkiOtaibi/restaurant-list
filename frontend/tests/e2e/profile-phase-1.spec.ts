@@ -325,7 +325,8 @@ function profilePayload({
     ratedRestaurantCount: userRatings.filter((rating) => rating.place.type === "restaurant").length,
     ratingsCount: userRatings.length,
     ratingsCreatedCount: userRatings.length,
-    userRatings
+    userRatings,
+    wishlist: null
   };
 }
 

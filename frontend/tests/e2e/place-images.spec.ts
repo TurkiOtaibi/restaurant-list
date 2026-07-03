@@ -113,6 +113,14 @@ async function mockPlaceDetailApi(
       });
     }
 
+    if (path === "/profile") {
+      return route.fulfill({
+        body: JSON.stringify(profilePayload()),
+        contentType: "application/json",
+        status: 200
+      });
+    }
+
     if (path === "/places/image-place/image" && request.method() === "PUT") {
       currentPlace = placePayload({ creator: true, imageUrl: `${imageDataUrl}#uploaded-place` });
       return route.fulfill({
@@ -193,7 +201,8 @@ function profilePayload() {
         rating: 8.5,
         updatedAt: now
       }
-    ]
+    ],
+    wishlist: null
   };
 }
 

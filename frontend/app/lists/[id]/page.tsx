@@ -157,6 +157,20 @@ export default function ListDetailPage() {
   }
 
   const placeCount = list?.items.length ?? 0;
+  const listMenuItems = list
+    ? [
+        { label: "تعديل", onSelect: () => setEditListOpen(true) },
+        ...(list.isSystem
+          ? []
+          : [
+              {
+                destructive: true,
+                label: "حذف",
+                onSelect: () => setDeleteListOpen(true)
+              }
+            ])
+      ]
+    : [];
 
   return (
     <main className="content list-detail-page">
@@ -168,6 +182,7 @@ export default function ListDetailPage() {
           {list ? (
             <div className="collection-topbar__meta">
               <Badge variant={list.visibility}>{listVisibilityLabel(list.visibility)}</Badge>
+              {list.isSystem ? <Badge>نظامية</Badge> : null}
               <span>{placeCountLabel(placeCount)}</span>
             </div>
           ) : null}
@@ -184,10 +199,7 @@ export default function ListDetailPage() {
               <AddIcon />
             </Button>
             <ActionMenu
-              items={[
-                { label: "تعديل", onSelect: () => setEditListOpen(true) },
-                { destructive: true, label: "حذف", onSelect: () => setDeleteListOpen(true) }
-              ]}
+              items={listMenuItems}
               label="إجراءات القائمة"
             />
           </div>

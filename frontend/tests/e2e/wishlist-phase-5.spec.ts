@@ -1,0 +1,246 @@
+import { expect, test, type Page } from "@playwright/test";
+
+const now = new Date().toISOString();
+const wishlistId = "wishlist-list";
+const placeId = "wishlist-place";
+
+test("place detail toggles wishlist membership in place", async ({ page }) => {
+  await mockWishlistPlaceDetailApi(page);
+
+  await page.goto(`/places/${placeId}`);
+
+  await expect(page.getByRole("button", { name: "أضف إلى رغباتي" })).toBeVisible();
+  await page.getByRole("button", { name: "أضف إلى رغباتي" }).click();
+  await expect(page.getByRole("button", { name: "في رغباتي" })).toBeVisible();
+  await expect(page.getByRole("status")).toBeVisible();
+
+  await page.getByRole("button", { name: "في رغباتي" }).click();
+  await expect(page.getByRole("button", { name: "أضف إلى رغباتي" })).toBeVisible();
+  await expect(page.getByRole("status")).toBeVisible();
+});
+
+test("profile renders wishlist empty and populated rows", async ({ page }) => {
+  await mockProfileApi(page, { wishlist: null });
+
+  await page.goto("/profile");
+
+  await expect(page.getByRole("heading", { name: "رغباتي" })).toBeVisible();
+  await expect(page.getByText("أضف أماكن تود زيارتها من صفحة المكان.")).toBeVisible();
+  await expect(page.locator(`a[href="/lists/${wishlistId}"]`)).toHaveCount(0);
+  await expect(page.locator("body")).not.toContainText("الإعجابات");
+  await expect(page.locator("body")).not.toContainText("جربته");
+
+  await mockProfileApi(page, { wishlist: { id: wishlistId, placeCount: 2 } });
+  await page.goto("/profile");
+
+  await expect(page.getByRole("heading", { name: "رغباتي" })).toBeVisible();
+  await expect(page.locator(`a[href="/lists/${wishlistId}"]`)).toBeVisible();
+});
+
+test("system list detail hides rename delete affordances and keeps visibility editing", async ({
+  page
+}) => {
+  await mockSystemListDetailApi(page);
+
+  await page.goto(`/lists/${wishlistId}`);
+
+  await expect(page.locator(".collection-topbar__meta .ds-badge")).toHaveCount(2);
+  await page.locator(".list-detail-header__actions .ds-action-menu__trigger").click();
+  await expect(page.getByRole("menuitem")).toHaveCount(1);
+
+  await page.getByRole("menuitem").first().click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.locator("#edit-list-name")).toHaveCount(0);
+  await expect(page.locator('input[name="edit-list-visibility"][value="public"]')).toBeVisible();
+});
+
+async function installSession(page: Page) {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("restaurantWishlist.hasSession", "1");
+  });
+}
+
+async function mockWishlistPlaceDetailApi(page: Page) {
+  await installSession(page);
+  let inWishlist = false;
+
+  await page.route("**/api/v1/**", async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname.replace("/api/v1", "");
+
+    if (path === "/auth/refresh") {
+      return route.fulfill({
+        body: JSON.stringify({ accessToken: "mock-access-token" }),
+        contentType: "application/json",
+        status: 200
+      });
+    }
+
+    if (path === `/places/${placeId}`) {
+      return route.fulfill({
+        body: JSON.stringify(placePayload(inWishlist)),
+        contentType: "application/json",
+        status: 200
+      });
+    }
+
+    if (path === "/profile") {
+      return route.fulfill({
+        body: JSON.stringify(profilePayload({ wishlist: inWishlist ? { id: wishlistId, placeCount: 1 } : null })),
+        contentType: "application/json",
+        status: 200
+      });
+    }
+
+    if (path === "/wishlist/places" && request.method() === "POST") {
+      inWishlist = true;
+      return route.fulfill({
+        body: JSON.stringify(wishlistListPayload(true)),
+        contentType: "application/json",
+        status: 200
+      });
+    }
+
+    if (path === `/wishlist/places/${placeId}` && request.method() === "DELETE") {
+      inWishlist = false;
+      return route.fulfill({
+        body: JSON.stringify(wishlistListPayload(false)),
+        contentType: "application/json",
+        status: 200
+      });
+    }
+
+    return route.fulfill({
+      body: JSON.stringify({ detail: { code: "MOCK_NOT_FOUND", message: `${request.method()} ${path}` } }),
+      contentType: "application/json",
+      status: 404
+    });
+  });
+}
+
+async function mockProfileApi(
+  page: Page,
+  { wishlist }: { wishlist: { id: string; placeCount: number } | null }
+) {
+  await installSession(page);
+  await page.unroute("**/api/v1/**").catch(() => undefined);
+  await page.route("**/api/v1/**", async (route) => {
+    const path = new URL(route.request().url()).pathname.replace("/api/v1", "");
+    if (path === "/auth/refresh") {
+      return route.fulfill({
+        body: JSON.stringify({ accessToken: "mock-access-token" }),
+        contentType: "application/json",
+        status: 200
+      });
+    }
+    if (path === "/profile") {
+      return route.fulfill({
+        body: JSON.stringify(profilePayload({ wishlist })),
+        contentType: "application/json",
+        status: 200
+      });
+    }
+    return route.fulfill({
+      body: JSON.stringify({ detail: { code: "MOCK_NOT_FOUND", message: path } }),
+      contentType: "application/json",
+      status: 404
+    });
+  });
+}
+
+async function mockSystemListDetailApi(page: Page) {
+  await installSession(page);
+  await page.route("**/api/v1/**", async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname.replace("/api/v1", "");
+
+    if (path === "/auth/refresh") {
+      return route.fulfill({
+        body: JSON.stringify({ accessToken: "mock-access-token" }),
+        contentType: "application/json",
+        status: 200
+      });
+    }
+
+    if (path === `/lists/${wishlistId}`) {
+      return route.fulfill({
+        body: JSON.stringify(wishlistListPayload(true)),
+        contentType: "application/json",
+        status: 200
+      });
+    }
+
+    return route.fulfill({
+      body: JSON.stringify({ detail: { code: "MOCK_NOT_FOUND", message: `${request.method()} ${path}` } }),
+      contentType: "application/json",
+      status: 404
+    });
+  });
+}
+
+function profilePayload({
+  wishlist
+}: {
+  wishlist: { id: string; placeCount: number } | null;
+}) {
+  return {
+    averageRating: null,
+    bio: null,
+    displayName: "مستخدم سجل",
+    favoritePlaces: [],
+    listCount: wishlist ? 1 : 0,
+    listsCount: wishlist ? 1 : 0,
+    publicListsSummary: [],
+    ratedCafeCount: 0,
+    ratedIceCreamCount: 0,
+    ratedRestaurantCount: 0,
+    ratingsCount: 0,
+    ratingsCreatedCount: 0,
+    userRatings: [],
+    wishlist
+  };
+}
+
+function placePayload(inWishlist: boolean) {
+  return {
+    averageRating: null,
+    createdAt: now,
+    createdByUserId: "owner",
+    currentUserIsCreator: false,
+    currentUserListCount: inWishlist ? 1 : 0,
+    currentUserListIds: inWishlist ? [wishlistId] : [],
+    currentUserListNames: inWishlist ? ["رغباتي"] : [],
+    currentUserRating: null,
+    description: null,
+    id: placeId,
+    imageUrl: null,
+    name: "مطعم الرغبات",
+    ratingCount: 0,
+    subtype: "burger",
+    type: "restaurant",
+    updatedAt: now
+  };
+}
+
+function wishlistListPayload(withPlace: boolean) {
+  return {
+    createdAt: now,
+    id: wishlistId,
+    isSystem: true,
+    items: withPlace
+      ? [
+          {
+            createdAt: now,
+            id: "wishlist-item",
+            listId: wishlistId,
+            place: placePayload(true),
+            placeId
+          }
+        ]
+      : [],
+    name: "رغباتي",
+    placeCount: withPlace ? 1 : 0,
+    updatedAt: now,
+    visibility: "private"
+  };
+}

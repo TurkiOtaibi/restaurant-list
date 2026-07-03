@@ -18,6 +18,7 @@ from app.api.lists import router as lists_router
 from app.api.places import router as places_router
 from app.api.profile import router as profile_router
 from app.api.ratings import router as ratings_router
+from app.api.wishlist import router as wishlist_router
 from app.core.config import get_settings
 
 request_logger = logging.getLogger("app.request")
@@ -154,6 +155,7 @@ def create_app() -> FastAPI:
     app.include_router(lists_router, prefix="/api/v1")
     app.include_router(ratings_router, prefix="/api/v1")
     app.include_router(profile_router, prefix="/api/v1")
+    app.include_router(wishlist_router, prefix="/api/v1")
 
     return app
 

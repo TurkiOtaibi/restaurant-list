@@ -11,6 +11,7 @@ export {
   AddIcon,
   ArchiveIcon,
   ArrowLeftIcon,
+  BookmarkIcon,
   CafeIcon,
   CheckIcon,
   ClearIcon,

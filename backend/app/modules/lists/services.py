@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import Select
 
-from app.core.errors import internal_error, not_found
+from app.core.errors import api_error, internal_error, not_found
 from app.modules.auth.models import User
 from app.modules.lists.models import ListItem, UserList
 from app.modules.lists.schemas import (
@@ -43,9 +43,14 @@ class _ListResponseFields(TypedDict):
     id: str
     name: str
     visibility: ListVisibility
+    is_system: bool
     place_count: int
     created_at: datetime
     updated_at: datetime
+
+
+WISHLIST_NAME = "رغباتي"
+SYSTEM_LIST_PROTECTED_STATUS = 422
 
 
 async def get_owned_list(db: AsyncSession, *, list_id: str, user_id: str) -> UserList:
@@ -66,6 +71,40 @@ async def get_public_user_list(db: AsyncSession, *, list_id: str) -> UserList:
     )
     if result is None:
         not_found("List")
+    return result
+
+
+async def get_wishlist_for_user(db: AsyncSession, *, user_id: str) -> UserList:
+    user_list = await _get_system_list_for_user(db, user_id=user_id)
+    if user_list is None:
+        not_found("Wishlist")
+    return user_list
+
+
+async def get_or_create_wishlist_for_user(db: AsyncSession, *, user_id: str) -> UserList:
+    existing = await _get_system_list_for_user(db, user_id=user_id)
+    if existing is not None:
+        return existing
+
+    user_list = UserList(
+        user_id=user_id,
+        name=WISHLIST_NAME,
+        visibility="private",
+        is_system=True,
+    )
+    db.add(user_list)
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        existing_after_race = await _get_system_list_for_user(db, user_id=user_id)
+        if existing_after_race is not None:
+            return existing_after_race
+        internal_error()
+
+    result = await _get_system_list_for_user(db, user_id=user_id)
+    if result is None:
+        internal_error()
     return result
 
 
@@ -137,6 +176,7 @@ async def update_owned_list_name(
     user_id: str,
 ) -> ListResponse:
     user_list = await get_owned_list(db, list_id=list_id, user_id=user_id)
+    _ensure_not_system_list(user_list)
     user_list.name = payload.name.strip()
     await db.commit()
     await db.refresh(user_list)
@@ -164,6 +204,7 @@ async def delete_owned_list(
     user_id: str,
 ) -> None:
     user_list = await get_owned_list(db, list_id=list_id, user_id=user_id)
+    _ensure_not_system_list(user_list)
     await db.delete(user_list)
     await db.commit()
 
@@ -192,10 +233,24 @@ class _ListSummaryRows:
 
 
 def _list_detail_statement() -> Select[tuple[UserList]]:
-    return select(UserList).options(
-        selectinload(UserList.user),
-        selectinload(UserList.items).selectinload(ListItem.place),
+    return (
+        select(UserList)
+        .options(
+            selectinload(UserList.user),
+            selectinload(UserList.items).selectinload(ListItem.place),
+        )
+        .execution_options(populate_existing=True)
     )
+
+
+async def _get_system_list_for_user(db: AsyncSession, *, user_id: str) -> UserList | None:
+    result: UserList | None = await db.scalar(
+        _list_detail_statement().where(
+            UserList.user_id == user_id,
+            UserList.is_system.is_(True),
+        )
+    )
+    return result
 
 
 async def _list_summary_rows(
@@ -244,6 +299,7 @@ async def list_detail_response(
         id=user_list.id,
         name=user_list.name,
         visibility=cast(ListVisibility, user_list.visibility),
+        is_system=user_list.is_system,
         place_count=len(user_list.items),
         created_at=user_list.created_at,
         updated_at=user_list.updated_at,
@@ -266,6 +322,7 @@ async def public_list_detail_response(
         id=user_list.id,
         name=user_list.name,
         visibility=cast(ListVisibility, user_list.visibility),
+        is_system=user_list.is_system,
         owner_display_name=user_list.user.display_name,
         place_count=len(user_list.items),
         created_at=user_list.created_at,
@@ -375,7 +432,19 @@ def _list_response_fields(user_list: UserList, place_count: int) -> _ListRespons
         "id": user_list.id,
         "name": user_list.name,
         "visibility": cast(ListVisibility, user_list.visibility),
+        "is_system": user_list.is_system,
         "place_count": place_count,
         "created_at": user_list.created_at,
         "updated_at": user_list.updated_at,
     }
+
+
+def _ensure_not_system_list(user_list: UserList) -> None:
+    if not user_list.is_system:
+        return
+
+    api_error(
+        SYSTEM_LIST_PROTECTED_STATUS,
+        "SYSTEM_LIST_PROTECTED",
+        "System lists cannot be renamed or deleted.",
+    )

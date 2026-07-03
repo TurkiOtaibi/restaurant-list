@@ -34,7 +34,7 @@ import {
   logout
 } from "@/lib/api";
 import { loginHrefForReturn } from "@/lib/authReturn";
-import { formatNumber, formatOutOfTen } from "@/lib/numerals";
+import { formatNumber, formatOutOfTen, placeCountLabel } from "@/lib/numerals";
 
 type ProfileStat = {
   ariaLabel: string;
@@ -176,6 +176,7 @@ export function ProfileArchivePage() {
               </ButtonLink>
             </div>
           </section>
+          <ProfileWishlistSection profile={profile} />
           <EditProfileDialog
             onClose={() => setEditOpen(false)}
             onUpdated={(updatedProfile) => {
@@ -190,6 +191,32 @@ export function ProfileArchivePage() {
     </main>
   );
 }
+
+function ProfileWishlistSection({ profile }: { profile: Profile }) {
+  const wishlist = profile.wishlist;
+  const hasWishlistItems = Boolean(wishlist && wishlist.placeCount > 0);
+
+  return (
+    <section className="profile-section" aria-labelledby="profile-wishlist-title">
+      <div className="profile-section-link">
+        <div>
+          <h2 id="profile-wishlist-title">رغباتي</h2>
+          {hasWishlistItems && wishlist ? (
+            <p className="muted">{placeCountLabel(wishlist.placeCount)}</p>
+          ) : (
+            <p className="muted">أضف أماكن تود زيارتها من صفحة المكان.</p>
+          )}
+        </div>
+        {hasWishlistItems && wishlist ? (
+          <ButtonLink href={`/lists/${wishlist.id}`} variant="secondary">
+            عرض رغباتي
+          </ButtonLink>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 
 function ProfileHeader({
   canLogout,

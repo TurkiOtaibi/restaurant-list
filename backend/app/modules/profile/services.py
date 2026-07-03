@@ -18,6 +18,7 @@ from app.modules.profile.schemas import (
     ProfileRatingResponse,
     ProfileResponse,
     ProfileUpdateRequest,
+    ProfileWishlistResponse,
 )
 from app.modules.ratings.models import Rating
 
@@ -41,6 +42,7 @@ async def get_profile_for_user(db: AsyncSession, user: User) -> ProfileResponse:
     ratings = await _ratings_for_user(db, user)
     user_ratings = await _profile_rating_responses(db, user, ratings)
     favorite_places = await _favorite_place_responses(db, user)
+    wishlist = await _wishlist_summary_for_user(db, user)
     public_lists_summary = await _public_lists_summary_for_user(db, user)
 
     return _profile_response(
@@ -50,6 +52,7 @@ async def get_profile_for_user(db: AsyncSession, user: User) -> ProfileResponse:
         public_lists_summary=public_lists_summary,
         user_ratings=user_ratings,
         user=user,
+        wishlist=wishlist,
     )
 
 
@@ -176,6 +179,30 @@ async def _favorite_place_responses(
     ]
 
 
+async def _wishlist_summary_for_user(
+    db: AsyncSession,
+    user: User,
+) -> ProfileWishlistResponse | None:
+    item_count = (
+        select(func.count(ListItem.id))
+        .where(ListItem.list_id == UserList.id)
+        .correlate(UserList)
+        .scalar_subquery()
+    )
+    row = await db.execute(
+        select(UserList.id, item_count.label("place_count")).where(
+            UserList.user_id == user.id,
+            UserList.is_system.is_(True),
+        )
+    )
+    result = row.one_or_none()
+    if result is None:
+        return None
+
+    list_id, place_count = result
+    return ProfileWishlistResponse(id=list_id, place_count=int(place_count))
+
+
 async def _validate_favorite_place_ids(
     db: AsyncSession,
     user: User,
@@ -230,6 +257,7 @@ def _profile_response(
     public_lists_summary: list[ProfilePublicListSummaryResponse],
     user_ratings: list[ProfileRatingResponse],
     user: User,
+    wishlist: ProfileWishlistResponse | None,
 ) -> ProfileResponse:
 
     return ProfileResponse(
@@ -244,6 +272,7 @@ def _profile_response(
         ratings_count=counts.ratings_created_count,
         ratings_created_count=counts.ratings_created_count,
         favorite_places=favorite_places,
+        wishlist=wishlist,
         user_ratings=user_ratings,
         public_lists_summary=public_lists_summary,
     )
