@@ -87,6 +87,7 @@ const lists = [
   {
     createdAt: now,
     id: "list-pop",
+    isSystem: false,
     name: "برجر الرياض طويل الاسم",
     ownerDisplayName: "تركي",
     placeCount: 5,
@@ -97,6 +98,7 @@ const lists = [
   {
     createdAt: now,
     id: "list-empty",
+    isSystem: false,
     name: "قائمة فارغة",
     ownerDisplayName: "تركي",
     placeCount: 0,
@@ -107,6 +109,7 @@ const lists = [
   {
     createdAt: now,
     id: "list-en",
+    isSystem: false,
     name: "The Original Cheesecake Factory Favorites",
     ownerDisplayName: "Turki",
     placeCount: 12,
