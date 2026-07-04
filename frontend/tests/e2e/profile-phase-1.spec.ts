@@ -171,16 +171,34 @@ test("profile favorites picker searches limits reorders and updates the strip", 
   await page.getByRole("button", { name: "أضف مفضلتك الأولى" }).click();
   await expect(page.getByRole("dialog", { name: "تعديل المفضلة" })).toBeVisible();
   await page.getByLabel("البحث في الأماكن التي قيّمتها").fill("خامس");
-  await expect(page.getByRole("button", { name: /مفضل خامس/ })).toBeVisible();
-  await expect(page.getByRole("button", { name: /مفضل أول/ })).toHaveCount(0);
+  await expect(page.getByRole("checkbox", { name: /مفضل خامس/ })).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: /مفضل أول/ })).toHaveCount(0);
 
   await page.getByLabel("البحث في الأماكن التي قيّمتها").fill("");
-  for (const name of ["مفضل أول", "مفضل ثاني", "مفضل ثالث", "مفضل رابع"]) {
-    await page.getByRole("button", { name: new RegExp(name) }).click();
+  const firstFavorite = page.getByRole("checkbox", { name: /مفضل أول/ });
+  await expect(firstFavorite).toHaveAttribute("aria-checked", "false");
+  await firstFavorite.focus();
+  await page.keyboard.press("Space");
+  await expect(firstFavorite).toHaveAttribute("aria-checked", "true");
+
+  const secondFavorite = page.getByRole("checkbox", { name: /مفضل ثاني/ });
+  await secondFavorite.click();
+  await expect(secondFavorite).toHaveAttribute("aria-checked", "true");
+  await secondFavorite.click();
+  await expect(secondFavorite).toHaveAttribute("aria-checked", "false");
+  await secondFavorite.click();
+  await expect(secondFavorite).toHaveAttribute("aria-checked", "true");
+
+  for (const name of ["مفضل ثالث", "مفضل رابع"]) {
+    await page.getByRole("checkbox", { name: new RegExp(name) }).click();
   }
   await expect(page.getByText("اخترت 4 من 4")).toBeVisible();
-  await page.getByRole("button", { name: /مفضل خامس/ }).click();
+  await page.getByRole("checkbox", { name: /مفضل خامس/ }).click();
   await expect(page.getByText("يمكنك اختيار ٤ أماكن كحد أقصى.")).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: /مفضل خامس/ })).toHaveAttribute(
+    "aria-checked",
+    "false"
+  );
 
   await page.getByRole("button", { name: /ارفع مفضل رابع/ }).click();
   await page.getByRole("button", { name: "حفظ المفضلة" }).click();

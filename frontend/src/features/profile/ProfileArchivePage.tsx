@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Checkbox } from "@base-ui/react/checkbox";
 import type { CSSProperties, FormEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -11,6 +12,7 @@ import {
   BidiText,
   Button,
   ButtonLink,
+  CheckIcon,
   EmptyState,
   LoadingState,
   MoreVerticalIcon,
@@ -561,12 +563,17 @@ function EditFavoritesDialog({
     setSaving(false);
   }, [favorites, open]);
 
-  function toggleFavorite(placeId: string) {
+  function setFavoriteSelected(placeId: string, checked: boolean) {
     setServerError("");
     setSelectedIds((current) => {
-      if (current.includes(placeId)) {
+      if (!checked) {
         setMessage("");
         return current.filter((id) => id !== placeId);
+      }
+
+      if (current.includes(placeId)) {
+        setMessage("");
+        return current;
       }
 
       if (current.length >= 4) {
@@ -670,17 +677,16 @@ function EditFavoritesDialog({
         <div className="profile-favorite-picker-list" aria-label="الأماكن التي قيّمتها">
           {filteredCandidates.map((candidate) => {
             const selected = selectedIds.includes(candidate.id);
+            const checkboxLabelId = `favorite-checkbox-label-${candidate.id}`;
             return (
-              <button
-                aria-pressed={selected}
+              <label
                 className="profile-favorite-picker-item"
+                data-selected={selected ? "true" : undefined}
                 key={candidate.id}
-                onClick={() => toggleFavorite(candidate.id)}
-                type="button"
               >
                 <PlaceImage imageUrl={candidate.imageUrl} type={candidate.type} />
                 <span className="profile-favorite-picker-item__main">
-                  <span className="profile-favorite-picker-item__name">
+                  <span className="profile-favorite-picker-item__name" id={checkboxLabelId}>
                     <BidiText>{candidate.name}</BidiText>
                   </span>
                   <RatingDisplay
@@ -690,10 +696,25 @@ function EditFavoritesDialog({
                     value={candidate.rating}
                   />
                 </span>
-                <span className="profile-favorite-picker-item__state">
-                  {selected ? "مختار" : "اختيار"}
+                <span className="profile-favorite-picker-item__selection">
+                  <span className="profile-favorite-picker-item__state">
+                    {selected ? "مختار" : "اختيار"}
+                  </span>
+                  <Checkbox.Root
+                    aria-labelledby={checkboxLabelId}
+                    checked={selected}
+                    className="profile-favorite-picker-checkbox"
+                    onCheckedChange={(checked) => setFavoriteSelected(candidate.id, checked)}
+                  >
+                    <Checkbox.Indicator
+                      className="profile-favorite-picker-checkbox__indicator"
+                      keepMounted
+                    >
+                      <CheckIcon />
+                    </Checkbox.Indicator>
+                  </Checkbox.Root>
                 </span>
-              </button>
+              </label>
             );
           })}
         </div>
