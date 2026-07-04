@@ -50,6 +50,8 @@ html {
 }
 
 body {
+  position: relative;
+  isolation: isolate;
   width: 100%;
   min-height: 100vh;
   min-height: 100svh;
@@ -2264,6 +2266,7 @@ textarea:disabled {
 }
 
 .profile-stat {
+  position: relative;
   display: grid;
   gap: var(--space-1);
   min-inline-size: 0;
@@ -2290,6 +2293,74 @@ textarea:disabled {
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.ds-tooltip__trigger {
+  position: absolute;
+  inset-block-start: var(--space-2);
+  inset-inline-end: var(--space-2);
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-accent);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: help;
+}
+
+.ds-tooltip__trigger::before {
+  position: absolute;
+  z-index: -1;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(41, 203, 131, 0.26);
+  border-radius: 999px;
+  background: rgba(24, 49, 38, 0.72);
+  content: "";
+}
+
+.ds-tooltip__trigger:hover,
+.ds-tooltip__trigger:focus-visible {
+  color: var(--color-text);
+}
+
+.ds-tooltip__trigger:hover::before,
+.ds-tooltip__trigger:focus-visible::before {
+  border-color: rgba(41, 203, 131, 0.62);
+  background: rgba(41, 203, 131, 0.16);
+}
+
+.ds-tooltip__positioner {
+  z-index: 80;
+}
+
+.ds-tooltip__popup {
+  position: relative;
+  z-index: 100;
+  max-inline-size: min(260px, calc(100vw - 32px));
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-premium-border);
+  border-radius: var(--radius-sm);
+  background: rgba(9, 14, 22, 0.98);
+  box-shadow: var(--shadow-elevated);
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: start;
+}
+
+.ds-tooltip__arrow {
+  display: flex;
+  width: 10px;
+  height: 10px;
+  color: rgba(9, 14, 22, 0.98);
+  transform: rotate(45deg);
 }
 
 .profile-section-link {
