@@ -14,3 +14,17 @@ test("frontend health endpoint returns ok", async ({ request }) => {
     service: "sijil-frontend"
   });
 });
+
+test("Base UI switch pilot has an accessible name and keyboard toggle", async ({ page }) => {
+  await page.goto("/health");
+
+  const switchControl = page.getByRole("switch", { name: "تفعيل المعاينة" });
+  await expect(switchControl).toBeVisible();
+  await expect(switchControl).toHaveAttribute("aria-checked", "false");
+
+  await switchControl.focus();
+  await page.keyboard.press("Space");
+
+  await expect(switchControl).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByText("المعاينة مفعلة محليًا فقط.")).toBeVisible();
+});
