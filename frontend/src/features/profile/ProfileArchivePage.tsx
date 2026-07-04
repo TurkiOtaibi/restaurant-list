@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   ActionMenu,
+  BaseTooltip,
   BidiText,
   Button,
   ButtonLink,
@@ -38,6 +39,7 @@ import { formatNumber, formatOutOfTen, placeCountLabel } from "@/lib/numerals";
 
 type ProfileStat = {
   ariaLabel: string;
+  help?: string;
   label: string;
   value: string;
 };
@@ -717,6 +719,11 @@ function ProfileStats({ stats }: { stats: ProfileStat[] }) {
             <NumberText>{stat.value}</NumberText>
           </span>
           <span className="profile-stat__label">{stat.label}</span>
+          {stat.help ? (
+            <BaseTooltip label={stat.help}>
+              <span aria-hidden="true">؟</span>
+            </BaseTooltip>
+          ) : null}
         </div>
       ))}
     </section>
@@ -871,6 +878,7 @@ function profileStats(profile: Profile): ProfileStat[] {
     {
       ariaLabel: `التقييمات: ${formatNumber(ratingsCount)}`,
       label: "التقييمات",
+      help: "عدد الأماكن التي أضفت لها تقييمًا في صفحتك.",
       value: formatNumber(ratingsCount)
     },
     {

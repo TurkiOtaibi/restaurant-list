@@ -1,4 +1,5 @@
 export { ActionMenu } from "./ActionMenu";
+export { BaseTooltip } from "./BaseTooltip";
 export { Badge } from "./Badge";
 export { BidiText } from "./BidiText";
 export { Button, ButtonLink } from "./Button";
