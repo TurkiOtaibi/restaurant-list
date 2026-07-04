@@ -2,16 +2,16 @@
 
 ## Executive Summary
 
-Phase 2 of the UI stack migration added a minimal shadcn/ui pilot to the existing Next.js, React, TypeScript, and Tailwind v4 frontend.
+Phase 2 of the UI stack migration adds a minimal shadcn/ui infrastructure pilot to the existing Next.js, React, TypeScript, and Tailwind v4 frontend.
 
-The pilot is intentionally narrow:
+The approved product direction is:
 
-- shadcn/ui configuration was added.
-- One shadcn component was added: `Separator`.
-- The component is used once on `/profile` as a decorative, non-interactive section divider.
-- No Base UI package was installed.
-- No dialog, sheet, menu, popover, select, command, form, navigation, ActionMenu, or ResponsiveDialog migration was performed.
-- No backend, API, auth, database, route, or product behavior was changed.
+- Preferred: shadcn + Base UI
+- Not preferred: shadcn + Radix
+
+The initial `Separator` pilot pulled in `radix-ui`, so it was removed. This revised pilot keeps only shadcn configuration and the standard class-name utility needed for future shadcn components.
+
+No shadcn component is currently rendered in the app.
 
 ## Current Stack Verified
 
@@ -23,15 +23,22 @@ The pilot is intentionally narrow:
 
 ## What Was Installed
 
-Runtime dependencies added:
+Runtime dependencies retained:
 
 - `clsx`
 - `tailwind-merge`
+
+These are justified by the shadcn-compatible `cn` utility in `frontend/src/lib/utils.ts`.
+
+Removed:
+
 - `radix-ui`
 
-No Base UI dependency was added.
+Not installed:
 
-The generated default shadcn Button and layout/font changes from the preset were reverted because this pilot must not migrate existing primitives or alter typography/layout.
+- `@base-ui-components/react`
+- shadcn CLI package as a runtime dependency
+- Base UI component packages
 
 ## Files Changed
 
@@ -39,47 +46,55 @@ The generated default shadcn Button and layout/font changes from the preset were
 - `frontend/package.json`
 - `frontend/package-lock.json`
 - `frontend/src/lib/utils.ts`
-- `frontend/src/components/ui/separator.tsx`
-- `frontend/src/features/profile/ProfileArchivePage.tsx`
 - `SHADCN_PILOT_REPORT.md`
+
+## shadcn Configuration
+
+`frontend/components.json` is present and configured for the Base UI direction with:
+
+- `style: "base-nova"`
+- `rtl: true`
+- aliases matching the existing `@/*` import setup
+
+This keeps the project ready for a future Base UI-backed shadcn component pilot without committing Radix.
 
 ## Component Added
 
-Component:
+None.
 
-- `Separator`
+The Radix-backed `Separator` component was removed because the preferred stack is shadcn + Base UI and Radix is not approved for this pilot.
 
-Location:
+## UI Usage
 
-- `frontend/src/components/ui/separator.tsx`
+None.
 
-The component is Radix-backed through the shadcn CLI's Radix base selection. It was customized to use the app's existing premium border token via `var(--color-premium-border)` so it does not require global shadcn theme overrides.
+No application screen renders a shadcn component in this revised pilot.
 
-## Where It Was Used
+## Why This Is Low Risk
 
-Used once:
+- There is no visible UI change.
+- There is no component migration.
+- Existing CSS tokens and `globals.css` remain intact.
+- Existing custom components remain the active design system.
+- The change does not affect routing, auth, API calls, forms, menus, dialogs, or state transitions.
 
-- `frontend/src/features/profile/ProfileArchivePage.tsx`
-
-Placement:
-
-- Between `ProfileStats` and `FavoritePlacesStrip`.
-
-## Why This Location Is Low Risk
-
-- The separator is decorative and non-interactive.
-- It does not affect form submission, routing, auth, API calls, menus, dialogs, or state transitions.
-- It is inside an already-rendered profile section stack.
-- It uses existing dark theme tokens.
-- It preserves RTL because it has no directional content.
-
-## No Base UI Installed
+## No Base UI Installed Yet
 
 Confirmed:
 
 - `@base-ui-components/react` is not installed.
 - No Base UI component was added.
 - No Base UI migration was performed.
+
+This is intentional. A future Base UI pilot should add one approved Base UI-backed shadcn component after confirming the generated component does not introduce Radix.
+
+## No Radix Installed
+
+Confirmed:
+
+- `radix-ui` is not installed.
+- No Radix-backed shadcn component remains.
+- No application code imports Radix.
 
 ## Behavior Preservation
 
@@ -88,13 +103,14 @@ No product behavior changed.
 The pilot does not:
 
 - Replace existing design-system primitives.
+- Add visible UI.
 - Modify backend code.
 - Modify API contracts.
 - Modify auth/session behavior.
 - Modify database or migrations.
 - Change routes.
 - Change navigation.
-- Migrate existing Dialog, Sheet, Menu, ActionMenu, or ResponsiveDialog components.
+- Migrate Dialog, Sheet, Menu, ActionMenu, ResponsiveDialog, forms, or navigation.
 
 ## Quality Gate Results
 
@@ -107,22 +123,20 @@ Frontend:
 
 Backend:
 
-- `python -m ruff format --check .`: PASS, 79 files already formatted
+- `python -m ruff format --check .`: PASS
 - `python -m ruff check .`: PASS
-- `python -m mypy app tests`: PASS, no issues in 66 source files
-- `python -m pytest -q`: PASS, 78 passed, 1 skipped, 4 warnings
+- `python -m mypy app tests`: PASS
+- `python -m pytest -q`: PASS, 78 passed, 1 skipped
 
 ## Remaining Risks
 
-- shadcn's current CLI can generate extra default files depending on preset; future additions must inspect and revert unintended output before commit.
-- The current shadcn Separator uses the `radix-ui` package, which is acceptable for this pilot but should not be treated as a broader Radix migration.
-- Future shadcn components may require more global token integration; those should be piloted one at a time with screenshots.
+- shadcn CLI presets can generate extra files depending on selected base and preset; future additions must inspect and revert unintended output before commit.
+- Future Base UI-backed component additions may require `@base-ui-components/react`; that should be introduced only with an explicitly approved component pilot.
+- Future components may require token integration and screenshot evidence.
 
 ## Recommendation For Next shadcn Component
 
-Next low-risk candidate:
-
-- `Badge`, added as a standalone shadcn component only if it can coexist without replacing the existing app `Badge`.
+Next pilot should be a Base UI-backed, low-risk presentational component only after confirming the generated code and dependency tree do not include Radix.
 
 Avoid next:
 
