@@ -7,6 +7,7 @@ export function BaseSwitchPilot() {
   const [enabled, setEnabled] = useState(false);
   const labelId = useId();
   const descriptionId = useId();
+  const switchLabelId = useId();
 
   return (
     <section className="base-switch-pilot" aria-labelledby={labelId}>
@@ -15,9 +16,12 @@ export function BaseSwitchPilot() {
         <p id={descriptionId}>مفتاح تقني معزول لا يغير أي إعداد أو بيانات في التطبيق.</p>
       </div>
       <label className="base-switch-pilot__control">
-        <span className="base-switch-pilot__label">تفعيل المعاينة</span>
+        <span className="base-switch-pilot__label" id={switchLabelId}>
+          تفعيل المعاينة
+        </span>
         <Switch.Root
           aria-describedby={descriptionId}
+          aria-labelledby={switchLabelId}
           checked={enabled}
           className="base-switch-pilot__switch"
           onCheckedChange={setEnabled}

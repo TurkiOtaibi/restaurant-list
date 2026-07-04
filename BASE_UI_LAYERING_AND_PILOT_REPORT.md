@@ -54,7 +54,7 @@ Screenshot evidence:
 - `npm run lint`: PASS
 - `npm run typecheck`: PASS
 - `npm run build`: PASS
-- `npm run test:e2e`: PASS, 52 passed
+- `npm run test:e2e`: PASS, 53 passed
 - `python -m ruff format --check .`: PASS
 - `python -m ruff check .`: PASS
 - `python -m mypy app tests`: PASS
@@ -63,6 +63,10 @@ Screenshot evidence:
 ## Radix Introduced
 
 No.
+
+## Tests Added
+
+- `frontend/tests/e2e/health.spec.ts`: verifies the Base UI switch is discoverable by accessible role/name (`switch`, `تفعيل المعاينة`) and toggles with keyboard input.
 
 ## Known Risks
 

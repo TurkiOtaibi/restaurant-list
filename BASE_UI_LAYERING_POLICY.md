@@ -38,6 +38,15 @@ Use the existing app scale as the reference:
 - toasts/status prompts: above page content and non-blocking overlays
 - dialogs/bottom sheets: highest interactive blocking layer
 
+Current numeric references from `frontend/app/globals.css`:
+
+| Layer | Current value | Notes |
+| --- | ---: | --- |
+| local decorative/content layering | 1-20 | Used for local surfaces and content effects only. |
+| app chrome / fixed navigation | 40-60 | Fixed app controls must remain reachable above page content. |
+| tooltip positioner / lightweight overlay positioning | 80 | Tooltip positioning layer. |
+| prompt/dialog/active overlay content | 90-100 | Highest current interactive overlay range. |
+
 Future migrations must document any new z-index value and why the existing scale was insufficient. Arbitrary z-index escalation is not allowed.
 
 ## 5. Bottom Navigation Collision Rules
