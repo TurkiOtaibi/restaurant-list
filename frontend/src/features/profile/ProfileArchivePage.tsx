@@ -21,6 +21,7 @@ import {
   TextArea,
   TextInput
 } from "@/components/ui";
+import { Separator } from "@/components/ui/separator";
 import { placeSubtypeLabel, placeTypeLabel } from "@/features/places/taxonomy";
 import {
   ApiError,
@@ -144,6 +145,7 @@ export function ProfileArchivePage() {
             onEdit={() => setEditOpen(true)}
           />
           <ProfileStats stats={stats} />
+          <Separator className="my-1" />
           <FavoritePlacesStrip
             favorites={profile.favoritePlaces}
             onUpdated={setProfile}
