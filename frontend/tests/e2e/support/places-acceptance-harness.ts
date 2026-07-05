@@ -150,7 +150,7 @@ export class PlacesAcceptanceHarness {
 
     await this.gotoFeatureState(`/places?${params.toString()}`);
     await expect(this.page.locator(".place-library-page")).toBeVisible({ timeout: 30_000 });
-    await expect(this.page.locator(".place-memory-list, .ds-empty, .place-library-loading")).toBeVisible({
+    await expect(this.page.locator(".place-memory-list, .ds-empty")).toBeVisible({
       timeout: 30_000
     });
   }

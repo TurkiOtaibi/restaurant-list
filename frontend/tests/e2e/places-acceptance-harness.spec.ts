@@ -19,6 +19,55 @@ test.describe("focused authenticated Places acceptance harness", () => {
     await expect(page.locator("body")).not.toContainText(dataset.places.restaurantBurger.name);
   });
 
+  test("places type selector exposes Base UI tabs and preserves query behavior", async ({
+    page,
+    placesHarness
+  }) => {
+    const dataset = await placesHarness.resetFeature("PLACE-001");
+
+    await placesHarness.loadPlacesList({ query: dataset.runId, type: "restaurant" });
+    await page.waitForLoadState("networkidle");
+
+    const tablist = page.getByRole("tablist", { name: "نوع المكان" });
+    await expect(tablist).toBeVisible();
+
+    const restaurantTab = page.getByRole("tab", { name: "المطاعم" });
+    const cafeTab = page.getByRole("tab", { name: "المقاهي" });
+    const iceCreamTab = page.getByRole("tab", { name: "الآيس كريم" });
+
+    await expect(restaurantTab).toHaveAttribute("aria-selected", "true");
+    await expect(cafeTab).toHaveAttribute("aria-selected", "false");
+    await expect(iceCreamTab).toHaveAttribute("aria-selected", "false");
+
+    const historyLength = await page.evaluate(() => window.history.length);
+    await cafeTab.click();
+    await expect(page).toHaveURL(/type=cafe/);
+    await expect(page).toHaveURL(new RegExp(`q=${dataset.runId}`));
+    await expect(cafeTab).toHaveAttribute("aria-selected", "true");
+    await expect(placesHarness.placeCardByName(dataset.places.cafeCoffee.name)).toBeVisible();
+    expect(await page.evaluate(() => window.history.length)).toBe(historyLength);
+
+    await iceCreamTab.click();
+    await expect(page).toHaveURL(/type=ice_cream/);
+    await expect(page).toHaveURL(new RegExp(`q=${dataset.runId}`));
+    await expect(iceCreamTab).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator(".place-subtype-filter__trigger")).toHaveCount(0);
+    await expect(placesHarness.placeCardByName(dataset.places.iceCream.name)).toBeVisible();
+
+    await page.goto(`/places?type=cafe&q=${dataset.runId}`, { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("tab", { name: "المقاهي" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    );
+    await expect(placesHarness.placeCardByName(dataset.places.cafeCoffee.name)).toBeVisible();
+
+    await page.getByRole("tab", { name: "المطاعم" }).focus();
+    await expect(page.getByRole("tab", { name: "المطاعم" })).toBeFocused();
+    await page.keyboard.press("ArrowLeft");
+    await expect(page.getByRole("tab", { selected: true })).not.toHaveText("المطاعم");
+    await expect(page).toHaveURL(/type=(cafe|ice_cream)/);
+  });
+
   test("loads detail and create states directly with deterministic authenticated data", async ({
     page,
     placesHarness
