@@ -54,6 +54,53 @@ test("system list detail hides rename delete affordances and keeps visibility ed
   await expect(page.locator('input[name="edit-list-visibility"][value="public"]')).toBeVisible();
 });
 
+test("system list action menu supports keyboard and focus contract", async ({ page }) => {
+  await mockSystemListDetailApi(page);
+
+  await page.goto(`/lists/${wishlistId}`);
+
+  const trigger = page.getByRole("button", { name: "إجراءات القائمة" });
+  await expect(trigger).toBeVisible();
+  await expect(trigger).toHaveAttribute("aria-haspopup", "menu");
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+  await trigger.focus();
+  await page.keyboard.press("Enter");
+  const menu = page.getByRole("menu", { name: "إجراءات القائمة" });
+  const editItem = page.getByRole("menuitem", { name: "تعديل" });
+  await expect(menu).toBeVisible();
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await expect(editItem).toBeFocused();
+  await expect(page.getByRole("menuitem")).toHaveCount(1);
+
+  await page.keyboard.press("ArrowDown");
+  await expect(editItem).toBeFocused();
+  await page.keyboard.press("ArrowUp");
+  await expect(editItem).toBeFocused();
+  await page.keyboard.press("Home");
+  await expect(editItem).toBeFocused();
+  await page.keyboard.press("End");
+  await expect(editItem).toBeFocused();
+
+  await page.keyboard.press("Escape");
+  await expect(menu).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+  await page.keyboard.press(" ");
+  await expect(editItem).toBeFocused();
+  await page.locator("main").click({ position: { x: 12, y: 12 } });
+  await expect(menu).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+  await trigger.click();
+  await expect(editItem).toBeFocused();
+  await editItem.click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.locator("#edit-list-name")).toHaveCount(0);
+});
+
 async function installSession(page: Page) {
   await page.addInitScript(() => {
     window.localStorage.setItem("restaurantWishlist.hasSession", "1");
