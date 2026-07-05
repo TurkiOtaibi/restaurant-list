@@ -211,6 +211,7 @@ test("profile favorites picker searches limits reorders and updates the strip", 
   });
 
   await page.goto("/profile");
+  const searchInput = page.locator("#favorite-search");
 
   await page.getByRole("button", { name: "أضف مفضلتك الأولى" }).click();
   await expect(page.getByRole("dialog", { name: "تعديل المفضلة" })).toBeVisible();
@@ -220,6 +221,12 @@ test("profile favorites picker searches limits reorders and updates the strip", 
 
   await page.getByLabel("البحث في الأماكن التي قيّمتها").fill("");
   const firstFavorite = page.getByRole("checkbox", { name: /مفضل أول/ });
+  await searchInput.fill("temporary");
+  await searchInput.press("Escape");
+  await expect(page.locator(".profile-favorites-dialog")).toHaveCount(0);
+  await page.locator(".profile-favorites-empty button").click();
+  await expect(searchInput).toHaveValue("");
+
   await expect(firstFavorite).toHaveAttribute("aria-checked", "false");
   await firstFavorite.focus();
   await page.keyboard.press("Space");
