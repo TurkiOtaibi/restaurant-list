@@ -324,8 +324,6 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
                         "place-type-filters__tab",
                         activeType === option.value && "is-selected"
                       )}
-                      onClick={() => selectType(option.value)}
-                      onFocus={() => selectType(option.value)}
                       type="button"
                     >
                       {option.label}

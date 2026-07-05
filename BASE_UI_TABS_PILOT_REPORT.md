@@ -34,6 +34,7 @@ No other surface or primitive was migrated.
 - Browser history still uses replace-style behavior for type changes.
 - Existing visual styling is preserved by reusing the current button classes and selected-state class.
 - No product behavior, routing model, backend contract, or business rule changed.
+- Review cleanup removed duplicate per-tab selection handlers. `Tabs.Root onValueChange` is now the single canonical path that updates selected type, URL query, and filtering state.
 
 The pilot intentionally keeps the existing Places results region unchanged instead of restructuring it into Base UI tab panels. This keeps the migration limited to selector semantics and avoids changing loading, empty, or list rendering behavior.
 
@@ -71,6 +72,8 @@ E2E coverage verifies:
 - `docs/qa-execution/base-ui-tabs-pilot/screenshots/places-tabs-320x568-after.png`
 - `docs/qa-execution/base-ui-tabs-pilot/screenshots/places-tabs-selected-state-390x844-after.png`
 - `docs/qa-execution/base-ui-tabs-pilot/screenshots/places-tabs-focused-390x844-after.png`
+
+Review cleanup replaced the focused-state screenshot with keyboard-driven focus evidence so the focus ring/state is visually clearer.
 
 ## Tests Updated
 
