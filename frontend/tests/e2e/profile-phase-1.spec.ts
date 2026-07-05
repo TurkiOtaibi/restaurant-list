@@ -73,6 +73,50 @@ test("profile uses server average rating field to control the average tile", asy
   await expect(page.getByText("متوسط التقييم")).toHaveCount(0);
 });
 
+test("profile ActionMenu wraps keyboard focus across multiple items", async ({ page }) => {
+  await mockProfileApi(page, { ratings: [] });
+
+  await page.goto("/profile");
+
+  const trigger = page.getByRole("button", { name: "إجراءات صفحتي" });
+  const editItem = page.getByRole("menuitem", { name: "تعديل الملف الشخصي" });
+  const logoutItem = page.getByRole("menuitem", { name: "تسجيل الخروج" });
+
+  await trigger.focus();
+  await page.keyboard.press("Enter");
+  await expect(editItem).toBeFocused();
+  await expect(page.getByRole("menu")).toBeVisible();
+
+  await page.keyboard.press("ArrowUp");
+  await expect(logoutItem).toBeFocused();
+  await expect(page.getByRole("menu")).toBeVisible();
+
+  await page.keyboard.press("ArrowDown");
+  await expect(editItem).toBeFocused();
+  await expect(page.getByRole("menu")).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(trigger).toBeFocused();
+});
+
+test("profile ActionMenu closes on Tab without executing an action", async ({ page }) => {
+  await mockProfileApi(page, { ratings: [] });
+
+  await page.goto("/profile");
+
+  const trigger = page.getByRole("button", { name: "إجراءات صفحتي" });
+  const editItem = page.getByRole("menuitem", { name: "تعديل الملف الشخصي" });
+
+  await trigger.focus();
+  await page.keyboard.press("Enter");
+  await expect(editItem).toBeFocused();
+
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("menu")).toHaveCount(0);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page).toHaveURL(/\/profile$/);
+});
+
 test("profile shows a friendly empty ratings state", async ({ page }) => {
   await mockProfileApi(page, { ratings: [] });
 
