@@ -1,5 +1,6 @@
 "use client";
 
+import { Tabs } from "@base-ui/react/tabs";
 import Link from "next/link";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -217,9 +218,17 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
   }, [loadNextPage, loading, needsAuth, pageError, reachedEnd, places.length]);
 
   function selectType(type: PlaceType) {
+    if (type === activeType) {
+      return;
+    }
+
     setActiveType(type);
     setActiveSubtype("all");
     updateUrl({ type, subtype: "all", q: submittedSearch });
+  }
+
+  function handleTypeTabChange(value: PlaceType) {
+    selectType(value);
   }
 
   function selectSubtype(subtype: SubtypeFilterValue) {
@@ -297,20 +306,34 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
 
       {!needsAuth ? (
         <>
-          <div className="place-type-filters" aria-label="نوع المكان">
-            {placeTypeOptions.map((option) => (
-              <Button
-                aria-pressed={activeType === option.value}
-                className={cx(activeType === option.value && "is-selected")}
-                key={option.value}
-                onClick={() => selectType(option.value)}
-                type="button"
-                variant={activeType === option.value ? "primary" : "secondary"}
-              >
-                {option.label}
-              </Button>
-            ))}
-          </div>
+          <Tabs.Root
+            className="place-type-tabs"
+            dir="rtl"
+            onValueChange={handleTypeTabChange}
+            value={activeType}
+          >
+            <Tabs.List activateOnFocus aria-label="نوع المكان" className="place-type-filters">
+              {placeTypeOptions.map((option) => (
+                <Tabs.Tab
+                  key={option.value}
+                  render={
+                    <button
+                      className={cx(
+                        "ds-button",
+                        "ds-button--secondary",
+                        "place-type-filters__tab",
+                        activeType === option.value && "is-selected"
+                      )}
+                      type="button"
+                    >
+                      {option.label}
+                    </button>
+                  }
+                  value={option.value}
+                />
+              ))}
+            </Tabs.List>
+          </Tabs.Root>
 
           <form aria-label="بحث الأماكن" className="place-library-search" onSubmit={handleSearchSubmit}>
             <SearchField
