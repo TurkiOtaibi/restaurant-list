@@ -247,4 +247,35 @@ Implementation safe to start now:
 
 Implementation safe after Waves 0-2:
 
-- Yes, if limited to the list-detail undo toast and all acceptance criteria above.
+- No, based on the follow-up implementation spike documented below.
+
+## 17. Post-Wave 2 Readiness Update
+
+Wave 0, Wave 1, and Wave 2 have now been completed and released, so the feedback candidate was rechecked for implementation readiness.
+
+Implementation spike result:
+
+- A Base UI Toast provider/manager implementation was attempted locally for the list-detail undo toast.
+- The focused undo toast E2E initially exposed a client-side failure when the provider/manager was mounted inside the existing local toast wrapper.
+- A reduced `Toast.Root`-only implementation was also attempted locally.
+- The reduced implementation was not valid enough for the current app because it produced client-side failures and broke existing list remove/empty-state behavior.
+- The implementation changes were reverted and were not committed.
+
+Decision update:
+
+- Do not proceed with a Base UI Toast implementation as the next wave.
+- Keep the current custom `Toast` for now.
+- Treat Toast migration as requiring a dedicated architecture design for provider placement, viewport lifecycle, route-cache interaction, bottom-navigation collision behavior, and live-region announcement parity.
+- Do not add `@base-ui/react/toast` to the approved import policy until a dedicated Toast architecture PR proves the provider/viewport model safely.
+
+Required before any future Toast migration:
+
+- A Base UI Toast architecture note defining provider location, viewport ownership, z-index, and route lifecycle behavior.
+- A current custom Toast contract test before migration.
+- A dedicated implementation PR that uses the official provider/manager pattern correctly.
+- E2E coverage for remove, undo, undo failure, live-region priority, focus behavior, route navigation after toast dismissal, and no bottom-nav collision.
+
+Updated final recommendation:
+
+- DEFER BASE UI TOAST.
+- Next Base UI progress should move to the next lower-risk wave or create a Toast architecture/contract test PR first.
