@@ -1916,7 +1916,19 @@ textarea:disabled {
   box-shadow: var(--shadow-elevated);
 }
 
-.ds-action-menu__items button {
+.ds-action-menu__positioner {
+  z-index: 70;
+}
+
+.ds-action-menu__items--base {
+  position: static;
+  inset-inline-end: auto;
+  top: auto;
+  z-index: auto;
+}
+
+.ds-action-menu__items button,
+.ds-action-menu__item {
   width: 100%;
   min-height: 44px;
   padding: 0 10px;
@@ -1928,11 +1940,20 @@ textarea:disabled {
   font-weight: 800;
 }
 
-.ds-action-menu__items button:hover {
+.ds-action-menu__item {
+  display: flex;
+  align-items: center;
+  cursor: default;
+  outline: none;
+}
+
+.ds-action-menu__items button:hover,
+.ds-action-menu__item[data-highlighted] {
   background: var(--color-active);
 }
 
-.ds-action-menu__items .is-destructive {
+.ds-action-menu__items .is-destructive,
+.ds-action-menu__item.is-destructive {
   color: #ffb8b8;
 }
 
