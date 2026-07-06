@@ -80,6 +80,39 @@ test("ResponsiveDialog close button keeps the existing profile edit behavior int
   await expect(page.getByRole("heading", { level: 2, name: "اسم مؤقت" })).toHaveCount(0);
 });
 
+test("ResponsiveDialog confirm-close keeps unsaved create-list edits inside the dialog", async ({
+  page
+}) => {
+  await mockProfileApi(page);
+  await page.goto("/lists/new");
+
+  const dialog = page.getByRole("dialog", { name: "أضف قائمة" });
+  await expect(dialog).toBeVisible();
+  await expect(page.getByLabel("اسم القائمة")).toBeFocused();
+
+  await page.getByLabel("اسم القائمة").fill("قائمة مؤقتة");
+  await page.keyboard.press("Escape");
+
+  const notice = dialog.getByRole("alert");
+  await expect(notice).toContainText("هناك تغييرات غير محفوظة. إغلاق؟");
+  await expect(dialog).toBeVisible();
+  await expect(page).toHaveURL(/\/lists\/new$/);
+
+  await page.getByRole("button", { name: "متابعة التحرير" }).click();
+  await expect(notice).toHaveCount(0);
+  await expect(dialog).toBeVisible();
+  await expect(page.getByLabel("اسم القائمة")).toHaveValue("قائمة مؤقتة");
+
+  await page.keyboard.press("Escape");
+  await expect(dialog.getByRole("alert")).toBeVisible();
+  await page.getByRole("button", { name: "تجاهل وإغلاق" }).click();
+
+  await expect(dialog).toHaveCount(0);
+  await expect(page).toHaveURL(/\/lists\?focus=create-list$/);
+  await expect(page.locator("[data-ds-dialog-root='true']")).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => document.body.style.overflowY)).toBe("");
+});
+
 async function mockProfileApi(page: Page) {
   await page.addInitScript(() => {
     window.localStorage.setItem("restaurantWishlist.hasSession", "1");
