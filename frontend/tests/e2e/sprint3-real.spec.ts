@@ -91,7 +91,16 @@ test("real frontend and api complete list edit add remove delete and profile flo
 
   await page.goto("/lists/new");
   await page.getByLabel("اسم القائمة").fill(listName);
-  await page.getByLabel("عامة").check();
+  const createVisibilityGroup = page.getByRole("radiogroup", { name: "الخصوصية" });
+  await expect(createVisibilityGroup.getByRole("radio", { name: "خاصة" })).toHaveAttribute(
+    "aria-checked",
+    "true"
+  );
+  await createVisibilityGroup.getByRole("radio", { name: "عامة" }).click();
+  await expect(createVisibilityGroup.getByRole("radio", { name: "عامة" })).toHaveAttribute(
+    "aria-checked",
+    "true"
+  );
   const createListResponsePromise = page.waitForResponse(
     (response) =>
       response.url().includes("/api/v1/lists") &&
@@ -116,7 +125,16 @@ test("real frontend and api complete list edit add remove delete and profile flo
   await page.getByRole("button", { name: "إجراءات القائمة" }).click();
   await page.getByRole("menuitem", { name: "تعديل" }).click();
   await page.getByLabel("اسم القائمة").fill(editedListName);
-  await page.getByLabel("خاصة").check();
+  const editVisibilityGroup = page.getByRole("radiogroup", { name: "الخصوصية" });
+  await expect(editVisibilityGroup.getByRole("radio", { name: "عامة" })).toHaveAttribute(
+    "aria-checked",
+    "true"
+  );
+  await editVisibilityGroup.getByRole("radio", { name: "خاصة" }).click();
+  await expect(editVisibilityGroup.getByRole("radio", { name: "خاصة" })).toHaveAttribute(
+    "aria-checked",
+    "true"
+  );
   await page.getByRole("button", { name: "حفظ", exact: true }).click();
   await expect(page.getByRole("heading", { name: editedListName })).toBeVisible();
   await expect(page.getByText("خاصة")).toBeVisible();
