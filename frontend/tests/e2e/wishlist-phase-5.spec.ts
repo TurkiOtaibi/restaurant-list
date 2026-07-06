@@ -51,7 +51,20 @@ test("system list detail hides rename delete affordances and keeps visibility ed
   await page.getByRole("menuitem").first().click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.locator("#edit-list-name")).toHaveCount(0);
-  await expect(page.locator('input[name="edit-list-visibility"][value="public"]')).toBeVisible();
+  const visibilityGroup = page.getByRole("radiogroup", { name: "الخصوصية" });
+  await expect(visibilityGroup).toBeVisible();
+
+  const privateRadio = visibilityGroup.getByRole("radio", { name: "خاصة" });
+  const publicRadio = visibilityGroup.getByRole("radio", { name: "عامة" });
+  await expect(privateRadio).toHaveAttribute("aria-checked", "true");
+
+  await privateRadio.focus();
+  await page.keyboard.press("ArrowDown");
+  await expect(publicRadio).toHaveAttribute("aria-checked", "true");
+
+  await page.getByRole("button", { name: "حفظ", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.locator(".collection-topbar__meta")).toContainText("عامة");
 });
 
 test("system list action menu supports keyboard and focus contract", async ({ page }) => {
@@ -197,6 +210,7 @@ async function mockProfileApi(
 
 async function mockSystemListDetailApi(page: Page) {
   await installSession(page);
+  let visibility: "private" | "public" = "private";
   await page.route("**/api/v1/**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname.replace("/api/v1", "");
@@ -211,7 +225,17 @@ async function mockSystemListDetailApi(page: Page) {
 
     if (path === `/lists/${wishlistId}`) {
       return route.fulfill({
-        body: JSON.stringify(wishlistListPayload(true)),
+        body: JSON.stringify(wishlistListPayload(true, visibility)),
+        contentType: "application/json",
+        status: 200
+      });
+    }
+
+    if (path === `/lists/${wishlistId}/visibility` && request.method() === "PATCH") {
+      const payload = request.postDataJSON() as { visibility: "private" | "public" };
+      visibility = payload.visibility;
+      return route.fulfill({
+        body: JSON.stringify({ data: wishlistListPayload(true, visibility) }),
         contentType: "application/json",
         status: 200
       });
@@ -269,7 +293,7 @@ function placePayload(inWishlist: boolean) {
   };
 }
 
-function wishlistListPayload(withPlace: boolean) {
+function wishlistListPayload(withPlace: boolean, visibility: "private" | "public" = "private") {
   return {
     createdAt: now,
     id: wishlistId,
@@ -288,6 +312,6 @@ function wishlistListPayload(withPlace: boolean) {
     name: "رغباتي",
     placeCount: withPlace ? 1 : 0,
     updatedAt: now,
-    visibility: "private"
+    visibility
   };
 }
