@@ -134,7 +134,7 @@ export function ResponsiveDialog(props: DialogProps) {
 }
 
 function BaseUIDialogHeader({
-  closeLabel = "ط¥ط؛ظ„ط§ظ‚",
+  closeLabel = "إغلاق",
   labelledBy,
   onClose,
   onRequestClose,
