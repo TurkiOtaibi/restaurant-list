@@ -82,6 +82,7 @@ export function CreateListDialog({ onClose, open }: CreateListDialogProps) {
   return (
     <ResponsiveDialog
       confirmCloseMessage="هناك تغييرات غير محفوظة. إغلاق؟"
+      desktopPresentation="base-ui"
       hasUnsavedChanges={hasUnsavedChanges && !submitting}
       initialFocusSelector="#list-name"
       labelledBy="create-list-title"

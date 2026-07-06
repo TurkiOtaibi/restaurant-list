@@ -1,5 +1,6 @@
 "use client";
 
+import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { createPortal } from "react-dom";
 import type { KeyboardEvent, ReactNode, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
@@ -13,6 +14,7 @@ type DialogProps = {
   children: ReactNode;
   closeLabel?: string;
   confirmCloseMessage?: string;
+  desktopPresentation?: "custom" | "base-ui";
   dialogRole?: "dialog" | "alertdialog";
   hasUnsavedChanges?: boolean;
   initialFocusSelector?: string;
@@ -29,6 +31,51 @@ export function Modal(props: DialogProps) {
 
 export function BottomSheet(props: DialogProps) {
   return <DialogSurface className="ds-bottom-sheet" props={props} showGrabber />;
+}
+
+function BaseUIDesktopDialog(props: DialogProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { cancelClose, close, confirmingClose, confirmClose } = useConfirmableClose(props);
+  useFocusAfterConfirmClose(props.open, ref, confirmingClose, props.initialFocusSelector);
+
+  if (!props.open) {
+    return null;
+  }
+
+  return (
+    <BaseDialog.Root
+      disablePointerDismissal
+      modal
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          close();
+        }
+      }}
+      open={props.open}
+    >
+      <BaseDialog.Portal data-ds-dialog-root="true">
+        <BaseDialog.Backdrop className="ds-dialog-backdrop" />
+        <BaseDialog.Popup
+          aria-labelledby={props.labelledBy}
+          className="ds-modal"
+          data-base-ui-dialog-surface="true"
+          initialFocus={() => getInitialFocus(ref.current, props.initialFocusSelector)}
+          ref={ref}
+          role={props.dialogRole ?? "dialog"}
+        >
+          <BaseUIDialogHeader {...props} onRequestClose={close} />
+          {confirmingClose ? (
+            <ConfirmCloseNotice
+              message={props.confirmCloseMessage}
+              onCancel={cancelClose}
+              onConfirm={confirmClose}
+            />
+          ) : null}
+          {props.children}
+        </BaseDialog.Popup>
+      </BaseDialog.Portal>
+    </BaseDialog.Root>
+  );
 }
 
 function DialogSurface({
@@ -80,9 +127,35 @@ function DialogSurface({
 
 export function ResponsiveDialog(props: DialogProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
-  const Dialog = isDesktop ? Modal : BottomSheet;
+  const Dialog =
+    isDesktop && props.desktopPresentation === "base-ui" ? BaseUIDesktopDialog : isDesktop ? Modal : BottomSheet;
 
   return <Dialog {...props} />;
+}
+
+function BaseUIDialogHeader({
+  closeLabel = "ط¥ط؛ظ„ط§ظ‚",
+  labelledBy,
+  onClose,
+  onRequestClose,
+  title
+}: DialogProps) {
+  return (
+    <div className="ds-dialog__header">
+      <BaseDialog.Title id={labelledBy}>{title}</BaseDialog.Title>
+      <BaseDialog.Close
+        aria-label={closeLabel}
+        className="ds-dialog__close"
+        onClick={(event) => {
+          event.preventDefault();
+          (onRequestClose ?? onClose)();
+        }}
+        type="button"
+      >
+        <CloseIcon />
+      </BaseDialog.Close>
+    </div>
+  );
 }
 
 function DialogHeader({
@@ -263,6 +336,18 @@ function useFocusAfterConfirmClose(
     const firstFocusable = getFocusableElements(ref.current)[0];
     (initialFocus ?? firstFocusable ?? ref.current).focus();
   }, [confirmingClose, initialFocusSelector, open, ref]);
+}
+
+function getInitialFocus(container: HTMLElement | null, initialFocusSelector?: string) {
+  if (!container) {
+    return true;
+  }
+
+  if (initialFocusSelector) {
+    return container.querySelector<HTMLElement>(initialFocusSelector) ?? true;
+  }
+
+  return getFocusableElements(container)[0] ?? true;
 }
 
 function ConfirmCloseNotice({
