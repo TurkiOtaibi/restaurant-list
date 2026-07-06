@@ -1,5 +1,6 @@
 "use client";
 
+import { Menu } from "@base-ui/react/menu";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -157,20 +158,17 @@ export default function ListDetailPage() {
   }
 
   const placeCount = list?.items.length ?? 0;
-  const listMenuItems = list
-    ? [
+  const listMenuItems =
+    list && !list.isSystem
+      ? [
         { label: "تعديل", onSelect: () => setEditListOpen(true) },
-        ...(list.isSystem
-          ? []
-          : [
-              {
-                destructive: true,
-                label: "حذف",
-                onSelect: () => setDeleteListOpen(true)
-              }
-            ])
+        {
+          destructive: true,
+          label: "حذف",
+          onSelect: () => setDeleteListOpen(true)
+        }
       ]
-    : [];
+      : [];
 
   return (
     <main className="content list-detail-page">
@@ -198,10 +196,14 @@ export default function ListDetailPage() {
             >
               <AddIcon />
             </Button>
-            <ActionMenu
-              items={listMenuItems}
-              label="إجراءات القائمة"
-            />
+            {list.isSystem ? (
+              <SystemListActionMenu onEdit={() => setEditListOpen(true)} />
+            ) : (
+              <ActionMenu
+                items={listMenuItems}
+                label="إجراءات القائمة"
+              />
+            )}
           </div>
         ) : (
           <Link className="text-link" href="/lists">
@@ -318,3 +320,64 @@ export default function ListDetailPage() {
   );
 }
 
+function SystemListActionMenu({ onEdit }: { onEdit: () => void }) {
+  const [open, setOpen] = useState(false);
+  const itemRef = useRef<HTMLElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const focusItemOnOpenRef = useRef(false);
+  const restoreFocusOnCloseRef = useRef(true);
+
+  useEffect(() => {
+    if (!open || !focusItemOnOpenRef.current) {
+      return;
+    }
+
+    focusItemOnOpenRef.current = false;
+    requestAnimationFrame(() => itemRef.current?.focus());
+  }, [open]);
+
+  return (
+    <div className="ds-action-menu" data-base-ui-menu-pilot="system-list">
+      <Menu.Root
+        modal={false}
+        onOpenChange={(nextOpen) => {
+          if (nextOpen) {
+            focusItemOnOpenRef.current = true;
+            restoreFocusOnCloseRef.current = true;
+          }
+          setOpen(nextOpen);
+        }}
+        open={open}
+      >
+        <Menu.Trigger
+          aria-label="إجراءات القائمة"
+          className="ds-action-menu__trigger"
+          ref={triggerRef}
+          type="button"
+        >
+          <span aria-hidden="true">•••</span>
+        </Menu.Trigger>
+        <Menu.Portal>
+          <Menu.Positioner align="end" className="ds-action-menu__positioner" sideOffset={8}>
+            <Menu.Popup
+              aria-label="إجراءات القائمة"
+              className="ds-action-menu__items ds-action-menu__items--base"
+              finalFocus={() => (restoreFocusOnCloseRef.current ? triggerRef.current : false)}
+            >
+              <Menu.Item
+                className="ds-action-menu__item"
+                onClick={() => {
+                  restoreFocusOnCloseRef.current = false;
+                  onEdit();
+                }}
+                ref={itemRef}
+              >
+                تعديل
+              </Menu.Item>
+            </Menu.Popup>
+          </Menu.Positioner>
+        </Menu.Portal>
+      </Menu.Root>
+    </div>
+  );
+}
