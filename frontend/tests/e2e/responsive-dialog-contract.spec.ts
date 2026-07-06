@@ -113,6 +113,29 @@ test("ResponsiveDialog confirm-close keeps unsaved create-list edits inside the 
   await expect.poll(() => page.evaluate(() => document.body.style.overflowY)).toBe("");
 });
 
+test("ResponsiveDialog alertdialog keeps destructive list deletion behind cancel", async ({
+  page
+}) => {
+  const deleteRequests = await mockNormalListDetailApi(page);
+  await page.goto("/lists/normal-list");
+
+  await page.getByRole("button", { name: "إجراءات القائمة" }).click();
+  await page.getByRole("menuitem", { name: "حذف" }).click();
+
+  const alertDialog = page.getByRole("alertdialog", { name: "حذف القائمة" });
+  await expect(alertDialog).toBeVisible();
+  await expect(page.getByRole("button", { name: "إلغاء" })).toBeFocused();
+  await expect(alertDialog.getByRole("button", { name: "حذف" })).toBeVisible();
+
+  await page.getByRole("button", { name: "إلغاء" }).click();
+
+  await expect(alertDialog).toHaveCount(0);
+  await expect(page).toHaveURL(/\/lists\/normal-list$/);
+  await expect.poll(deleteRequests).toBe(0);
+  await expect(page.locator("[data-ds-dialog-root='true']")).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => document.body.style.overflowY)).toBe("");
+});
+
 async function mockProfileApi(page: Page) {
   await page.addInitScript(() => {
     window.localStorage.setItem("restaurantWishlist.hasSession", "1");
@@ -171,5 +194,65 @@ function profilePayload() {
     ratingsCreatedCount: 0,
     userRatings: [],
     wishlist: null
+  };
+}
+
+async function mockNormalListDetailApi(page: Page) {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("restaurantWishlist.hasSession", "1");
+  });
+
+  let deleteRequests = 0;
+
+  await page.route("**/api/v1/**", async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname.replace("/api/v1", "");
+
+    if (path === "/auth/refresh") {
+      return route.fulfill({
+        body: JSON.stringify({ accessToken: "mock-access-token" }),
+        contentType: "application/json",
+        status: 200
+      });
+    }
+
+    if (path === "/lists/normal-list" && request.method() === "GET") {
+      return route.fulfill({
+        body: JSON.stringify(normalListPayload()),
+        contentType: "application/json",
+        status: 200
+      });
+    }
+
+    if (path === "/lists/normal-list" && request.method() === "DELETE") {
+      deleteRequests += 1;
+      return route.fulfill({
+        body: JSON.stringify({ detail: { code: "MOCK_DELETE_CALLED", message: path } }),
+        contentType: "application/json",
+        status: 500
+      });
+    }
+
+    return route.fulfill({
+      body: JSON.stringify({ detail: { code: "MOCK_NOT_FOUND", message: `${request.method()} ${path}` } }),
+      contentType: "application/json",
+      status: 404
+    });
+  });
+
+  return () => deleteRequests;
+}
+
+function normalListPayload() {
+  return {
+    createdAt: now,
+    id: "normal-list",
+    isSystem: false,
+    items: [],
+    name: "قائمة للحذف",
+    ownerDisplayName: "تركي العتيبي",
+    placeCount: 0,
+    updatedAt: now,
+    visibility: "private"
   };
 }
