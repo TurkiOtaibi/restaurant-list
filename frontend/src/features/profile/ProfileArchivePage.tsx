@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Checkbox } from "@base-ui/react/checkbox";
+import { Field as BaseField } from "@base-ui/react/field";
+import { Input as BaseInput } from "@base-ui/react/input";
 import type { CSSProperties, FormEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -59,6 +61,35 @@ const AVATAR_COLORS = [
   ["#7c3f8f", "#d48df1"],
   ["#8f3d4a", "#ef8b98"]
 ] as const;
+
+type FavoriteSearchFieldProps = {
+  id: string;
+  label: string;
+  onValueChange: (value: string) => void;
+  placeholder: string;
+  value: string;
+};
+
+function FavoriteSearchField({
+  id,
+  label,
+  onValueChange,
+  placeholder,
+  value
+}: FavoriteSearchFieldProps) {
+  return (
+    <BaseField.Root className="ds-field">
+      <BaseField.Label>{label}</BaseField.Label>
+      <BaseInput
+        id={id}
+        onValueChange={onValueChange}
+        placeholder={placeholder}
+        type="search"
+        value={value}
+      />
+    </BaseField.Root>
+  );
+}
 
 export function ProfileArchivePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -627,10 +658,10 @@ function EditFavoritesDialog({
       title="تعديل المفضلة"
     >
       <div className="profile-favorites-dialog">
-        <TextInput
+        <FavoriteSearchField
           id="favorite-search"
           label="البحث في الأماكن التي قيّمتها"
-          onChange={(event) => setQuery(event.target.value)}
+          onValueChange={setQuery}
           placeholder="ابحث باسم المكان"
           value={query}
         />

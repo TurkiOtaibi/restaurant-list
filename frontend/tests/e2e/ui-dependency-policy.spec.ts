@@ -4,6 +4,8 @@ import { join } from "node:path";
 
 const ALLOWED_BASE_UI_IMPORTS = new Set([
   "@base-ui/react/checkbox",
+  "@base-ui/react/field",
+  "@base-ui/react/input",
   "@base-ui/react/switch",
   "@base-ui/react/tabs",
   "@base-ui/react/tooltip"
@@ -32,6 +34,8 @@ test("UI dependency policy limits Base UI imports to released primitives", () =>
   expect(baseUiImports).toEqual(
     expect.arrayContaining([
       expect.objectContaining({ importPath: "@base-ui/react/checkbox" }),
+      expect.objectContaining({ importPath: "@base-ui/react/field" }),
+      expect.objectContaining({ importPath: "@base-ui/react/input" }),
       expect.objectContaining({ importPath: "@base-ui/react/switch" }),
       expect.objectContaining({ importPath: "@base-ui/react/tabs" }),
       expect.objectContaining({ importPath: "@base-ui/react/tooltip" })
