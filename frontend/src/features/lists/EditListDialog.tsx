@@ -96,6 +96,7 @@ export function EditListDialog({ list, onClose, onUpdated, open }: EditListDialo
   return (
     <ResponsiveDialog
       confirmCloseMessage="هناك تغييرات غير محفوظة. إغلاق؟"
+      desktopPresentation="base-ui"
       hasUnsavedChanges={hasUnsavedChanges && !submitting}
       initialFocusSelector={list.isSystem ? undefined : "#edit-list-name"}
       labelledBy="edit-list-title"
