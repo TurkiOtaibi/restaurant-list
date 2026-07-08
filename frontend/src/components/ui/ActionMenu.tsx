@@ -1,7 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 
 import { cx } from "@/lib/ui";
 
@@ -17,12 +17,22 @@ type ActionMenuProps = {
   trigger?: ReactNode;
 };
 
+type ActionMenuPosition = {
+  left: number;
+  top: number;
+};
+
+const MENU_VIEWPORT_MARGIN = 12;
+const MENU_TRIGGER_GAP = 8;
+
 export function ActionMenu({ items, label, trigger }: ActionMenuProps) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [menuPosition, setMenuPosition] = useState<ActionMenuPosition | null>(null);
   const menuId = useId();
   const triggerId = useId();
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const menuRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const focusItemOnOpenRef = useRef(false);
@@ -40,6 +50,35 @@ export function ActionMenu({ items, label, trigger }: ActionMenuProps) {
     },
     [items.length]
   );
+
+  const updateMenuPosition = useCallback(() => {
+    const triggerRect = triggerRef.current?.getBoundingClientRect();
+    const menuRect = menuRef.current?.getBoundingClientRect();
+
+    if (!triggerRect || !menuRect) {
+      return;
+    }
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const maxMenuWidth = Math.max(0, viewportWidth - MENU_VIEWPORT_MARGIN * 2);
+    const menuWidth = Math.min(menuRect.width, maxMenuWidth);
+    const maxLeft = Math.max(MENU_VIEWPORT_MARGIN, viewportWidth - MENU_VIEWPORT_MARGIN - menuWidth);
+    const preferredLeft = triggerRect.right - menuWidth;
+    const left = Math.min(Math.max(preferredLeft, MENU_VIEWPORT_MARGIN), maxLeft);
+
+    const maxTop = Math.max(MENU_VIEWPORT_MARGIN, viewportHeight - MENU_VIEWPORT_MARGIN - menuRect.height);
+    const preferredTop = triggerRect.bottom + MENU_TRIGGER_GAP;
+    const top = Math.min(Math.max(preferredTop, MENU_VIEWPORT_MARGIN), maxTop);
+
+    setMenuPosition((currentPosition) => {
+      if (currentPosition?.left === left && currentPosition.top === top) {
+        return currentPosition;
+      }
+
+      return { left, top };
+    });
+  }, []);
 
   const openMenu = useCallback(
     (index = 0) => {
@@ -63,6 +102,25 @@ export function ActionMenu({ items, label, trigger }: ActionMenuProps) {
 
   useCloseOnOutsideClick(open, rootRef, closeMenu);
 
+  useLayoutEffect(() => {
+    if (!open) {
+      setMenuPosition(null);
+      return;
+    }
+
+    updateMenuPosition();
+    const frame = requestAnimationFrame(updateMenuPosition);
+
+    window.addEventListener("resize", updateMenuPosition);
+    window.addEventListener("scroll", updateMenuPosition, true);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updateMenuPosition);
+      window.removeEventListener("scroll", updateMenuPosition, true);
+    };
+  }, [open, updateMenuPosition]);
+
   useEffect(() => {
     if (!open) {
       if (restoreFocusOnCloseRef.current) {
@@ -77,6 +135,12 @@ export function ActionMenu({ items, label, trigger }: ActionMenuProps) {
       requestAnimationFrame(() => itemRefs.current[activeIndex]?.focus());
     }
   }, [activeIndex, open]);
+
+  const menuStyle: CSSProperties = {
+    left: menuPosition?.left ?? 0,
+    top: menuPosition?.top ?? 0,
+    visibility: menuPosition ? "visible" : "hidden"
+  };
 
   return (
     <div className="ds-action-menu" ref={rootRef}>
@@ -139,7 +203,9 @@ export function ActionMenu({ items, label, trigger }: ActionMenuProps) {
               closeMenu(false);
             }
           }}
+          ref={menuRef}
           role="menu"
+          style={menuStyle}
         >
           {items.map((item, index) => (
             <button

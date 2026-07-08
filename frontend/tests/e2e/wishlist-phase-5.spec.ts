@@ -77,6 +77,7 @@ test("system list detail hides rename delete affordances and keeps visibility ed
 });
 
 test("system list action menu supports keyboard and focus contract", async ({ page }) => {
+  await page.setViewportSize({ height: 844, width: 390 });
   await mockSystemListDetailApi(page);
 
   await page.goto(`/lists/${wishlistId}`);
@@ -94,6 +95,8 @@ test("system list action menu supports keyboard and focus contract", async ({ pa
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
   await expect(editItem).toBeFocused();
   await expect(page.getByRole("menuitem")).toHaveCount(1);
+  await assertMenuInsideViewport(page, menu);
+  await expect.poll(() => hasNoHorizontalOverflow(page)).toBe(true);
 
   await page.keyboard.press("ArrowDown");
   await expect(editItem).toBeFocused();
@@ -122,6 +125,28 @@ test("system list action menu supports keyboard and focus contract", async ({ pa
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.locator("#edit-list-name")).toHaveCount(0);
 });
+
+async function assertMenuInsideViewport(page: Page, menu: ReturnType<Page["getByRole"]>) {
+  const box = await menu.boundingBox();
+  expect(box).not.toBeNull();
+  if (!box) {
+    return;
+  }
+
+  const viewport = page.viewportSize();
+  expect(viewport).not.toBeNull();
+  if (!viewport) {
+    return;
+  }
+
+  expect(box.x).toBeGreaterThanOrEqual(8);
+  expect(box.x + box.width).toBeLessThanOrEqual(viewport.width - 8);
+  expect(box.y).toBeGreaterThanOrEqual(0);
+}
+
+async function hasNoHorizontalOverflow(page: Page) {
+  return page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
+}
 
 async function installSession(page: Page) {
   await page.addInitScript(() => {
