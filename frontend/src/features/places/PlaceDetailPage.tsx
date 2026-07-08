@@ -312,22 +312,6 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
             </div>
           </article>
         ) : null}
-
-        <article className="place-detail-panel">
-          <h2>معلومات المكان</h2>
-          <dl className="place-detail-info">
-            <div>
-              <dt>نوع المكان</dt>
-              <dd>{placeTypeLabel(place.type)}</dd>
-            </div>
-            {subtype ? (
-              <div>
-                <dt>النوع الفرعي</dt>
-                <dd>{subtype}</dd>
-              </div>
-            ) : null}
-          </dl>
-        </article>
       </section>
 
       {addToListOpen ? (
