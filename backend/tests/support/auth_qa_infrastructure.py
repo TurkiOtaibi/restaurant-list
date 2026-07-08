@@ -1,7 +1,6 @@
 from datetime import UTC, datetime, timedelta, tzinfo
 from typing import Any
 
-import jose.jwt
 import pytest
 
 from app.core.config import get_settings
@@ -99,7 +98,6 @@ class DeterministicTimeControlHarness:
     def freeze(self, value: datetime) -> None:
         self.current_time = _aware_utc(value)
         _FrozenDateTime.set(self.current_time)
-        self.monkeypatch.setattr(jose.jwt, "datetime", _FrozenDateTime)
 
     def fast_forward(self, delta: timedelta) -> None:
         self.freeze(self.current_time + delta)
