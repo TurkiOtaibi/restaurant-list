@@ -1,6 +1,7 @@
 import { expect, test } from "./support/places-acceptance-harness";
 
-const TEST_PASSWORD = "password123";
+const INSTALL_PROMPT_DISMISS_KEY = "restaurantWishlist.installPromptDismissed";
+const EXPIRED_INSTALL_PROMPT_DISMISSAL_MS = 31 * 24 * 60 * 60 * 1000;
 
 async function dispatchInstallPrompt(page: import("@playwright/test").Page) {
   await page.evaluate(() => {
@@ -87,6 +88,8 @@ test.describe("PR review UI polish findings", () => {
 
     await placesHarness.loadRatingState(dataset.places.restaurantBurger.id);
     await expect(page.locator(".rate-place-dialog .ds-rating-control__value")).toHaveText("9.5/10");
+    await expect(page.locator(".rate-place-dialog .ds-rating-control__scale")).toContainText("1/10");
+    await expect(page.locator(".rate-place-dialog .ds-rating-control__scale")).toContainText("10/10");
     await expect(page.locator(".rate-place-dialog .ds-rating-display")).toHaveCount(0);
     await expect(page.locator(".rate-place-dialog input[type='range']")).toHaveAttribute(
       "aria-valuetext",
@@ -94,17 +97,33 @@ test.describe("PR review UI polish findings", () => {
     );
   });
 
-  test("suppresses install prompt on auth routes and supports dismissal on app routes", async ({
+  test("does not show a fake action affordance on list cards without actions", async ({
     page,
     placesHarness
   }) => {
     const dataset = await placesHarness.resetFeature("PLACE-HARNESS");
 
-    await page.goto("/login?returnTo=%2Fplaces");
-    await page.locator('input[type="email"]').fill(dataset.user.email);
-    await page.locator('input[type="password"]').fill(TEST_PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await expect(page).toHaveURL(/\/places/);
+    await page.goto("/lists/public");
+    const publicListCard = page.locator(".ds-list-card", {
+      hasText: dataset.lists.ownedPublic.name
+    });
+
+    await expect(publicListCard).toBeVisible({ timeout: 30_000 });
+    await expect(publicListCard).toHaveClass(/ds-list-card--plain/);
+    await expect(publicListCard.locator(".ds-list-card__more")).toHaveCount(0);
+    await expect(publicListCard).toHaveAttribute("href", `/lists/public/${dataset.lists.ownedPublic.id}`);
+  });
+
+  test("suppresses install prompt on auth routes and supports dismissal on app routes", async ({
+    page,
+    placesHarness
+  }) => {
+    await page.goto("/login");
+    await dispatchInstallPrompt(page);
+    await expect(page.locator(".install-app-prompt")).toHaveCount(0);
+
+    await placesHarness.resetFeature("PLACE-HARNESS");
+    await placesHarness.loadPlacesList({ type: "restaurant" });
 
     await dispatchInstallPrompt(page);
     await expect(page.locator(".install-app-prompt")).toBeVisible();
@@ -113,9 +132,17 @@ test.describe("PR review UI polish findings", () => {
 
     await page.locator(".install-app-prompt button").last().click();
     await expect(page.locator(".install-app-prompt")).toHaveCount(0);
+    await expect
+      .poll(() => page.evaluate((key) => window.localStorage.getItem(key), INSTALL_PROMPT_DISMISS_KEY))
+      .toMatch(/^\d+$/);
 
-    await page.goto("/login");
+    await page.evaluate(
+      ({ elapsedMs, key }) => {
+        window.localStorage.setItem(key, String(Date.now() - elapsedMs));
+      },
+      { elapsedMs: EXPIRED_INSTALL_PROMPT_DISMISSAL_MS, key: INSTALL_PROMPT_DISMISS_KEY }
+    );
     await dispatchInstallPrompt(page);
-    await expect(page.locator(".install-app-prompt")).toHaveCount(0);
+    await expect(page.locator(".install-app-prompt")).toBeVisible();
   });
 });

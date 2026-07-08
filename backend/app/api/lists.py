@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.schemas import CollectionResponse, DeleteResponse, collection_response
 from app.db.session import get_db
-from app.modules.auth.dependencies import get_current_user
+from app.modules.auth.dependencies import get_current_user, get_optional_current_user
 from app.modules.auth.models import User
 from app.modules.lists.schemas import (
     ListCreateRequest,
@@ -39,6 +39,7 @@ from app.modules.lists.services import (
 
 router = APIRouter(prefix="/lists", tags=["lists"])
 CurrentUser = Annotated[User, Depends(get_current_user)]
+OptionalCurrentUser = Annotated[User | None, Depends(get_optional_current_user)]
 DatabaseSession = Annotated[AsyncSession, Depends(get_db)]
 
 
@@ -61,7 +62,6 @@ async def list_lists(
 
 @router.get("/public", response_model=CollectionResponse[PublicListResponse])
 async def list_public_lists(
-    _: CurrentUser,
     db: DatabaseSession,
     limit: Annotated[int, Query(ge=1, le=100)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
@@ -79,14 +79,14 @@ async def list_public_lists(
 @router.get("/public/{list_id}", response_model=PublicListDetailResponse)
 async def get_public_list(
     list_id: str,
-    current_user: CurrentUser,
+    current_user: OptionalCurrentUser,
     db: DatabaseSession,
 ) -> PublicListDetailResponse:
     user_list = await get_public_user_list(db, list_id=list_id)
     return await public_list_detail_response(
         db,
         user_list=user_list,
-        current_user_id=current_user.id,
+        current_user_id=current_user.id if current_user else None,
     )
 
 

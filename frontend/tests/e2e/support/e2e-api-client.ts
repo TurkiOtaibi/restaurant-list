@@ -1,4 +1,7 @@
-export const E2E_API_BASE_URL = process.env.E2E_API_BASE_URL ?? "http://localhost:8000";
+const E2E_API_PORT = process.env.E2E_API_PORT ?? "8000";
+
+export const E2E_API_BASE_URL =
+  process.env.E2E_API_BASE_URL ?? `http://localhost:${E2E_API_PORT}`;
 export const E2E_TEST_PASSWORD = "password123";
 
 type AuthResponse = {

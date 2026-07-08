@@ -237,6 +237,7 @@ async def test_public_private_list_visibility_and_guest_denial(client: AsyncClie
         f"/api/v1/lists/public/{owner_list['id']}",
         headers=auth_header(other_token),
     )
+    guest_public_detail = await client.get(f"/api/v1/lists/public/{owner_list['id']}")
     private_again = await client.patch(
         f"/api/v1/lists/{owner_list['id']}/visibility",
         json={"visibility": "private"},
@@ -250,7 +251,8 @@ async def test_public_private_list_visibility_and_guest_denial(client: AsyncClie
     assert private_collection.status_code == 200
     assert collection_data(private_collection) == []
     assert private_detail.status_code == 404
-    assert guest_collection.status_code == 401
+    assert guest_collection.status_code == 200
+    assert collection_data(guest_collection) == []
     assert visibility.status_code == 200
     visibility_data = visibility.json()["data"]
     assert visibility_data["id"] == owner_list["id"]
@@ -268,6 +270,13 @@ async def test_public_private_list_visibility_and_guest_denial(client: AsyncClie
     assert public_detail.json()["ownerDisplayName"] == "تركي"
     assert "userId" not in public_detail.json()
     assert "owner@example.com" not in str(public_detail.json())
+    assert guest_public_detail.status_code == 200
+    assert guest_public_detail.json()["id"] == owner_list["id"]
+    assert (
+        guest_public_detail.json()["ownerDisplayName"] == public_detail.json()["ownerDisplayName"]
+    )
+    assert "userId" not in guest_public_detail.json()
+    assert "owner@example.com" not in str(guest_public_detail.json())
     assert private_again.status_code == 200
     private_again_data = private_again.json()["data"]
     assert private_again_data["id"] == owner_list["id"]

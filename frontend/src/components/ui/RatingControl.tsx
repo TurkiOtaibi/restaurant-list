@@ -72,6 +72,14 @@ export function RatingControl({
           type="range"
           value={currentValue}
         />
+        <span className="ds-rating-control__scale" aria-hidden="true">
+          <span>
+            <NumberText>{formatOutOfTen(1)}</NumberText>
+          </span>
+          <span>
+            <NumberText>{formatOutOfTen(10)}</NumberText>
+          </span>
+        </span>
         <span className="ds-rating-control__star-row" aria-hidden="true">
           {Array.from({ length: 10 }, (_, index) => {
             const starValue = index + 1;

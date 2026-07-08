@@ -31,3 +31,22 @@ async def get_current_user(
         unauthorized("USER_NOT_FOUND", "User no longer exists.")
 
     return user
+
+
+async def get_optional_current_user(
+    credentials: BearerCredentials,
+    db: DatabaseSession,
+) -> User | None:
+    if credentials is None:
+        return None
+
+    payload = decode_token(credentials.credentials, token_type="access")
+    user_id = payload.get("sub")
+    if not isinstance(user_id, str):
+        unauthorized("INVALID_TOKEN", "Token subject is invalid.")
+
+    user = await db.get(User, user_id)
+    if user is None:
+        unauthorized("USER_NOT_FOUND", "User no longer exists.")
+
+    return user

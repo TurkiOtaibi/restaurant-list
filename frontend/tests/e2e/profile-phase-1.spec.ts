@@ -47,7 +47,11 @@ test("profile renders identity header stats and primary sections from profile co
   await expect(page.getByLabel("التقييمات: 2")).toBeVisible();
   await expect(page.getByLabel("القوائم: 1")).toBeVisible();
   await expect(page.getByLabel("متوسط التقييم: 8.5/10")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 2, name: "الأماكن التي قيّمتها" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "آخر الأماكن التي قيّمتها" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "عرض كل الأماكن التي قيّمتها" })).toHaveAttribute(
+    "href",
+    "/profile/ratings"
+  );
   await expect(page.getByRole("heading", { level: 2, name: "قوائمي" })).toBeVisible();
   await expect(page.getByRole("link", { name: "عرض القوائم" })).toHaveAttribute("href", "/lists");
 
@@ -71,6 +75,38 @@ test("profile uses server average rating field to control the average tile", asy
   await expect(page.getByLabel("التقييمات: 1")).toBeVisible();
   await expect(page.getByLabel("القوائم: 1")).toBeVisible();
   await expect(page.getByText("متوسط التقييم")).toHaveCount(0);
+});
+
+test("profile ratings preview is capped and full archive route keeps all ratings", async ({
+  page
+}) => {
+  await mockProfileApi(page, {
+    ratings: [
+      { id: "r1", name: "مكان أول", rating: 9, type: "restaurant" },
+      { id: "r2", name: "مكان ثاني", rating: 8, type: "cafe" },
+      { id: "r3", name: "مكان ثالث", rating: 7, type: "restaurant" },
+      { id: "r4", name: "مكان رابع", rating: 6, type: "cafe" },
+      { id: "r5", name: "مكان خامس", rating: 5, type: "restaurant" }
+    ]
+  });
+
+  await page.goto("/profile");
+
+  await expect(page.getByRole("heading", { level: 2, name: "آخر الأماكن التي قيّمتها" })).toBeVisible();
+  await expect(page.locator(".profile-rating-card--preview")).toHaveCount(4);
+  await expect(page.getByText("مكان خامس")).toHaveCount(0);
+  await expect(page.getByText("ملاحظتك الخاصة")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "عرض كل الأماكن التي قيّمتها" })).toHaveAttribute(
+    "href",
+    "/profile/ratings"
+  );
+
+  await page.goto("/profile/ratings");
+
+  await expect(page.getByRole("heading", { level: 2, name: "الأماكن التي قيّمتها" })).toBeVisible();
+  await expect(page.locator(".profile-rating-card")).toHaveCount(5);
+  await expect(page.getByText("مكان خامس")).toBeVisible();
+  await expect(page.getByRole("link", { name: "العودة إلى صفحتي" })).toHaveAttribute("href", "/profile");
 });
 
 test("profile ActionMenu wraps keyboard focus across multiple items", async ({ page }) => {
@@ -122,7 +158,7 @@ test("profile shows a friendly empty ratings state", async ({ page }) => {
 
   await page.goto("/profile");
 
-  await expect(page.getByRole("heading", { level: 2, name: "الأماكن التي قيّمتها" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "آخر الأماكن التي قيّمتها" })).toBeVisible();
   await expect(page.getByText("لم تقيّم أي مكان بعد")).toBeVisible();
   await expect(page.getByRole("link", { name: "استكشف الأماكن" })).toHaveAttribute("href", "/places");
   await expect(page.getByLabel("التقييمات: 0")).toBeVisible();

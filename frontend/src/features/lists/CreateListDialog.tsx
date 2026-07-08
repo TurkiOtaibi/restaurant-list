@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { Button, ResponsiveDialog, StatusMessage, TextInput } from "@/components/ui";
 import { ApiError, UserList, apiRequest } from "@/lib/api";
@@ -14,7 +13,6 @@ type CreateListDialogProps = {
 };
 
 export function CreateListDialog({ onClose, open }: CreateListDialogProps) {
-  const router = useRouter();
   const nameRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
   const [visibility, setVisibility] = useState<UserList["visibility"]>("private");
@@ -62,7 +60,7 @@ export function CreateListDialog({ onClose, open }: CreateListDialogProps) {
         body: JSON.stringify({ name: trimmedName, visibility })
       });
 
-      router.replace(`/lists/${response.id}`);
+      window.location.href = `/lists/${response.id}`;
     } catch (caught) {
       setFormError(
         caught instanceof ApiError

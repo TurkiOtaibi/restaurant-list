@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import {
@@ -26,7 +25,6 @@ import {
   Place,
   Profile,
   apiRequest,
-  clearTokens,
   ensureSession,
   isSessionRecoveryError
 } from "@/lib/api";
@@ -44,7 +42,7 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
   const [place, setPlace] = useState<Place | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [needsAuth, setNeedsAuth] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [addToListOpen, setAddToListOpen] = useState(false);
   const [wishlistId, setWishlistId] = useState<string | null>(null);
   const [wishlistMessage, setWishlistMessage] = useState("");
@@ -59,22 +57,22 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
     setLoading(true);
     setError("");
     try {
-      if (!(await ensureSession())) {
-        setNeedsAuth(true);
-        setLoading(false);
-        return;
-      }
+      const restoredToken = await ensureSession().catch(() => null);
+      setIsAuthenticated(Boolean(restoredToken));
 
-      const [placeResponse, profileResponse] = await Promise.all([
-        apiRequest<Place>(`/places/${placeId}`),
-        apiRequest<Profile>("/profile")
-      ]);
+      const placeResponse = await apiRequest<Place>(`/places/${placeId}`, {
+        auth: "optional"
+      });
       setPlace(placeResponse);
-      setWishlistId(profileResponse.wishlist?.id ?? null);
+      if (restoredToken) {
+        const profileResponse = await apiRequest<Profile>("/profile");
+        setWishlistId(profileResponse.wishlist?.id ?? null);
+      } else {
+        setWishlistId(null);
+      }
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 401) {
-        clearTokens();
-        setNeedsAuth(true);
+        setError(caught.message);
       } else if (isSessionRecoveryError(caught)) {
         setError("تعذر استعادة الجلسة. حاول مرة أخرى.");
       } else {
@@ -88,16 +86,6 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
   useEffect(() => {
     void loadPlace();
   }, [loadPlace]);
-
-  if (needsAuth) {
-    return (
-      <main className="content place-detail-page">
-        <StatusMessage tone="notice">
-          سجل الدخول لعرض التفاصيل. <Link href={loginHrefForReturn(`/places/${placeId}`)}>تسجيل الدخول</Link>
-        </StatusMessage>
-      </main>
-    );
-  }
 
   if (loading) {
     return (
@@ -131,17 +119,32 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
   }
 
   const subtype = placeSubtypeLabel(place.subtype);
+  const currentPlaceId = place.id;
   const isInWishlist = Boolean(wishlistId && place.currentUserListIds.includes(wishlistId));
+  const rateHref = isAuthenticated
+    ? `/places/${currentPlaceId}/rate`
+    : loginHrefForReturn(`/places/${currentPlaceId}/rate`);
+
+  function openAddToList() {
+    if (!isAuthenticated) {
+      window.location.href = loginHrefForReturn(`/places/${currentPlaceId}`);
+      return;
+    }
+    setAddToListOpen(true);
+  }
+
+  function goToRating() {
+    window.location.href = rateHref;
+  }
+
   const menuItems = [
     {
       label: "أضف إلى قائمة",
-      onSelect: () => setAddToListOpen(true)
+      onSelect: openAddToList
     },
     {
       label: place.currentUserRating ? "تعديل التقييم" : "قيّم المكان",
-      onSelect: () => {
-        window.location.href = `/places/${place.id}/rate`;
-      }
+      onSelect: goToRating
     },
     ...(place.currentUserIsCreator
       ? [
@@ -183,6 +186,10 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
 
   async function toggleWishlist() {
     if (!place) {
+      return;
+    }
+    if (!isAuthenticated) {
+      window.location.href = loginHrefForReturn(`/places/${currentPlaceId}`);
       return;
     }
 
@@ -241,7 +248,7 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
             {subtype ? <Chip>{subtype}</Chip> : null}
           </div>
           <div className="actions place-detail-hero__actions">
-            <Button className="ds-button--full" onClick={() => setAddToListOpen(true)} type="button">
+            <Button className="ds-button--full" onClick={openAddToList} type="button">
               <AddIcon />
               أضف إلى قائمة
             </Button>
@@ -286,7 +293,7 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
             ) : (
               <p className="muted">لم تضف تقييما لهذا المكان بعد.</p>
             )}
-            <ButtonLink href={`/places/${place.id}/rate`} variant="secondary">
+            <ButtonLink href={rateHref} variant="secondary">
               {place.currentUserRating ? "تعديل التقييم" : "قيّم المكان"}
             </ButtonLink>
           </div>

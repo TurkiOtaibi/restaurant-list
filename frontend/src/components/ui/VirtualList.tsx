@@ -42,9 +42,16 @@ export function VirtualList<T>({
 
   if (!windowed) {
     return (
-      <div aria-label={ariaLabel} className={className}>
+      <div aria-label={ariaLabel} className={className} role={ariaLabel ? "list" : undefined}>
         {items.map((item, index) => (
-          <div key={getKey(item, index)}>{renderItem(item, index)}</div>
+          <div
+            aria-posinset={ariaLabel ? index + 1 : undefined}
+            aria-setsize={ariaLabel ? items.length : undefined}
+            key={getKey(item, index)}
+            role={ariaLabel ? "listitem" : undefined}
+          >
+            {renderItem(item, index)}
+          </div>
         ))}
       </div>
     );
@@ -181,13 +188,20 @@ function WindowedList<T>({
   const bottomPad = Math.max(0, totalHeight() - offsetOf(safeEnd));
 
   return (
-    <div aria-label={ariaLabel} ref={containerRef}>
+    <div aria-label={ariaLabel} ref={containerRef} role={ariaLabel ? "list" : undefined}>
       <div aria-hidden="true" style={{ height: topPad }} />
       {visible.map((item, localIndex) => {
         const index = range.start + localIndex;
         const key = getKey(item, index);
         return (
-          <div key={key} ref={(element) => measure(key, element)} style={{ marginBottom: gap }}>
+          <div
+            aria-posinset={ariaLabel ? index + 1 : undefined}
+            aria-setsize={ariaLabel ? items.length : undefined}
+            key={key}
+            ref={(element) => measure(key, element)}
+            role={ariaLabel ? "listitem" : undefined}
+            style={{ marginBottom: gap }}
+          >
             {renderItem(item, index)}
           </div>
         );

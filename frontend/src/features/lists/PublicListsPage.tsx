@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import {
@@ -15,42 +14,23 @@ import {
   ApiError,
   ListDetail,
   UserList,
-  apiCollection,
-  clearTokens,
-  ensureSession,
-  isSessionRecoveryError
+  apiCollection
 } from "@/lib/api";
-import { loginHrefForReturn } from "@/lib/authReturn";
 
 export function PublicListsPage() {
   const [lists, setLists] = useState<ListDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [needsAuth, setNeedsAuth] = useState(false);
 
   const loadLists = useCallback(async () => {
     setError("");
-    setNeedsAuth(false);
     setLoading(true);
 
     try {
-      if (!(await ensureSession())) {
-        setNeedsAuth(true);
-        setLoading(false);
-        return;
-      }
-
-      const response = await apiCollection<UserList>("/lists/public");
+      const response = await apiCollection<UserList>("/lists/public", { auth: "optional" });
       setLists(response.data.map((list) => ({ ...list, items: [] })));
     } catch (caught) {
-      if (caught instanceof ApiError && caught.status === 401) {
-        clearTokens();
-        setNeedsAuth(true);
-      } else if (isSessionRecoveryError(caught)) {
-        setError("تعذر استعادة الجلسة. حاول مرة أخرى.");
-      } else {
-        setError(caught instanceof ApiError ? caught.message : "تعذر تحميل القوائم العامة.");
-      }
+      setError(caught instanceof ApiError ? caught.message : "تعذر تحميل القوائم العامة.");
     } finally {
       setLoading(false);
     }
@@ -71,11 +51,6 @@ export function PublicListsPage() {
         </ButtonLink>
       </section>
 
-      {needsAuth ? (
-        <StatusMessage tone="notice">
-          سجّل الدخول لعرض القوائم العامة. <Link href={loginHrefForReturn("/lists/public")}>تسجيل الدخول</Link>
-        </StatusMessage>
-      ) : null}
 
       {loading ? <LoadingState count={3} delayMs={0} label="جاري تحميل القوائم العامة" /> : null}
 
@@ -90,14 +65,14 @@ export function PublicListsPage() {
         </section>
       ) : null}
 
-      {!loading && !needsAuth && !error && lists.length === 0 ? (
+      {!loading && !error && lists.length === 0 ? (
         <EmptyState
           action={<ButtonLink href="/lists">رجوع لقوائمي</ButtonLink>}
           title="لا توجد قوائم عامة"
         />
       ) : null}
 
-      {!loading && !needsAuth && !error && lists.length > 0 ? (
+      {!loading && !error && lists.length > 0 ? (
         <section className="public-lists-section" aria-labelledby="public-lists-section-title">
           <div className="library-section__header">
             <h2 id="public-lists-section-title">قوائم عامة</h2>

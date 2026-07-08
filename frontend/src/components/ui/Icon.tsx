@@ -145,6 +145,15 @@ export function FilterIcon(props: IconProps) {
   );
 }
 
+export function SearchIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <circle cx="11" cy="11" r="6" />
+      <path d="m16 16 4 4" />
+    </BaseIcon>
+  );
+}
+
 export function MoreVerticalIcon(props: IconProps) {
   return (
     <BaseIcon {...props}>

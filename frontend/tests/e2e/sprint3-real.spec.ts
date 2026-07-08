@@ -3,6 +3,10 @@ import { expect, test, type Page } from "@playwright/test";
 import { PlacesAcceptanceHarness } from "./support/places-acceptance-harness";
 import { ensureE2eApiServer } from "./support/e2e-api-server";
 
+const E2E_API_PORT = process.env.E2E_API_PORT ?? "8000";
+const REAL_API_BASE_URL =
+  process.env.E2E_API_BASE_URL ?? `http://localhost:${E2E_API_PORT}`;
+
 test.beforeAll(async () => {
   await ensureE2eApiServer();
 });
@@ -111,7 +115,7 @@ test("real frontend and api complete list edit add remove delete and profile flo
   const createListResponse = await createListResponsePromise;
   expect(createListResponse.status()).toBe(201);
   await expect(page).toHaveURL(/\/lists\/[0-9a-f-]+$/, { timeout: 30_000 });
-  await expect(page.getByRole("heading", { name: listName })).toBeVisible();
+  await expect(page.getByRole("heading", { name: listName })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText("عامة")).toBeVisible();
 
   await page.goto("/lists/public");
@@ -177,10 +181,24 @@ test("real frontend and api complete list edit add remove delete and profile flo
   await expect(page.getByRole("heading", { name: editedListName })).toBeVisible();
   await expect(page.getByRole("link", { name: new RegExp(placeName) })).toBeVisible();
 
-  await page.getByRole("link", { name: "صفحتي" }).first().click();
-  await expect(page).toHaveURL(/\/profile$/);
+  const profileNavLink = page
+    .getByRole("navigation", { name: "التنقل الرئيسي" })
+    .getByRole("link", { name: "صفحتي" });
+  await expect(profileNavLink).toHaveAttribute("href", "/profile");
+  await Promise.all([
+    page.waitForURL(/\/profile$/, { timeout: 15_000 }),
+    profileNavLink.click()
+  ]);
   await expect(page.getByRole("heading", { name: "صفحتي" })).toBeVisible();
   await expect(page.getByText(placeName)).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText("ملاحظة خاصة للاختبار")).toHaveCount(0);
+  const ratingsArchiveLink = page.getByRole("link", { name: "عرض كل الأماكن التي قيّمتها" });
+  await expect(ratingsArchiveLink).toHaveAttribute("href", "/profile/ratings");
+  await Promise.all([
+    page.waitForURL(/\/profile\/ratings$/, { timeout: 15_000 }),
+    ratingsArchiveLink.click()
+  ]);
+  await expect(page.getByRole("heading", { name: "الأماكن التي قيّمتها" })).toBeVisible();
   await expect(page.getByText("ملاحظة خاصة للاختبار")).toBeVisible();
   await expect(page.locator("body")).not.toContainText("جربته");
   await expect(page.locator("body")).not.toContainText(/[٠-٩۰-۹]/);
@@ -231,7 +249,7 @@ test("real places library covers subtype filters sorting layout bidi and errors"
 
   const apiRequests: string[] = [];
   page.on("request", (request) => {
-    if (request.url().includes("localhost:8000")) {
+    if (request.url().startsWith(REAL_API_BASE_URL)) {
       apiRequests.push(request.url());
     }
   });
@@ -313,7 +331,7 @@ test("real places library covers subtype filters sorting layout bidi and errors"
   await expect(page.getByRole("link", { name: "أضف مكانًا" })).toBeVisible();
 
   expect(apiRequests.some((url) => url.includes("/api/v1/places"))).toBeTruthy();
-  expect(apiRequests.some((url) => /localhost:8000\/places/.test(url))).toBeFalsy();
+  expect(apiRequests.some((url) => url === `${REAL_API_BASE_URL}/places`)).toBeFalsy();
 });
 
 test("technical shell stories expose manifest headers and legacy redirects", async ({
@@ -323,10 +341,65 @@ test("technical shell stories expose manifest headers and legacy redirects", asy
   const manifest = await request.get("/manifest.webmanifest");
   expect(manifest.ok()).toBeTruthy();
   await expect(manifest.json()).resolves.toMatchObject({
+    categories: ["food", "lifestyle", "social"],
+    id: "/",
     name: "سجل",
+    scope: "/",
     short_name: "سجل",
-    display: "standalone"
+    display: "standalone",
+    display_override: ["standalone", "minimal-ui"],
+    launch_handler: {
+      client_mode: "focus-existing"
+    },
+    prefer_related_applications: false,
+    screenshots: expect.arrayContaining([
+      expect.objectContaining({
+        form_factor: "narrow",
+        sizes: "390x844",
+        src: "/screenshots/sijil-mobile-home.png",
+        type: "image/png"
+      }),
+      expect.objectContaining({
+        form_factor: "wide",
+        sizes: "1280x720",
+        src: "/screenshots/sijil-desktop-home.png",
+        type: "image/png"
+      })
+    ]),
+    shortcuts: expect.arrayContaining([
+      expect.objectContaining({
+        icons: [expect.objectContaining({ src: "/icon-192.png", sizes: "192x192" })],
+        name: "الأماكن",
+        url: "/places?type=restaurant"
+      }),
+      expect.objectContaining({
+        icons: [expect.objectContaining({ src: "/icon-192.png", sizes: "192x192" })],
+        name: "قوائمي",
+        url: "/lists"
+      }),
+      expect.objectContaining({
+        icons: [expect.objectContaining({ src: "/icon-192.png", sizes: "192x192" })],
+        name: "صفحتي",
+        url: "/profile"
+      })
+    ])
   });
+
+  const mobileScreenshot = await request.get("/screenshots/sijil-mobile-home.png");
+  expect(mobileScreenshot.ok()).toBeTruthy();
+  expect(mobileScreenshot.headers()["content-type"]).toContain("image/png");
+
+  const desktopScreenshot = await request.get("/screenshots/sijil-desktop-home.png");
+  expect(desktopScreenshot.ok()).toBeTruthy();
+  expect(desktopScreenshot.headers()["content-type"]).toContain("image/png");
+
+  const serviceWorker = await request.get("/service-worker.js");
+  expect(serviceWorker.ok()).toBeTruthy();
+  await expect(serviceWorker.text()).resolves.toContain("offline.html");
+
+  const offlineFallback = await request.get("/offline.html");
+  expect(offlineFallback.ok()).toBeTruthy();
+  await expect(offlineFallback.text()).resolves.toContain("أنت غير متصل");
 
   const health = await request.get("/health");
   expect(health.headers()["x-content-type-options"]).toBe("nosniff");
@@ -363,7 +436,7 @@ type ApiPlaceType = "restaurant" | "cafe" | "ice_cream";
 type ApiPlaceSubtype = "burger" | "italian" | "grill" | "coffee" | null;
 
 async function createApiUser(email: string): Promise<string> {
-  const response = await fetch("http://localhost:8000/api/v1/auth/register", {
+  const response = await fetch(`${REAL_API_BASE_URL}/api/v1/auth/register`, {
     body: JSON.stringify({ displayName: "مستخدم اختبار", email, password: "password123" }),
     headers: { "Content-Type": "application/json" },
     method: "POST"
@@ -383,7 +456,7 @@ async function createApiPlace(
   type: ApiPlaceType,
   subtype: ApiPlaceSubtype
 ): Promise<{ id: string; name: string }> {
-  const response = await fetch("http://localhost:8000/api/v1/places", {
+  const response = await fetch(`${REAL_API_BASE_URL}/api/v1/places`, {
     body: JSON.stringify({ name, type, subtype }),
     headers: {
       Authorization: `Bearer ${token}`,
@@ -400,7 +473,7 @@ async function createApiPlace(
 }
 
 async function rateApiPlace(token: string, placeId: string, rating: number): Promise<void> {
-  const response = await fetch("http://localhost:8000/api/v1/ratings", {
+  const response = await fetch(`${REAL_API_BASE_URL}/api/v1/ratings`, {
     body: JSON.stringify({ placeId, rating }),
     headers: {
       Authorization: `Bearer ${token}`,

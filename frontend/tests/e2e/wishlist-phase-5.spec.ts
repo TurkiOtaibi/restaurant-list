@@ -1,8 +1,17 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type Route } from "@playwright/test";
 
 const now = new Date().toISOString();
 const wishlistId = "wishlist-list";
 const placeId = "wishlist-place";
+const playwrightPort = process.env.PLAYWRIGHT_PORT ?? "3000";
+const mockFrontendOrigin =
+  process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${playwrightPort}`;
+const mockCorsHeaders = {
+  "Access-Control-Allow-Credentials": "true",
+  "Access-Control-Allow-Headers": "authorization, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+  "Access-Control-Allow-Origin": mockFrontendOrigin
+};
 
 test("place detail toggles wishlist membership in place", async ({ page }) => {
   await mockWishlistPlaceDetailApi(page);
@@ -120,6 +129,15 @@ async function installSession(page: Page) {
   });
 }
 
+async function fulfillMockJson(route: Route, payload: unknown, status = 200) {
+  return route.fulfill({
+    body: JSON.stringify(payload),
+    contentType: "application/json",
+    headers: mockCorsHeaders,
+    status
+  });
+}
+
 async function mockWishlistPlaceDetailApi(page: Page) {
   await installSession(page);
   let inWishlist = false;
@@ -185,26 +203,21 @@ async function mockProfileApi(
   await installSession(page);
   await page.unroute("**/api/v1/**").catch(() => undefined);
   await page.route("**/api/v1/**", async (route) => {
-    const path = new URL(route.request().url()).pathname.replace("/api/v1", "");
-    if (path === "/auth/refresh") {
+    const request = route.request();
+    const path = new URL(request.url()).pathname.replace("/api/v1", "");
+    if (request.method() === "OPTIONS") {
       return route.fulfill({
-        body: JSON.stringify({ accessToken: "mock-access-token" }),
-        contentType: "application/json",
-        status: 200
+        headers: mockCorsHeaders,
+        status: 204
       });
+    }
+    if (path === "/auth/refresh") {
+      return fulfillMockJson(route, { accessToken: "mock-access-token" });
     }
     if (path === "/profile") {
-      return route.fulfill({
-        body: JSON.stringify(profilePayload({ wishlist })),
-        contentType: "application/json",
-        status: 200
-      });
+      return fulfillMockJson(route, profilePayload({ wishlist }));
     }
-    return route.fulfill({
-      body: JSON.stringify({ detail: { code: "MOCK_NOT_FOUND", message: path } }),
-      contentType: "application/json",
-      status: 404
-    });
+    return fulfillMockJson(route, { detail: { code: "MOCK_NOT_FOUND", message: path } }, 404);
   });
 }
 
