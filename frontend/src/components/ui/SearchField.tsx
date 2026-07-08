@@ -1,6 +1,6 @@
 "use client";
 
-import type { InputHTMLAttributes } from "react";
+import type { InputHTMLAttributes, Ref } from "react";
 import { useId } from "react";
 
 import { formatNumber } from "@/lib/numerals";
@@ -11,6 +11,7 @@ import { ClearIcon } from "./Icon";
 
 type SearchFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & {
   clearLabel?: string;
+  inputRef?: Ref<HTMLInputElement>;
   label: string;
   onClear?: () => void;
   resultCount?: number;
@@ -20,6 +21,7 @@ type SearchFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & {
 export function SearchField({
   clearLabel = "مسح البحث",
   id,
+  inputRef,
   label,
   onClear,
   resultCount,
@@ -43,6 +45,7 @@ export function SearchField({
         <input
           aria-describedby={describedBy}
           id={searchId}
+          ref={inputRef}
           role="searchbox"
           type="search"
           value={value}

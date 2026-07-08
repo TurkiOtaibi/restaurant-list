@@ -2,6 +2,7 @@
 
 import { Tabs } from "@base-ui/react/tabs";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -20,7 +21,6 @@ import {
   ApiError,
   Place,
   apiCollection,
-  clearTokens,
   ensureSession,
   isSessionRecoveryError
 } from "@/lib/api";
@@ -45,6 +45,8 @@ import {
 const PAGE_SIZE = 20;
 
 export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
+  const searchParams = useSearchParams();
+  const currentSearch = searchParams.toString();
   const [activeType, setActiveType] = useState<PlaceType>(initialType);
   const [places, setPlaces] = useState<Place[]>([]);
   const [total, setTotal] = useState<number | null>(null);
@@ -53,12 +55,13 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
   const [reachedEnd, setReachedEnd] = useState(false);
   const [error, setError] = useState("");
   const [pageError, setPageError] = useState(false);
-  const [needsAuth, setNeedsAuth] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [submittedSearch, setSubmittedSearch] = useState("");
   const [activeSubtype, setActiveSubtype] = useState<SubtypeFilterValue>("all");
   const [subtypeFilterOpen, setSubtypeFilterOpen] = useState(false);
   const createLinkRef = useRef<HTMLAnchorElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   // The active load generation. Switching type/filter/search increments it so a
   // late page response from a previous filter is ignored (no out-of-order rows).
@@ -70,7 +73,10 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
   const loadingMoreRef = useRef(false);
 
   useEffect(() => {
-    const urlState = parsePlaceLibraryUrlState(window.location.search, initialType);
+    const urlState = parsePlaceLibraryUrlState(
+      currentSearch ? `?${currentSearch}` : "",
+      initialType
+    );
 
     setActiveType(urlState.type);
     setActiveSubtype(urlState.subtype);
@@ -80,7 +86,10 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
     if (urlState.focusCreatePlace) {
       createLinkRef.current?.focus();
     }
-  }, [initialType]);
+    if (urlState.focusSearch) {
+      window.setTimeout(() => searchInputRef.current?.focus(), 0);
+    }
+  }, [currentSearch, initialType]);
 
   const buildQuery = useCallback(
     (offset: number) =>
@@ -100,15 +109,10 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
     const isCurrent = () => requestId === requestIdRef.current;
 
     try {
-      if (!(await ensureSession())) {
-        if (isCurrent()) {
-          setNeedsAuth(true);
-          setLoading(false);
-        }
-        return;
+      const restoredToken = await ensureSession().catch(() => null);
+      if (isCurrent()) {
+        setIsAuthenticated(Boolean(restoredToken));
       }
-
-      setNeedsAuth(false);
       setLoading(true);
       setError("");
       setPageError(false);
@@ -116,7 +120,9 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
       loadingMoreRef.current = false;
       setLoadingMore(false);
 
-      const response = await apiCollection<Place>(`/places?${buildQuery(0)}`);
+      const response = await apiCollection<Place>(`/places?${buildQuery(0)}`, {
+        auth: "optional"
+      });
       if (!isCurrent()) {
         return;
       }
@@ -129,8 +135,7 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
         return;
       }
       if (caught instanceof ApiError && caught.status === 401) {
-        clearTokens();
-        setNeedsAuth(true);
+        setError(caught.message);
       } else if (isSessionRecoveryError(caught)) {
         setError("تعذر استعادة الجلسة. حاول مرة أخرى.");
       } else {
@@ -153,7 +158,10 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
     setPageError(false);
 
     try {
-      const response = await apiCollection<Place>(`/places?${buildQuery(loadedCountRef.current)}`);
+      const response = await apiCollection<Place>(
+        `/places?${buildQuery(loadedCountRef.current)}`,
+        { auth: "optional" }
+      );
       if (requestId !== requestIdRef.current) {
         return;
       }
@@ -173,14 +181,9 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
       if (response.data.length === 0 || loadedCountRef.current >= response.meta.total) {
         setReachedEnd(true);
       }
-    } catch (caught) {
+    } catch {
       if (requestId === requestIdRef.current) {
-        if (caught instanceof ApiError && caught.status === 401) {
-          clearTokens();
-          setNeedsAuth(true);
-        } else {
-          setPageError(true);
-        }
+        setPageError(true);
       }
     } finally {
       loadingMoreRef.current = false;
@@ -202,7 +205,7 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
     if (!sentinel) {
       return;
     }
-    if (loading || needsAuth || reachedEnd || pageError) {
+    if (loading || reachedEnd || pageError) {
       return;
     }
     const observer = new IntersectionObserver(
@@ -215,7 +218,7 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [loadNextPage, loading, needsAuth, pageError, reachedEnd, places.length]);
+  }, [loadNextPage, loading, pageError, reachedEnd, places.length]);
 
   function selectType(type: PlaceType) {
     if (type === activeType) {
@@ -281,6 +284,9 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
     : reachedEnd && hasResults
       ? "تم عرض كل الأماكن"
       : "";
+  const createPlaceHref = isAuthenticated
+    ? `/places/new?type=${activeType}`
+    : loginHrefForReturn(`/places/new?type=${activeType}`);
 
   return (
     <main className="content place-library-page">
@@ -291,21 +297,14 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
         <Link
           aria-label="أضف مكانًا"
           className="ds-button ds-button--icon"
-          href={`/places/new?type=${activeType}`}
+          href={createPlaceHref}
           ref={createLinkRef}
         >
           <AddIcon />
         </Link>
       </section>
 
-      {needsAuth ? (
-        <StatusMessage tone="notice">
-          سجل الدخول لعرض الأماكن. <Link href={loginHrefForReturn(`/places?type=${activeType}`)}>تسجيل الدخول</Link>
-        </StatusMessage>
-      ) : null}
-
-      {!needsAuth ? (
-        <>
+      <>
           <Tabs.Root
             className="place-type-tabs"
             dir="rtl"
@@ -337,6 +336,7 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
 
           <form aria-label="بحث الأماكن" className="place-library-search" onSubmit={handleSearchSubmit}>
             <SearchField
+              inputRef={searchInputRef}
               label="بحث"
               onChange={(event) => setSearchTerm(event.target.value)}
               onClear={searchTerm || submittedSearch ? handleClearSearch : undefined}
@@ -395,8 +395,7 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
               ))}
             </div>
           </BottomSheet>
-        </>
-      ) : null}
+      </>
 
       {loading ? <PlaceLibraryLoading label="جاري تحميل الأماكن" /> : null}
       {error ? (
@@ -410,7 +409,7 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
         </section>
       ) : null}
 
-      {!loading && !error && !needsAuth && !hasResults ? (
+      {!loading && !error && !hasResults ? (
         <EmptyState
           action={
             hasActiveFilter ? (
@@ -418,7 +417,7 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
                 عرض الكل
               </Button>
             ) : (
-              <Link className="ds-button" href={`/places/new?type=${activeType}`}>أضف مكانًا</Link>
+              <Link className="ds-button" href={createPlaceHref}>أضف مكانًا</Link>
             )
           }
           body={hasActiveFilter ? "غيّر البحث أو الفلتر." : "أضف مكانًا للبدء."}
@@ -426,7 +425,7 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
         />
       ) : null}
 
-      {!loading && !needsAuth && hasResults ? (
+      {!loading && hasResults ? (
         <section className="place-memory-section" aria-label="قائمة الأماكن">
           <VirtualList
             ariaLabel="قائمة الأماكن"

@@ -6,7 +6,8 @@ let apiProcess: ChildProcessWithoutNullStreams | undefined;
 let apiOutput = "";
 let apiExited = false;
 let apiReady = false;
-const API_BASE_URL = process.env.E2E_API_BASE_URL ?? "http://localhost:8000";
+const E2E_API_PORT = process.env.E2E_API_PORT ?? "8000";
+const API_BASE_URL = process.env.E2E_API_BASE_URL ?? `http://localhost:${E2E_API_PORT}`;
 
 export async function ensureE2eApiServer(): Promise<void> {
   if (apiReady && (await isReady())) {

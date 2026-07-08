@@ -59,8 +59,42 @@ export default function ListsPage() {
   useEffect(() => {
     const focusTarget = new URLSearchParams(window.location.search).get("focus");
     if (focusTarget === "create-list") {
-      createLinkRef.current?.focus();
+      let cancelled = false;
+      let timeout: number | undefined;
+      let attempts = 0;
+      const focusCreateLink = () => {
+        if (cancelled) {
+          return;
+        }
+
+        const target = createLinkRef.current;
+        if (target) {
+          target.focus({ preventScroll: true });
+        }
+
+        attempts += 1;
+        if (target && document.activeElement === target) {
+          return;
+        }
+
+        if (attempts < 40) {
+          timeout = window.setTimeout(focusCreateLink, 75);
+        }
+      };
+      const frame = window.requestAnimationFrame(focusCreateLink);
+      timeout = window.setTimeout(focusCreateLink, 0);
+
+      focusCreateLink();
+
+      return () => {
+        cancelled = true;
+        window.cancelAnimationFrame(frame);
+        if (timeout !== undefined) {
+          window.clearTimeout(timeout);
+        }
+      };
     }
+    return undefined;
   }, []);
 
   const totalPlaces = lists.reduce((sum, list) => sum + list.placeCount, 0);

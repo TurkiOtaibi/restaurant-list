@@ -12,6 +12,10 @@ export default function CreateListPage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [sessionError, setSessionError] = useState("");
+  function closeCreateListDialog() {
+    setIsAuthenticated(false);
+    window.location.href = "/lists?focus=create-list";
+  }
 
   useEffect(() => {
     let active = true;
@@ -46,7 +50,7 @@ export default function CreateListPage() {
     <main className="dialog-route-shell">
       {sessionError ? <StatusMessage tone="error">{sessionError}</StatusMessage> : null}
       <CreateListDialog
-        onClose={() => router.push("/lists?focus=create-list")}
+        onClose={closeCreateListDialog}
         open={isAuthenticated}
       />
     </main>

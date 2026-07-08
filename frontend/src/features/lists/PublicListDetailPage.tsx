@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import {
@@ -16,12 +15,8 @@ import {
 import {
   ApiError,
   ListDetail,
-  apiRequest,
-  clearTokens,
-  ensureSession,
-  isSessionRecoveryError
+  apiRequest
 } from "@/lib/api";
-import { loginHrefForReturn } from "@/lib/authReturn";
 import { placeCountLabel } from "@/lib/numerals";
 
 type PublicListDetailPageProps = {
@@ -32,30 +27,21 @@ export function PublicListDetailPage({ listId }: PublicListDetailPageProps) {
   const [list, setList] = useState<ListDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [needsAuth, setNeedsAuth] = useState(false);
 
   const loadList = useCallback(async () => {
     setError("");
-    setNeedsAuth(false);
     setLoading(true);
 
     try {
-      if (!(await ensureSession())) {
-        setNeedsAuth(true);
-        setLoading(false);
-        return;
-      }
-
-      const response = await apiRequest<ListDetail>(`/lists/public/${listId}`);
+      const response = await apiRequest<ListDetail>(`/lists/public/${listId}`, {
+        auth: "optional"
+      });
       setList(response);
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 401) {
-        clearTokens();
-        setNeedsAuth(true);
+        setError(caught.message);
       } else if (caught instanceof ApiError && caught.status === 404) {
         setError("هذه القائمة خاصة أو غير متاحة.");
-      } else if (isSessionRecoveryError(caught)) {
-        setError("تعذر استعادة الجلسة. حاول مرة أخرى.");
       } else {
         setError(caught instanceof ApiError ? caught.message : "تعذر تحميل القائمة العامة.");
       }
@@ -95,11 +81,6 @@ export function PublicListDetailPage({ listId }: PublicListDetailPageProps) {
         </ButtonLink>
       </section>
 
-      {needsAuth ? (
-        <StatusMessage tone="notice">
-          سجّل الدخول لعرض هذه القائمة العامة. <Link href={loginHrefForReturn(`/lists/public/${listId}`)}>تسجيل الدخول</Link>
-        </StatusMessage>
-      ) : null}
 
       {loading ? <LoadingState count={3} delayMs={0} label="جاري تحميل القائمة العامة" /> : null}
 

@@ -311,7 +311,7 @@ async def public_list_detail_response(
     db: AsyncSession,
     *,
     user_list: UserList,
-    current_user_id: str,
+    current_user_id: str | None,
 ) -> PublicListDetailResponse:
     place_by_id = await get_place_summaries_by_id(
         db,

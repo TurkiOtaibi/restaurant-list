@@ -4,7 +4,7 @@ const sessionMarkerKey = "restaurantWishlist.hasSession";
 const loginRequiredText = "سجل الدخول لعرض الأماكن";
 
 test.describe("iOS Safari session restoration", () => {
-  test("restores a missing in-memory access token before rendering protected places", async ({
+  test("restores a missing in-memory access token before enriching public places", async ({
     page
   }) => {
     let refreshCalls = 0;
@@ -75,7 +75,7 @@ test.describe("iOS Safari session restoration", () => {
     expect(refreshCalls).toBe(1);
   });
 
-  test("refreshes once and retries the original protected request after 401", async ({
+  test("falls back to anonymous public browsing after an optional places 401", async ({
     page
   }) => {
     let refreshCalls = 0;
@@ -87,7 +87,7 @@ test.describe("iOS Safari session restoration", () => {
       await route.fulfill({
         contentType: "application/json",
         json: {
-          accessToken: refreshCalls === 1 ? "initial-restored-token" : "retry-restored-token"
+          accessToken: "initial-restored-token"
         },
         status: 200
       });
@@ -110,7 +110,7 @@ test.describe("iOS Safari session restoration", () => {
         return;
       }
 
-      expect(route.request().headers().authorization).toBe("Bearer retry-restored-token");
+      expect(route.request().headers().authorization).toBeUndefined();
       await route.fulfill({
         contentType: "application/json",
         json: placesCollection("مطعم إعادة المحاولة"),
@@ -122,11 +122,13 @@ test.describe("iOS Safari session restoration", () => {
 
     await expect(page.getByText(loginRequiredText)).toHaveCount(0);
     await expect(page.getByText("مطعم إعادة المحاولة")).toBeVisible();
-    expect(refreshCalls).toBe(2);
+    expect(refreshCalls).toBe(1);
     expect(placesCalls).toBe(2);
   });
 
-  test("clears the marker and shows login-required only after invalid refresh", async ({ page }) => {
+  test("clears the marker and keeps public browsing available after invalid refresh", async ({
+    page
+  }) => {
     await installSessionMarker(page);
     await page.route("**/api/v1/auth/refresh", async (route) => {
       await route.fulfill({
@@ -142,29 +144,41 @@ test.describe("iOS Safari session restoration", () => {
       });
     });
     await page.route("**/api/v1/places?**", async (route) => {
-      await route.fulfill({ status: 500, body: "places should not load" });
+      await route.fulfill({
+        contentType: "application/json",
+        json: placesCollection("مطعم عام بعد جلسة غير صالحة"),
+        status: 200
+      });
     });
 
     await page.goto("/places?type=restaurant");
 
-    await expect(page.getByText(loginRequiredText)).toBeVisible();
+    await expect(page.getByText(loginRequiredText)).toHaveCount(0);
+    await expect(page.getByText("مطعم عام بعد جلسة غير صالحة")).toBeVisible();
     await expect
       .poll(() => page.evaluate((key) => window.localStorage.getItem(key), sessionMarkerKey))
       .toBeNull();
   });
 
-  test("keeps the marker and avoids login-required on recoverable refresh failure", async ({
+  test("keeps the marker and uses anonymous browsing after recoverable refresh failure", async ({
     page
   }) => {
     await installSessionMarker(page);
     await page.route("**/api/v1/auth/refresh", async (route) => {
       await route.abort("failed");
     });
+    await page.route("**/api/v1/places?**", async (route) => {
+      await route.fulfill({
+        contentType: "application/json",
+        json: placesCollection("مطعم عام بعد فشل استعادة"),
+        status: 200
+      });
+    });
 
     await page.goto("/places?type=restaurant");
 
     await expect(page.getByText(loginRequiredText)).toHaveCount(0);
-    await expect(page.getByText("تعذر استعادة الجلسة. حاول مرة أخرى.")).toBeVisible();
+    await expect(page.getByText("مطعم عام بعد فشل استعادة")).toBeVisible();
     await expect
       .poll(() => page.evaluate((key) => window.localStorage.getItem(key), sessionMarkerKey))
       .toBe("1");

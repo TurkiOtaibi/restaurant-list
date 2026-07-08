@@ -36,7 +36,11 @@ test("CreateListDialog desktop uses Base UI Dialog and preserves validation and 
   await page.getByRole("button", { name: "حفظ" }).click();
 
   await expect.poll(createRequests).toBe(1);
-  await expect(page).toHaveURL(/\/lists\/base-ui-dialog-list$/, { timeout: 15_000 });
+  await page.waitForURL(/\/lists\/base-ui-dialog-list$/, {
+    timeout: 30_000,
+    waitUntil: "domcontentloaded"
+  });
+  await expect(page).toHaveURL(/\/lists\/base-ui-dialog-list$/);
 });
 
 test("CreateListDialog mobile keeps the existing BottomSheet presentation", async ({ page }) => {

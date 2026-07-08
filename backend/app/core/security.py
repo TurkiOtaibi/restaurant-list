@@ -1,9 +1,9 @@
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
-from typing import Any, cast
+from typing import Any
 
+import jwt
 from fastapi import HTTPException, status
-from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from app.core.config import get_settings
@@ -29,7 +29,7 @@ def create_access_token(subject: str, extra_claims: dict[str, Any] | None = None
     payload: dict[str, Any] = {"sub": subject, "type": "access", "exp": expires_at}
     if extra_claims:
         payload.update(extra_claims)
-    return str(jwt.encode(payload, settings.jwt_access_secret, algorithm="HS256"))
+    return jwt.encode(payload, settings.jwt_access_secret, algorithm="HS256")
 
 
 def create_refresh_token(subject: str, extra_claims: dict[str, Any] | None = None) -> str:
@@ -38,15 +38,15 @@ def create_refresh_token(subject: str, extra_claims: dict[str, Any] | None = Non
     payload: dict[str, Any] = {"sub": subject, "type": "refresh", "exp": expires_at}
     if extra_claims:
         payload.update(extra_claims)
-    return str(jwt.encode(payload, settings.jwt_refresh_secret, algorithm="HS256"))
+    return jwt.encode(payload, settings.jwt_refresh_secret, algorithm="HS256")
 
 
 def decode_token(token: str, *, token_type: str) -> dict[str, Any]:
     settings = get_settings()
     secret = settings.jwt_access_secret if token_type == "access" else settings.jwt_refresh_secret
     try:
-        payload = jwt.decode(token, secret, algorithms=["HS256"])
-    except JWTError as exc:
+        payload = jwt.decode(token, secret, algorithms=["HS256"], options={"verify_exp": False})
+    except jwt.InvalidTokenError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={
@@ -54,6 +54,16 @@ def decode_token(token: str, *, token_type: str) -> dict[str, Any]:
                 "message": "Token is invalid or expired.",
             },
         ) from exc
+
+    expires_at = payload.get("exp")
+    if not isinstance(expires_at, int | float) or expires_at <= datetime.now(UTC).timestamp():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={
+                "code": "INVALID_TOKEN",
+                "message": "Token is invalid or expired.",
+            },
+        )
 
     if payload.get("type") != token_type:
         raise HTTPException(
@@ -64,4 +74,4 @@ def decode_token(token: str, *, token_type: str) -> dict[str, Any]:
             },
         )
 
-    return cast(dict[str, Any], payload)
+    return payload

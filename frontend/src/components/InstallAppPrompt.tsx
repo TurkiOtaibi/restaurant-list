@@ -12,6 +12,7 @@ type BeforeInstallPromptEvent = Event & {
 };
 
 const DISMISS_KEY = "restaurantWishlist.installPromptDismissed";
+const DISMISS_COOLDOWN_MS = 30 * 24 * 60 * 60 * 1000;
 const AUTH_ROUTE_PREFIXES = ["/login", "/register", "/auth", "/password", "/forgot-password", "/reset-password"];
 const APP_ROUTE_PREFIXES = ["/places", "/lists", "/profile", "/restaurants", "/cafes"];
 
@@ -46,6 +47,26 @@ function hasAuthenticatedSession() {
   return Boolean(getAccessToken());
 }
 
+function hasActiveDismissal() {
+  const dismissedAtValue = window.localStorage.getItem(DISMISS_KEY);
+  if (!dismissedAtValue) {
+    return false;
+  }
+
+  const dismissedAt = Number(dismissedAtValue);
+  if (!Number.isFinite(dismissedAt)) {
+    window.localStorage.removeItem(DISMISS_KEY);
+    return false;
+  }
+
+  if (Date.now() - dismissedAt < DISMISS_COOLDOWN_MS) {
+    return true;
+  }
+
+  window.localStorage.removeItem(DISMISS_KEY);
+  return false;
+}
+
 export function InstallAppPrompt() {
   const pathname = usePathname();
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -58,13 +79,13 @@ export function InstallAppPrompt() {
 
     setShowIosHint(false);
 
-    if (window.localStorage.getItem(DISMISS_KEY) === "true" || isStandalone()) {
+    if (hasActiveDismissal() || isStandalone()) {
       return;
     }
 
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
-      if (window.localStorage.getItem(DISMISS_KEY) === "true" || isStandalone()) {
+      if (hasActiveDismissal() || isStandalone()) {
         return;
       }
       setInstallPrompt(event as BeforeInstallPromptEvent);
@@ -97,7 +118,7 @@ export function InstallAppPrompt() {
   }
 
   function dismiss() {
-    window.localStorage.setItem(DISMISS_KEY, "true");
+    window.localStorage.setItem(DISMISS_KEY, String(Date.now()));
     setInstallPrompt(null);
     setShowIosHint(false);
   }

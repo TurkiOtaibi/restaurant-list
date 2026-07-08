@@ -142,7 +142,7 @@ export type Profile = {
 };
 
 type ApiRequestOptions = RequestInit & {
-  auth?: boolean;
+  auth?: boolean | "optional";
   skipRefresh?: boolean;
 };
 
@@ -287,7 +287,25 @@ export async function apiRequest<T>(
   const response = await performRequest(path, options);
   const data = await parseResponseBody(response);
 
-  if (response.status === 401 && options.auth !== false && !options.skipRefresh) {
+  if (response.status === 401 && options.auth === "optional" && !options.skipRefresh) {
+    const retryResponse = await performRequest(path, {
+      ...options,
+      auth: false,
+      skipRefresh: true
+    });
+    const retryData = await parseResponseBody(retryResponse);
+    if (!retryResponse.ok) {
+      throw new ApiError(retryResponse.status, retryData);
+    }
+    return retryData as T;
+  }
+
+  if (
+    response.status === 401 &&
+    options.auth !== false &&
+    options.auth !== "optional" &&
+    !options.skipRefresh
+  ) {
     const refreshedToken = await refreshAccessToken(true);
     if (refreshedToken) {
       const retryResponse = await performRequest(path, { ...options, skipRefresh: true });

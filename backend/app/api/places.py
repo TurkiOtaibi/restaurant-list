@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import internal_error, not_found
 from app.core.schemas import CollectionResponse, collection_response
 from app.db.session import get_db
-from app.modules.auth.dependencies import get_current_user
+from app.modules.auth.dependencies import get_current_user, get_optional_current_user
 from app.modules.auth.models import User
 from app.modules.places.image_service import delete_place_image, upload_place_image
 from app.modules.places.schemas import (
@@ -26,6 +26,7 @@ from app.modules.places.services import (
 
 router = APIRouter(prefix="/places", tags=["places"])
 CurrentUser = Annotated[User, Depends(get_current_user)]
+OptionalCurrentUser = Annotated[User | None, Depends(get_optional_current_user)]
 DatabaseSession = Annotated[AsyncSession, Depends(get_db)]
 PlaceImageUpload = Annotated[UploadFile, File(...)]
 PLACE_SUBTYPES_BY_TYPE: dict[PlaceType, set[str]] = {
@@ -38,7 +39,7 @@ PLACE_SUBTYPES_BY_TYPE: dict[PlaceType, set[str]] = {
 @router.get("", response_model=CollectionResponse[PlaceCollectionResponse])
 async def list_places(
     request: Request,
-    current_user: CurrentUser,
+    current_user: OptionalCurrentUser,
     db: DatabaseSession,
     q: Annotated[str | None, Query(max_length=120)] = None,
     type: PlaceType | None = None,
@@ -57,7 +58,7 @@ async def list_places(
     validated_subtype = validate_place_filter(type, subtype)
     result = await list_place_summaries(
         db,
-        current_user.id,
+        current_user.id if current_user else None,
         query=q,
         place_type=type,
         place_subtype=validated_subtype,
@@ -76,10 +77,10 @@ async def list_places(
 @router.get("/{place_id}", response_model=PlaceResponse)
 async def get_place(
     place_id: str,
-    current_user: CurrentUser,
+    current_user: OptionalCurrentUser,
     db: DatabaseSession,
 ) -> PlaceResponse:
-    place = await get_place_summary(db, current_user.id, place_id)
+    place = await get_place_summary(db, current_user.id if current_user else None, place_id)
     if place is None:
         not_found("Place")
     return place

@@ -10,6 +10,8 @@ import uvicorn
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 E2E_DIR = BACKEND_ROOT / ".e2e"
 E2E_DIR.mkdir(exist_ok=True)
+E2E_FRONTEND_PORT = os.environ.get("E2E_FRONTEND_PORT", os.environ.get("PLAYWRIGHT_PORT", "3000"))
+E2E_API_PORT = int(os.environ.get("E2E_API_PORT", "8000"))
 
 os.environ.setdefault(
     "DATABASE_URL",
@@ -23,11 +25,11 @@ os.environ.setdefault("AUTH_RATE_LIMIT_REQUESTS", "200")
 os.environ.setdefault("AUTH_RATE_LIMIT_WINDOW_SECONDS", "60")
 os.environ.setdefault(
     "CORS_ORIGINS",
-    '["http://127.0.0.1:3000","http://localhost:3000"]',
+    f'["http://127.0.0.1:{E2E_FRONTEND_PORT}","http://localhost:{E2E_FRONTEND_PORT}"]',
 )
 os.environ.setdefault(
     "CORS_ALLOW_ORIGIN_REGEX",
-    r"http://(localhost|127\.0\.0\.1):3000",
+    rf"http://(localhost|127\.0\.0\.1):{E2E_FRONTEND_PORT}",
 )
 
 sys.path.insert(0, str(BACKEND_ROOT))
@@ -47,6 +49,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",
         host=os.environ.get("E2E_API_HOST", "localhost"),
-        port=8000,
+        port=E2E_API_PORT,
         log_level="warning",
     )

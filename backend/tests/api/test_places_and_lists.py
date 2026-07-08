@@ -72,11 +72,36 @@ async def _rate_place(
     assert response.status_code == 201
 
 
-async def test_places_require_authentication(client: AsyncClient) -> None:
-    response = await client.get("/api/v1/places")
+async def test_places_are_publicly_browsable_with_anonymous_relationship_fields(
+    client: AsyncClient,
+) -> None:
+    token = await _token(client)
+    place = await _create_place(client, token, name="Public Browse Cafe")
+    await _rate_place(client, token, place_id=place["id"], rating=8.5)
+    user_list = await _create_list(client, token, name="Private shelf")
+    await client.post(
+        f"/api/v1/lists/{user_list['id']}/items",
+        json={"placeId": place["id"]},
+        headers=auth_header(token),
+    )
 
-    assert response.status_code == 401
-    assert response.json()["detail"]["code"] == "UNAUTHENTICATED"
+    collection = await client.get("/api/v1/places")
+    detail = await client.get(f"/api/v1/places/{place['id']}")
+
+    assert collection.status_code == 200
+    anonymous_place = collection_data(collection)[0]
+    assert anonymous_place["id"] == place["id"]
+    assert anonymous_place["averageRating"] == 8.5
+    assert anonymous_place["ratingCount"] == 1
+    assert anonymous_place["currentUserRating"] is None
+    assert anonymous_place["currentUserListCount"] == 0
+    assert anonymous_place["currentUserIsCreator"] is False
+    assert detail.status_code == 200
+    assert detail.json()["currentUserRating"] is None
+    assert detail.json()["currentUserListIds"] == []
+    assert detail.json()["currentUserListNames"] == []
+    assert detail.json()["currentUserListCount"] == 0
+    assert detail.json()["currentUserIsCreator"] is False
 
 
 async def test_create_place_and_reject_duplicate_name(client: AsyncClient) -> None:

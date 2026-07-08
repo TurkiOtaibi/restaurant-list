@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, cast
 
-from sqlalchemy import func, select
+from sqlalchemy import func, literal, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -38,7 +38,7 @@ def _place_response(
     place: Place,
     average_rating: float | None,
     rating_count: int,
-    current_user_id: str,
+    current_user_id: str | None,
     current_user_rating: float | None,
     relationship: UserPlaceRelationship | None = None,
 ) -> PlaceResponse:
@@ -59,17 +59,21 @@ def _place_response(
         current_user_list_ids=current_relationship.list_ids,
         current_user_list_names=current_relationship.list_names,
         current_user_list_count=len(current_relationship.list_ids),
-        current_user_is_creator=place.created_by_user_id == current_user_id,
+        current_user_is_creator=bool(
+            current_user_id and place.created_by_user_id == current_user_id
+        ),
     )
 
 
-def _place_summary_statement(current_user_id: str) -> Any:
-    current_rating = (
-        select(Rating.rating)
-        .where(Rating.place_id == Place.id, Rating.user_id == current_user_id)
-        .correlate(Place)
-        .scalar_subquery()
-    )
+def _place_summary_statement(current_user_id: str | None) -> Any:
+    current_rating: Any = literal(None)
+    if current_user_id is not None:
+        current_rating = (
+            select(Rating.rating)
+            .where(Rating.place_id == Place.id, Rating.user_id == current_user_id)
+            .correlate(Place)
+            .scalar_subquery()
+        )
 
     return (
         select(
@@ -97,7 +101,7 @@ def _escape_like(value: str) -> str:
 
 async def list_place_summaries(
     db: AsyncSession,
-    current_user_id: str,
+    current_user_id: str | None,
     query: str | None = None,
     place_type: PlaceType | None = None,
     place_subtype: PlaceSubtype | None = None,
@@ -150,7 +154,7 @@ async def list_place_summaries(
 
 async def get_place_summary(
     db: AsyncSession,
-    current_user_id: str,
+    current_user_id: str | None,
     place_id: str,
 ) -> PlaceResponse | None:
     row = (
@@ -166,7 +170,7 @@ async def get_place_summary(
 
 async def get_place_summaries_by_id(
     db: AsyncSession,
-    current_user_id: str,
+    current_user_id: str | None,
     place_ids: Sequence[str],
 ) -> dict[str, PlaceResponse]:
     if not place_ids:
@@ -190,7 +194,7 @@ async def get_place_summaries_by_id(
 def _place_response_from_summary_row(
     row: Any,
     relationships: dict[str, UserPlaceRelationship],
-    current_user_id: str,
+    current_user_id: str | None,
 ) -> PlaceResponse:
     place, average_rating, rating_count, current_user_rating = row
     return _place_response(
@@ -205,10 +209,10 @@ def _place_response_from_summary_row(
 
 async def get_user_place_relationships(
     db: AsyncSession,
-    current_user_id: str,
+    current_user_id: str | None,
     place_ids: Sequence[str],
 ) -> dict[str, UserPlaceRelationship]:
-    if not place_ids:
+    if current_user_id is None or not place_ids:
         return {}
 
     rows = await db.execute(

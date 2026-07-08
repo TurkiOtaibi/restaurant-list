@@ -91,7 +91,11 @@ function FavoriteSearchField({
   );
 }
 
-export function ProfileArchivePage() {
+type ProfileArchivePageProps = {
+  mode?: "archive" | "overview";
+};
+
+export function ProfileArchivePage({ mode = "overview" }: ProfileArchivePageProps = {}) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -141,6 +145,7 @@ export function ProfileArchivePage() {
   const stats = profile ? profileStats(profile) : [];
   const hasRatings = profile ? profile.userRatings.length > 0 : false;
   const canEditProfile = Boolean(profile && !needsAuth);
+  const archiveMode = mode === "archive";
 
   return (
     <main className="content profile-page">
@@ -185,20 +190,7 @@ export function ProfileArchivePage() {
             ratedPlaces={profile.userRatings}
           />
 
-          <section className="profile-section" aria-labelledby="profile-ratings-title">
-            <div className="library-section__header">
-              <h2 id="profile-ratings-title">الأماكن التي قيّمتها</h2>
-            </div>
-            {hasRatings ? (
-              <RatingArchiveList ratings={profile.userRatings} />
-            ) : (
-              <EmptyState
-                action={<ButtonLink href="/places">استكشف الأماكن</ButtonLink>}
-                body="ابدأ من صفحة الأماكن، افتح مكانًا يعجبك، ثم أضف تقييمك الأول."
-                title="لم تقيّم أي مكان بعد"
-              />
-            )}
-          </section>
+          <ProfileRatingsSection archiveMode={archiveMode} hasRatings={hasRatings} ratings={profile.userRatings} />
 
           <section className="profile-section" aria-labelledby="profile-lists-title">
             <div className="profile-section-link">
@@ -224,6 +216,51 @@ export function ProfileArchivePage() {
         </>
       ) : null}
     </main>
+  );
+}
+
+function ProfileRatingsSection({
+  archiveMode,
+  hasRatings,
+  ratings
+}: {
+  archiveMode: boolean;
+  hasRatings: boolean;
+  ratings: ProfileRating[];
+}) {
+  const title = archiveMode ? "الأماكن التي قيّمتها" : "آخر الأماكن التي قيّمتها";
+  const titleId = archiveMode ? "profile-ratings-title" : "profile-ratings-preview-title";
+  const previewRatings = ratings.slice(0, 4);
+
+  return (
+    <section className="profile-section" aria-labelledby={titleId}>
+      <div className="library-section__header">
+        <h2 id={titleId}>{title}</h2>
+        {archiveMode ? (
+          <ButtonLink href="/profile" variant="secondary">
+            العودة إلى صفحتي
+          </ButtonLink>
+        ) : null}
+      </div>
+      {hasRatings ? (
+        archiveMode ? (
+          <RatingArchiveList ratings={ratings} />
+        ) : (
+          <>
+            <RatingPreviewList ratings={previewRatings} />
+            <ButtonLink className="profile-ratings-preview__more" href="/profile/ratings" variant="secondary">
+              عرض كل الأماكن التي قيّمتها
+            </ButtonLink>
+          </>
+        )
+      ) : (
+        <EmptyState
+          action={<ButtonLink href="/places">استكشف الأماكن</ButtonLink>}
+          body="ابدأ من صفحة الأماكن، افتح مكانًا يعجبك، ثم أضف تقييمك الأول."
+          title="لم تقيّم أي مكان بعد"
+        />
+      )}
+    </section>
   );
 }
 
@@ -782,6 +819,60 @@ function ProfileStats({ stats }: { stats: ProfileStat[] }) {
   );
 }
 
+function RatingPreviewList({ ratings }: { ratings: ProfileRating[] }) {
+  return (
+    <div
+      className="profile-rating-list profile-rating-list--preview"
+      aria-label="آخر الأماكن التي قيّمتها"
+      role="list"
+    >
+      {ratings.map((rating, index) => (
+        <RatingPreviewCard index={index} key={rating.id} rating={rating} total={ratings.length} />
+      ))}
+    </div>
+  );
+}
+
+function RatingPreviewCard({
+  index,
+  rating,
+  total
+}: {
+  index: number;
+  rating: ProfileRating;
+  total: number;
+}) {
+  const metadata = [placeTypeLabel(rating.place.type), placeSubtypeLabel(rating.place.subtype)]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <article
+      aria-label={`${rating.place.name}، تقييمك ${formatOutOfTen(rating.rating)}`}
+      aria-posinset={index + 1}
+      aria-setsize={total}
+      className="profile-rating-card profile-rating-card--preview"
+      role="listitem"
+    >
+      <PlaceImage imageUrl={rating.place.imageUrl} type={rating.place.type} />
+      <div className="profile-rating-card__main">
+        <h3>
+          <BidiText>{rating.place.name}</BidiText>
+        </h3>
+        <div className="profile-rating-card__meta">
+          <RatingDisplay
+            className="profile-rating-card__score"
+            label="تقييمك"
+            variant="outOfTen"
+            value={rating.rating}
+          />
+          {metadata ? <span className="profile-rating-card__type-meta">{metadata}</span> : null}
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function RatingArchiveList({ ratings }: { ratings: ProfileRating[] }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [scrollTop, setScrollTop] = useState(0);
@@ -801,9 +892,9 @@ function RatingArchiveList({ ratings }: { ratings: ProfileRating[] }) {
 
   if (ratings.length <= ARCHIVE_VIRTUALIZATION_THRESHOLD) {
     return (
-      <div className="profile-rating-list" aria-label="الأماكن التي قيّمتها">
-        {ratings.map((rating) => (
-          <RatingArchiveCard key={rating.id} rating={rating} />
+      <div className="profile-rating-list" aria-label="الأماكن التي قيّمتها" role="list">
+        {ratings.map((rating, index) => (
+          <RatingArchiveCard index={index} key={rating.id} rating={rating} total={ratings.length} />
         ))}
       </div>
     );
@@ -828,11 +919,18 @@ function RatingArchiveList({ ratings }: { ratings: ProfileRating[] }) {
         style={{ height: ratings.length * ARCHIVE_ROW_HEIGHT }}
       />
       <div
+        aria-label="الأماكن التي قيّمتها"
         className="profile-rating-list__window"
+        role="list"
         style={{ transform: `translateY(${startIndex * ARCHIVE_ROW_HEIGHT}px)` }}
       >
-        {visibleRatings.map((rating) => (
-          <RatingArchiveCard key={rating.id} rating={rating} />
+        {visibleRatings.map((rating, index) => (
+          <RatingArchiveCard
+            index={startIndex + index}
+            key={rating.id}
+            rating={rating}
+            total={ratings.length}
+          />
         ))}
       </div>
     </div>
@@ -858,7 +956,15 @@ function profileRatingWindow({
   };
 }
 
-function RatingArchiveCard({ rating }: { rating: ProfileRating }) {
+function RatingArchiveCard({
+  index,
+  rating,
+  total
+}: {
+  index: number;
+  rating: ProfileRating;
+  total: number;
+}) {
   const metadata = [placeTypeLabel(rating.place.type), placeSubtypeLabel(rating.place.subtype)]
     .filter(Boolean)
     .join(" · ");
@@ -878,7 +984,10 @@ function RatingArchiveCard({ rating }: { rating: ProfileRating }) {
       aria-label={`${rating.place.name}، تقييمك ${formatOutOfTen(rating.rating)}${
         rating.notes ? "، ملاحظة خاصة" : ""
       }`}
+      aria-posinset={index + 1}
+      aria-setsize={total}
       className="profile-rating-card"
+      role="listitem"
     >
       <PlaceImage imageUrl={rating.place.imageUrl} type={rating.place.type} />
       <div className="profile-rating-card__main">

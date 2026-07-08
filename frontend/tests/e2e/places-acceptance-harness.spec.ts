@@ -9,6 +9,11 @@ test.describe("focused authenticated Places acceptance harness", () => {
 
     await placesHarness.loadPlacesList({ query: dataset.runId, type: "restaurant" });
     await expect(placesHarness.placeCardByName(dataset.places.restaurantBurger.name)).toBeVisible();
+    await expect(page.locator(".place-memory-list[role='list']")).toBeVisible();
+    await expect(page.locator(".place-memory-list > [role='listitem']").first()).toHaveAttribute(
+      "aria-posinset",
+      "1"
+    );
 
     await placesHarness.loadFilterState({
       query: dataset.runId,
@@ -59,6 +64,7 @@ test.describe("focused authenticated Places acceptance harness", () => {
       "aria-selected",
       "true"
     );
+    await expect(page.locator(".place-memory-list, .ds-empty")).toBeVisible({ timeout: 30_000 });
     await expect(placesHarness.placeCardByName(dataset.places.cafeCoffee.name)).toBeVisible();
 
     await page.getByRole("tab", { name: "المطاعم" }).focus();
@@ -72,10 +78,19 @@ test.describe("focused authenticated Places acceptance harness", () => {
     page,
     placesHarness
   }) => {
+    test.setTimeout(120_000);
+
     const dataset = await placesHarness.resetFeature("PLACE-001");
 
     await placesHarness.loadPlaceDetail(dataset.places.restaurantBurger.id);
     await expect(page.getByRole("heading", { name: dataset.places.restaurantBurger.name })).toBeVisible();
+
+    await page.goto(`/lists/${dataset.lists.ownedPrivate.id}`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator(".collection-list[role='list']")).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator(".collection-list > [role='listitem']").first()).toHaveAttribute(
+      "aria-setsize",
+      "1"
+    );
 
     await placesHarness.loadCreatePlace({
       name: `${dataset.runId} Draft Place`,

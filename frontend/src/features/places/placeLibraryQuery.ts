@@ -10,6 +10,7 @@ type PlaceLibraryApiQuery = {
 
 type PlaceLibraryUrlState = {
   focusCreatePlace: boolean;
+  focusSearch: boolean;
   q: string;
   subtype: SubtypeFilterValue;
   type: PlaceType;
@@ -25,6 +26,7 @@ export function parsePlaceLibraryUrlState(
 
   return {
     focusCreatePlace: params.get("focus") === "create-place",
+    focusSearch: params.get("focus") === "search",
     q: params.get("q") ?? "",
     subtype,
     type

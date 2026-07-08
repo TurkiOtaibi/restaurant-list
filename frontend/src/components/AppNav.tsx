@@ -1,20 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
-import { ArchiveIcon, RestaurantIcon, ShelfIcon, TasteMarkIcon } from "./ui/Icon";
+import { ArchiveIcon, RestaurantIcon, SearchIcon, ShelfIcon, TasteMarkIcon } from "./ui/Icon";
 
 const AUTH_SCREEN_PATHS = new Set(["/login", "/register"]);
 
 const NAV_LINKS = [
   { href: "/lists", icon: ShelfIcon, label: "قوائمي" },
   { href: "/places", icon: RestaurantIcon, label: "الأماكن" },
+  { href: "/places?type=restaurant&focus=search", icon: SearchIcon, label: "بحث" },
   { href: "/profile", icon: ArchiveIcon, label: "صفحتي" }
 ];
 
 export function AppNav() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const isSearchFocused = pathname === "/places" && (searchParams.get("focus") === "search" || searchParams.has("q"));
 
   if (isAuthScreen(pathname)) {
     return null;
@@ -34,7 +37,7 @@ export function AppNav() {
           const Icon = link.icon;
           return (
             <Link
-              aria-current={isActive(pathname, link.href) ? "page" : undefined}
+              aria-current={isActive(pathname, link.href, isSearchFocused) ? "page" : undefined}
               className="app-nav__link"
               href={link.href}
               key={link.href}
@@ -53,13 +56,17 @@ function isAuthScreen(pathname: string): boolean {
   return AUTH_SCREEN_PATHS.has(pathname);
 }
 
-function isActive(pathname: string, href: string): boolean {
+function isActive(pathname: string, href: string, isSearchFocused: boolean): boolean {
   if (href === "/lists") {
     return pathname === "/lists" || pathname.startsWith("/lists/");
   }
 
+  if (href.includes("focus=search")) {
+    return isSearchFocused;
+  }
+
   if (href === "/places") {
-    return pathname === "/places" || pathname.startsWith("/places/");
+    return !isSearchFocused && (pathname === "/places" || pathname.startsWith("/places/"));
   }
 
   return pathname === href;

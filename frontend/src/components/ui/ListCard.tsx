@@ -30,6 +30,7 @@ export function ListCard({
 }: ListCardProps) {
   const visibility = listVisibilityLabel(list.visibility);
   const count = placeCountLabel(placeCount);
+  const hasActions = Boolean(actions);
   const owner = context === "viewer" ? `بواسطة: ${list.ownerDisplayName}` : "";
   const accessibleName = `${list.name}، ${count}، ${visibility}${
     context === "viewer" ? `، ${owner}، عرض فقط` : ""
@@ -37,9 +38,7 @@ export function ListCard({
 
   const content = (
     <>
-      <span className="ds-type-icon" aria-hidden="true">
-        <ShelfIcon />
-      </span>
+      <ListPreviewTile isEmpty={isEmpty} isSystem={list.isSystem} />
       <div className="ds-list-card__main">
         <h2 className="ds-list-card__title">
           {href && actions ? (
@@ -58,13 +57,7 @@ export function ListCard({
           {context === "viewer" ? <span>عرض فقط</span> : null}
         </div>
       </div>
-      {actions ? (
-        <div className="ds-list-card__actions">{actions}</div>
-      ) : (
-        <span aria-hidden="true" className="ds-list-card__more">
-          •••
-        </span>
-      )}
+      {hasActions ? <div className="ds-list-card__actions">{actions}</div> : null}
     </>
   );
 
@@ -72,7 +65,11 @@ export function ListCard({
     return (
       <CardLink
         aria-label={accessibleName}
-        className={cx("ds-list-card", isEmpty && "ds-list-card--empty")}
+        className={cx(
+          "ds-list-card",
+          hasActions ? "ds-list-card--with-actions" : "ds-list-card--plain",
+          isEmpty && "ds-list-card--empty"
+        )}
         href={href}
       >
         {content}
@@ -83,9 +80,31 @@ export function ListCard({
   return (
     <Card
       aria-label={accessibleName}
-      className={cx("ds-list-card", isEmpty && "ds-list-card--empty")}
+      className={cx(
+        "ds-list-card",
+        hasActions ? "ds-list-card--with-actions" : "ds-list-card--plain",
+        isEmpty && "ds-list-card--empty"
+      )}
     >
       {content}
     </Card>
+  );
+}
+
+function ListPreviewTile({ isEmpty, isSystem }: { isEmpty: boolean; isSystem: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cx(
+        "ds-list-preview",
+        isEmpty && "ds-list-preview--empty",
+        isSystem && "ds-list-preview--system"
+      )}
+    >
+      <span className="ds-list-preview__poster ds-list-preview__poster--one" />
+      <span className="ds-list-preview__poster ds-list-preview__poster--two" />
+      <span className="ds-list-preview__poster ds-list-preview__poster--three" />
+      <ShelfIcon />
+    </span>
   );
 }
