@@ -58,10 +58,8 @@ test("real frontend and api complete auth, create, search, and detail flow", asy
   await page.getByRole("button", { name: "بحث", exact: true }).click();
   const placeLink = page.getByRole("link", { name: new RegExp(placeName) });
   await placeLink.scrollIntoViewIfNeeded();
-  await Promise.all([
-    page.waitForURL(/\/places\/[0-9a-f-]+$/, { timeout: 30_000 }),
-    placeLink.click()
-  ]);
+  await placeLink.click();
+  await expect(page).toHaveURL(/\/places\/[0-9a-f-]+$/, { timeout: 30_000 });
   await expect(page.getByRole("heading", { name: placeName })).toBeVisible();
   await expect(page.getByRole("link", { name: "قيّم المكان" })).toBeVisible();
 });
@@ -93,7 +91,7 @@ test("real frontend and api complete list edit add remove delete and profile flo
   await page.goto("/places?type=restaurant");
   await expect(page).toHaveURL(/\/places\?type=restaurant/);
 
-  await page.goto("/lists/new");
+  await openCreateListDialog(page);
   await page.getByLabel("اسم القائمة").fill(listName);
   const createVisibilityGroup = page.getByRole("radiogroup", { name: "الخصوصية" });
   await expect(createVisibilityGroup.getByRole("radio", { name: "خاصة" })).toHaveAttribute(
@@ -185,19 +183,15 @@ test("real frontend and api complete list edit add remove delete and profile flo
     .getByRole("navigation", { name: "التنقل الرئيسي" })
     .getByRole("link", { name: "صفحتي" });
   await expect(profileNavLink).toHaveAttribute("href", "/profile");
-  await Promise.all([
-    page.waitForURL(/\/profile$/, { timeout: 15_000 }),
-    profileNavLink.click()
-  ]);
+  await profileNavLink.click();
+  await expect(page).toHaveURL(/\/profile$/, { timeout: 15_000 });
   await expect(page.getByRole("heading", { name: "صفحتي" })).toBeVisible();
   await expect(page.getByText(placeName)).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText("ملاحظة خاصة للاختبار")).toHaveCount(0);
   const ratingsArchiveLink = page.getByRole("link", { name: "عرض كل الأماكن التي قيّمتها" });
   await expect(ratingsArchiveLink).toHaveAttribute("href", "/profile/ratings");
-  await Promise.all([
-    page.waitForURL(/\/profile\/ratings$/, { timeout: 15_000 }),
-    ratingsArchiveLink.click()
-  ]);
+  await ratingsArchiveLink.click();
+  await expect(page).toHaveURL(/\/profile\/ratings$/, { timeout: 15_000 });
   await expect(page.getByRole("heading", { name: "الأماكن التي قيّمتها" })).toBeVisible();
   await expect(page.getByText("ملاحظة خاصة للاختبار")).toBeVisible();
   await expect(page.locator("body")).not.toContainText("جربته");
@@ -416,6 +410,15 @@ test("technical shell stories expose manifest headers and legacy redirects", asy
 async function waitForPlaceLibraryReady(page: Page) {
   await expect(page.locator(".place-library-loading")).toHaveCount(0, { timeout: 30_000 });
   await expect(page.locator(".place-memory-section, .ds-empty")).toBeVisible({ timeout: 30_000 });
+}
+
+async function openCreateListDialog(page: Page) {
+  await page.goto("/lists/new");
+  await expect(page).toHaveURL(/\/lists\/new$/, { timeout: 30_000 });
+  await expect(page.getByRole("dialog", { name: "أضف قائمة" })).toBeVisible({
+    timeout: 30_000
+  });
+  await expect(page.getByLabel("اسم القائمة")).toBeVisible({ timeout: 30_000 });
 }
 
 async function signInApiUserThroughUi(page: Page, email: string, returnTo: string) {
