@@ -125,7 +125,7 @@ function placePayload() {
     averageRating: 9,
     createdAt: now,
     createdByUserId: "user-owner",
-    currentUserIsCreator: false,
+    currentUserIsCreator: true,
     currentUserListCount: 0,
     currentUserListIds: [],
     currentUserListNames: [],

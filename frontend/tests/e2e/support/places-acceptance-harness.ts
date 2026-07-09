@@ -190,7 +190,7 @@ export class PlacesAcceptanceHarness {
 
   async loadAddToListState(placeId: string): Promise<void> {
     await this.loadPlaceDetail(placeId);
-    await this.page.locator(".place-detail-hero__actions button").first().click();
+    await this.page.getByRole("button", { name: "أضف إلى قائمة" }).click();
     await expect(this.page.locator(".place-save-dialog")).toBeVisible({ timeout: 30_000 });
   }
 
