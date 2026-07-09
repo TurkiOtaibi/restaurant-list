@@ -5,18 +5,24 @@ import { setTimeout as delay } from "node:timers/promises";
 let apiProcess: ChildProcessWithoutNullStreams | undefined;
 let apiOutput = "";
 let apiExited = false;
-let apiReady = false;
 const E2E_API_PORT = process.env.E2E_API_PORT ?? "8000";
 const API_BASE_URL = process.env.E2E_API_BASE_URL ?? `http://localhost:${E2E_API_PORT}`;
 
 export async function ensureE2eApiServer(): Promise<void> {
-  if (apiReady && (await isReady())) {
+  if (apiProcess) {
+    if (await isReady()) {
+      return;
+    }
+
+    await waitForApi();
     return;
   }
 
   if (await isReady()) {
-    apiReady = true;
-    return;
+    throw new Error(
+      `E2E refuses to reuse an existing API at ${API_BASE_URL}. ` +
+        "Stop that process or configure a different E2E_API_BASE_URL."
+    );
   }
 
   if (!apiProcess) {
@@ -31,8 +37,14 @@ export async function ensureE2eApiServer(): Promise<void> {
       "start_e2e_api.py"
     );
 
+    const childEnv = { ...process.env };
+    delete childEnv.DATABASE_URL;
+    if (process.env.E2E_DATABASE_URL === undefined) {
+      delete childEnv.E2E_DATABASE_URL;
+    }
+
     const spawnedProcess = spawn(process.env.PYTHON ?? "python", [backendScript], {
-      env: { ...process.env },
+      env: childEnv,
       stdio: "pipe"
     });
     apiProcess = spawnedProcess;
@@ -48,20 +60,17 @@ export async function ensureE2eApiServer(): Promise<void> {
         return;
       }
       apiExited = true;
-      apiReady = false;
       apiProcess = undefined;
       apiOutput += `\nAPI exited with code ${code ?? "null"} and signal ${signal ?? "null"}.`;
     });
   }
 
   await waitForApi();
-  apiReady = true;
 }
 
 export async function stopE2eApiServer(): Promise<void> {
   const currentProcess = apiProcess;
   apiProcess = undefined;
-  apiReady = false;
   if (!currentProcess || currentProcess.exitCode !== null) {
     apiExited = false;
     return;

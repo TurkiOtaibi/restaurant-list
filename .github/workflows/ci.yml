@@ -102,7 +102,7 @@ jobs:
           --health-retries 5
     env:
       # The real end-to-end flow boots the FastAPI app against this PostgreSQL service.
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/restaurant_test
+      E2E_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/restaurant_test
       APP_ENV: e2e
       JWT_ACCESS_SECRET: e2e-access-secret
       JWT_REFRESH_SECRET: e2e-refresh-secret
