@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.requests import Request
 
 from app.core.errors import unauthorized
 from app.core.security import decode_token
@@ -15,6 +16,7 @@ DatabaseSession = Annotated[AsyncSession, Depends(get_db)]
 
 
 async def get_current_user(
+    request: Request,
     credentials: BearerCredentials,
     db: DatabaseSession,
 ) -> User:
@@ -30,10 +32,12 @@ async def get_current_user(
     if user is None:
         unauthorized("USER_NOT_FOUND", "User no longer exists.")
 
+    request.state.user_id = user.id
     return user
 
 
 async def get_optional_current_user(
+    request: Request,
     credentials: BearerCredentials,
     db: DatabaseSession,
 ) -> User | None:
@@ -49,4 +53,5 @@ async def get_optional_current_user(
     if user is None:
         unauthorized("USER_NOT_FOUND", "User no longer exists.")
 
+    request.state.user_id = user.id
     return user

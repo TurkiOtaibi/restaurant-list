@@ -65,7 +65,7 @@ async def test_auth_004_access_token_expires_after_configured_default_lifetime(
     expired = await client.get("/api/v1/places", headers=auth_header(access_token))
 
     assert expired.status_code == 401
-    assert expired.json()["detail"]["code"] == "INVALID_TOKEN"
+    assert expired.json()["error"]["code"] == "INVALID_TOKEN"
     assert "accessToken" not in expired.text
     assert "refresh" not in expired.text.lower()
 

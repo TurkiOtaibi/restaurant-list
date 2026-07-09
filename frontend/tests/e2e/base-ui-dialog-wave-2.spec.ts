@@ -153,7 +153,7 @@ async function mockEditListApi(page: Page) {
 
     return route.fulfill({
       body: JSON.stringify({
-        detail: { code: "MOCK_NOT_FOUND", message: `${request.method()} ${path}` }
+        error: { code: "MOCK_NOT_FOUND", message: `${request.method()} ${path}` }
       }),
       contentType: "application/json",
       status: 404

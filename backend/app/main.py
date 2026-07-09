@@ -6,9 +6,10 @@ from time import perf_counter
 from typing import Any
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
@@ -22,15 +23,31 @@ from app.api.wishlist import router as wishlist_router
 from app.core.config import get_settings
 
 request_logger = logging.getLogger("app.request")
+exception_logger = logging.getLogger("app.exception")
 
 
 def serializable_validation_errors(errors: Sequence[Any]) -> list[dict[str, Any]]:
     normalized_errors: list[dict[str, Any]] = []
     for error in errors:
-        normalized_error = dict(error) if isinstance(error, dict) else {"error": str(error)}
-        ctx = normalized_error.get("ctx")
+        if not isinstance(error, dict):
+            normalized_errors.append({"type": "validation_error", "msg": "Invalid value."})
+            continue
+
+        normalized_error: dict[str, Any] = {}
+        for key in ("type", "loc", "msg"):
+            value = error.get(key)
+            if key == "loc" and isinstance(value, (list, tuple)):
+                normalized_error[key] = [str(item) for item in value]
+            elif isinstance(value, (str, int, float, bool)) or value is None:
+                normalized_error[key] = value
+
+        ctx = error.get("ctx")
         if isinstance(ctx, dict):
-            normalized_error["ctx"] = {key: str(value) for key, value in ctx.items()}
+            normalized_error["ctx"] = {
+                str(key): str(value)
+                for key, value in ctx.items()
+                if isinstance(value, (str, int, float, bool)) or value is None
+            }
         normalized_errors.append(normalized_error)
     return normalized_errors
 
@@ -55,9 +72,7 @@ def build_error_content(
     if details is not None:
         error["details"] = details
 
-    # Keep detail as a compatibility alias for existing internal tests while
-    # exposing error as the EDR-001 response envelope.
-    return {"error": error, "detail": error}
+    return {"error": error}
 
 
 def create_app() -> FastAPI:
@@ -77,7 +92,10 @@ def create_app() -> FastAPI:
         request_id = request.headers.get("X-Request-ID") or str(uuid4())
         request.state.request_id = request_id
         started_at = perf_counter()
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception as exc:
+            response = await unhandled_exception_handler(request, exc)
         duration_ms = round((perf_counter() - started_at) * 1000, 2)
         response.headers["X-Request-ID"] = request_id
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
@@ -91,11 +109,21 @@ def create_app() -> FastAPI:
             "Content-Security-Policy",
             "default-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
         )
-        request_logger.info(
+        if response.status_code >= 500:
+            log_method = request_logger.error
+            level = "ERROR"
+        elif response.status_code >= 400:
+            log_method = request_logger.warning
+            level = "WARNING"
+        else:
+            log_method = request_logger.info
+            level = "INFO"
+
+        log_method(
             json.dumps(
                 {
                     "timestamp": datetime.now(UTC).isoformat(),
-                    "level": "INFO" if response.status_code < 400 else "ERROR",
+                    "level": level,
                     "requestId": request_id,
                     "userId": getattr(request.state, "user_id", None),
                     "path": request.url.path,
@@ -110,17 +138,35 @@ def create_app() -> FastAPI:
         )
         return response
 
-    @app.exception_handler(HTTPException)
-    async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    @app.exception_handler(StarletteHTTPException)
+    async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
         if isinstance(exc.detail, dict) and {"code", "message"}.issubset(exc.detail):
             code = str(exc.detail["code"])
             message = str(exc.detail["message"])
+        elif exc.status_code == 404:
+            code = "NOT_FOUND"
+            message = "Resource not found."
         else:
             code = "HTTP_ERROR"
-            message = str(exc.detail)
+            message = "Request could not be completed."
         return JSONResponse(
             status_code=exc.status_code,
             content=build_error_content(request, code, message),
+        )
+
+    @app.exception_handler(Exception)
+    async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+        exception_logger.exception(
+            "Unhandled exception requestId=%s",
+            getattr(request.state, "request_id", request.headers.get("X-Request-ID")),
+        )
+        return JSONResponse(
+            status_code=500,
+            content=build_error_content(
+                request,
+                "INTERNAL_ERROR",
+                "An unexpected error occurred.",
+            ),
         )
 
     @app.exception_handler(RequestValidationError)

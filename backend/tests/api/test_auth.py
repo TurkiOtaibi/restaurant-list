@@ -64,7 +64,7 @@ async def test_register_login_refresh_and_logout(client: AsyncClient) -> None:
     client.cookies.set(refresh_cookie_name, first_refresh_token, path="/api/v1/auth")
     old_refresh = await client.post("/api/v1/auth/refresh")
     assert old_refresh.status_code == 401
-    assert old_refresh.json()["detail"]["code"] == "REFRESH_TOKEN_REVOKED"
+    assert old_refresh.json()["error"]["code"] == "REFRESH_TOKEN_REVOKED"
 
     client.cookies.clear()
     client.cookies.set(refresh_cookie_name, rotated_refresh_token, path="/api/v1/auth")
@@ -74,7 +74,7 @@ async def test_register_login_refresh_and_logout(client: AsyncClient) -> None:
 
     revoked_refresh = await client.post("/api/v1/auth/refresh")
     assert revoked_refresh.status_code == 401
-    assert revoked_refresh.json()["detail"]["code"] in {
+    assert revoked_refresh.json()["error"]["code"] in {
         "MISSING_REFRESH_TOKEN",
         "REFRESH_TOKEN_REVOKED",
     }
@@ -118,14 +118,14 @@ async def test_refresh_reuse_revokes_token_family(client: AsyncClient) -> None:
     client.cookies.set(refresh_cookie_name, stolen, path="/api/v1/auth")
     reused = await client.post("/api/v1/auth/refresh")
     assert reused.status_code == 401
-    assert reused.json()["detail"]["code"] == "REFRESH_TOKEN_REVOKED"
+    assert reused.json()["error"]["code"] == "REFRESH_TOKEN_REVOKED"
 
     # The most recent token of the family must now be dead too.
     client.cookies.clear()
     client.cookies.set(refresh_cookie_name, rotated, path="/api/v1/auth")
     after = await client.post("/api/v1/auth/refresh")
     assert after.status_code == 401
-    assert after.json()["detail"]["code"] == "REFRESH_TOKEN_REVOKED"
+    assert after.json()["error"]["code"] == "REFRESH_TOKEN_REVOKED"
 
 
 async def test_duplicate_email_rejected(client: AsyncClient) -> None:
@@ -136,7 +136,7 @@ async def test_duplicate_email_rejected(client: AsyncClient) -> None:
     )
 
     assert response.status_code == 409
-    assert response.json()["detail"]["code"] == "EMAIL_ALREADY_EXISTS"
+    assert response.json()["error"]["code"] == "EMAIL_ALREADY_EXISTS"
 
 
 async def test_login_rejects_bad_password(client: AsyncClient) -> None:
@@ -159,7 +159,7 @@ async def test_auth_rate_limit_returns_429(client: AsyncClient) -> None:
 
     assert last_response is not None
     assert last_response.status_code == 429
-    assert last_response.json()["detail"]["code"] == "RATE_LIMITED"
+    assert last_response.json()["error"]["code"] == "RATE_LIMITED"
 
 
 async def test_logout_rejects_invalid_refresh_token(client: AsyncClient) -> None:
@@ -171,4 +171,4 @@ async def test_logout_rejects_invalid_refresh_token(client: AsyncClient) -> None
     response = await client.post("/api/v1/auth/logout")
 
     assert response.status_code == 401
-    assert response.json()["detail"]["code"] == "INVALID_TOKEN"
+    assert response.json()["error"]["code"] == "INVALID_TOKEN"

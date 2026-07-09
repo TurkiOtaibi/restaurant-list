@@ -214,7 +214,7 @@ async function mockWishlistPlaceDetailApi(page: Page) {
     }
 
     return route.fulfill({
-      body: JSON.stringify({ detail: { code: "MOCK_NOT_FOUND", message: `${request.method()} ${path}` } }),
+      body: JSON.stringify({ error: { code: "MOCK_NOT_FOUND", message: `${request.method()} ${path}` } }),
       contentType: "application/json",
       status: 404
     });
@@ -242,7 +242,7 @@ async function mockProfileApi(
     if (path === "/profile") {
       return fulfillMockJson(route, profilePayload({ wishlist }));
     }
-    return fulfillMockJson(route, { detail: { code: "MOCK_NOT_FOUND", message: path } }, 404);
+    return fulfillMockJson(route, { error: { code: "MOCK_NOT_FOUND", message: path } }, 404);
   });
 }
 
@@ -280,7 +280,7 @@ async function mockSystemListDetailApi(page: Page) {
     }
 
     return route.fulfill({
-      body: JSON.stringify({ detail: { code: "MOCK_NOT_FOUND", message: `${request.method()} ${path}` } }),
+      body: JSON.stringify({ error: { code: "MOCK_NOT_FOUND", message: `${request.method()} ${path}` } }),
       contentType: "application/json",
       status: 404
     });
