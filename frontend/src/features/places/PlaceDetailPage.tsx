@@ -137,20 +137,18 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
     ...(place.currentUserIsCreator
       ? [
           {
-            label: place.imageUrl ? "تغيير الصورة" : "أضف صورة",
+            label: "تعديل",
             onSelect: () => setImageDialogOpen(true)
           },
-          ...(place.imageUrl
-            ? [
-                {
-                  destructive: true,
-                  label: "إزالة الصورة",
-                  onSelect: () => {
-                    void removeImage(place.id);
-                  }
-                }
-              ]
-            : [])
+          {
+            destructive: true,
+            label: "حذف",
+            onSelect: () => {
+              if (place.imageUrl) {
+                void removeImage(place.id);
+              }
+            }
+          }
         ]
       : [])
   ];
@@ -244,8 +242,10 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
               onClick={() => void toggleWishlist()}
               type="button"
             >
-              <BookmarkIcon />
-              {isInWishlist ? "في رغباتي" : "أضف إلى رغباتي"}
+              <span className="place-detail-hero__cta-content">
+                <BookmarkIcon />
+                <span>{isInWishlist ? "في رغباتي" : "أضف إلى رغباتي"}</span>
+              </span>
             </Button>
             <Button
               className="ds-button--full place-detail-hero__cta place-detail-hero__cta--secondary"
@@ -253,8 +253,10 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
               type="button"
               variant="secondary"
             >
-              <AddIcon />
-              أضف إلى قائمة
+              <span className="place-detail-hero__cta-content">
+                <AddIcon />
+                <span>أضف إلى قائمة</span>
+              </span>
             </Button>
           </div>
         </div>

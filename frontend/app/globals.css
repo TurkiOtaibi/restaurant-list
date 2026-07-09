@@ -3297,24 +3297,39 @@ textarea:disabled {
 }
 
 .place-detail-hero__actions .place-detail-hero__cta {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   width: min(100%, 268px);
   min-height: 48px;
+  padding-inline: 18px;
   text-align: center;
+  justify-self: center;
 }
 
-.place-detail-hero__actions .place-detail-hero__cta > span {
+.place-detail-hero__actions .place-detail-hero__cta > span:not(.ds-button__spinner) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: auto;
+  min-inline-size: 0;
+  margin-inline: auto;
+}
+
+.place-detail-hero__actions .place-detail-hero__cta-content {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   min-inline-size: 0;
+  margin-inline: auto;
 }
 
-.place-detail-hero__actions .place-detail-hero__cta svg {
+.place-detail-hero__actions .place-detail-hero__cta svg,
+.place-detail-hero__actions .place-detail-hero__cta-content svg {
+  position: static;
   flex: 0 0 auto;
 }
 

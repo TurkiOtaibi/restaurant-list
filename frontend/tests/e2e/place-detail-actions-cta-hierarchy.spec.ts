@@ -9,7 +9,7 @@ const screenshotsDir = join(
   "..",
   "docs",
   "qa-execution",
-  "place-detail-actions-cta-hierarchy",
+  "place-detail-actions-final-fix",
   "screenshots"
 );
 
@@ -20,22 +20,27 @@ test("public Place Detail keeps user actions in hero and rating card without top
 
   await capturePublicPlaceDetail(page, {
     height: 844,
-    name: "place-detail-actions-hero-390x844.png",
+    name: "place-detail-cta-fixed-390x844.png",
     width: 390
   });
   await capturePublicPlaceDetail(page, {
     height: 568,
-    name: "place-detail-actions-hero-320x568.png",
+    name: "place-detail-cta-fixed-320x568.png",
     width: 320
   });
   await capturePublicPlaceDetail(page, {
     height: 932,
-    name: "place-detail-actions-hero-430x932.png",
+    name: "place-detail-cta-fixed-430x932.png",
     width: 430
   });
+
+  await page.setViewportSize({ height: 844, width: 390 });
+  await page.goto(`/places/${placeId}`, { waitUntil: "domcontentloaded" });
+  await expect(page.locator(".place-detail-page")).toBeVisible();
+  await captureScreenshot(page, "place-detail-public-menu-state-390x844.png");
 });
 
-test("Place Detail owner menu contains only existing management actions", async ({ page }) => {
+test("Place Detail owner menu contains only edit and delete management actions", async ({ page }) => {
   await page.setViewportSize({ height: 844, width: 390 });
   await mockPlaceDetailApi(page, { authenticated: true, creator: true });
 
@@ -48,14 +53,14 @@ test("Place Detail owner menu contains only existing management actions", async 
 
   const menu = page.getByRole("menu", { name: "خيارات إدارة المكان" });
   await expect(menu).toBeVisible();
-  await expect(menu.getByRole("menuitem", { name: "تغيير الصورة" })).toBeVisible();
-  await expect(menu.getByRole("menuitem", { name: "إزالة الصورة" })).toBeVisible();
+  await expect(menu.getByRole("menuitem", { name: "تعديل" })).toBeVisible();
+  await expect(menu.getByRole("menuitem", { name: "حذف" })).toBeVisible();
   await expect(menu.getByRole("menuitem", { name: "أضف إلى قائمة" })).toHaveCount(0);
   await expect(menu.getByRole("menuitem", { name: "أضف إلى رغباتي" })).toHaveCount(0);
   await expect(menu.getByRole("menuitem", { name: "قيّم المكان" })).toHaveCount(0);
   await expect.poll(() => hasNoHorizontalOverflow(page)).toBe(true);
 
-  await captureScreenshot(page, "place-detail-actions-menu-open-390x844.png");
+  await captureScreenshot(page, "place-detail-authorized-menu-open-390x844.png");
 });
 
 test("Place Detail actions still open the existing flows", async ({ page }) => {
@@ -97,6 +102,8 @@ async function capturePublicPlaceDetail(
   await expect(addToListButton).toBeVisible();
   await expectCenteredButton(wishlistButton);
   await expectCenteredButton(addToListButton);
+  await expectCenteredCtaContent(wishlistButton);
+  await expectCenteredCtaContent(addToListButton);
 
   await expect(page.locator(".place-detail-panel--rating")).toBeVisible();
   const ratingPanel = page.locator(".place-detail-panel--rating");
@@ -116,6 +123,28 @@ async function expectCenteredButton(button: Locator) {
   await expect(button).toHaveCSS("display", "flex");
   await expect(button).toHaveCSS("align-items", "center");
   await expect(button).toHaveCSS("justify-content", "center");
+}
+
+async function expectCenteredCtaContent(button: Locator) {
+  const buttonBox = await button.boundingBox();
+  const contentBox = await button.locator(".place-detail-hero__cta-content").boundingBox();
+  const iconBox = await button.locator(".place-detail-hero__cta-content svg").boundingBox();
+
+  expect(buttonBox).not.toBeNull();
+  expect(contentBox).not.toBeNull();
+  expect(iconBox).not.toBeNull();
+
+  if (!buttonBox || !contentBox || !iconBox) {
+    return;
+  }
+
+  const buttonCenter = buttonBox.x + buttonBox.width / 2;
+  const contentCenter = contentBox.x + contentBox.width / 2;
+  const maxCenterDriftPx = 2;
+
+  expect(Math.abs(buttonCenter - contentCenter)).toBeLessThanOrEqual(maxCenterDriftPx);
+  expect(iconBox.x).toBeGreaterThan(buttonBox.x + 10);
+  expect(iconBox.x + iconBox.width).toBeLessThan(buttonBox.x + buttonBox.width - 10);
 }
 
 async function mockPlaceDetailApi(
