@@ -24,7 +24,7 @@ test("creator can upload a place image and non-creator cannot see image manageme
   await mockPlaceDetailApi(page, { creator: true, imageUrl: null });
 
   await page.goto("/places/image-place");
-  await page.getByRole("button", { name: "خيارات المكان" }).click();
+  await page.getByRole("button", { name: "خيارات إدارة المكان" }).click();
   await page.getByRole("menuitem", { name: "أضف صورة" }).click();
   await expect(page.getByRole("dialog", { name: "أضف صورة" })).toBeVisible();
 
@@ -42,13 +42,13 @@ test("creator can upload a place image and non-creator cannot see image manageme
   await expect(page.getByRole("dialog", { name: "أضف صورة" })).toHaveCount(0);
   await expect(page.locator(".place-detail-hero__art img")).toHaveAttribute("src", /uploaded-place/);
 
-  await page.getByRole("button", { name: "خيارات المكان" }).click();
+  await page.getByRole("button", { name: "خيارات إدارة المكان" }).click();
   await page.getByRole("menuitem", { name: "إزالة الصورة" }).click();
   await expect(page.locator(".place-detail-hero__art.ds-type-icon")).toBeVisible();
 
   await mockPlaceDetailApi(page, { creator: false, imageUrl: null });
   await page.goto("/places/image-place");
-  await page.getByRole("button", { name: "خيارات المكان" }).click();
+  await expect(page.getByRole("button", { name: "خيارات إدارة المكان" })).toHaveCount(0);
   await expect(page.getByRole("menuitem", { name: "أضف صورة" })).toHaveCount(0);
   await expect(page.getByRole("menuitem", { name: "تغيير الصورة" })).toHaveCount(0);
   await expect(page.getByRole("menuitem", { name: "إزالة الصورة" })).toHaveCount(0);

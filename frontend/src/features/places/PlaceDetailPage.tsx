@@ -133,19 +133,7 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
     setAddToListOpen(true);
   }
 
-  function goToRating() {
-    window.location.href = rateHref;
-  }
-
   const menuItems = [
-    {
-      label: "أضف إلى قائمة",
-      onSelect: openAddToList
-    },
-    {
-      label: place.currentUserRating ? "تعديل التقييم" : "قيّم المكان",
-      onSelect: goToRating
-    },
     ...(place.currentUserIsCreator
       ? [
           {
@@ -220,11 +208,13 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
         <ButtonLink aria-label="العودة للأماكن" className="place-detail-topbar__action" href="/places" variant="secondary">
           <ArrowLeftIcon />
         </ButtonLink>
-        <ActionMenu
-          items={menuItems}
-          label="خيارات المكان"
-          trigger={<MoreVerticalIcon />}
-        />
+        {menuItems.length > 0 ? (
+          <ActionMenu
+            items={menuItems}
+            label="خيارات إدارة المكان"
+            trigger={<MoreVerticalIcon />}
+          />
+        ) : null}
       </div>
       {imageMessage ? <StatusMessage tone="success">{imageMessage}</StatusMessage> : null}
       {imageError ? <StatusMessage tone="error">{imageError}</StatusMessage> : null}
@@ -248,19 +238,23 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
             {subtype ? <Chip>{subtype}</Chip> : null}
           </div>
           <div className="actions place-detail-hero__actions">
-            <Button className="ds-button--full" onClick={openAddToList} type="button">
-              <AddIcon />
-              أضف إلى قائمة
-            </Button>
             <Button
-              className="ds-button--full"
+              className="ds-button--full place-detail-hero__cta place-detail-hero__cta--primary"
               isLoading={updatingWishlist}
               onClick={() => void toggleWishlist()}
               type="button"
-              variant="secondary"
             >
               <BookmarkIcon />
               {isInWishlist ? "في رغباتي" : "أضف إلى رغباتي"}
+            </Button>
+            <Button
+              className="ds-button--full place-detail-hero__cta place-detail-hero__cta--secondary"
+              onClick={openAddToList}
+              type="button"
+              variant="secondary"
+            >
+              <AddIcon />
+              أضف إلى قائمة
             </Button>
           </div>
         </div>
@@ -291,7 +285,7 @@ export function PlaceDetailPage({ placeId }: PlaceDetailPageProps) {
                 value={place.currentUserRating}
               />
             ) : (
-              <p className="muted">لم تضف تقييما لهذا المكان بعد.</p>
+              <p className="muted">لم تضف تقييمًا لهذا المكان بعد.</p>
             )}
             <ButtonLink href={rateHref} variant="secondary">
               {place.currentUserRating ? "تعديل التقييم" : "قيّم المكان"}
