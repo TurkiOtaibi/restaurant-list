@@ -112,6 +112,8 @@ class Settings(BaseSettings):
             raise ValueError("CORS_ALLOW_ORIGIN_REGEX is not permitted in production.")
 
         for origin in self.cors_origins:
+            if origin != origin.strip():
+                raise ValueError("CORS_ORIGINS must not contain surrounding whitespace.")
             if "*" in origin:
                 raise ValueError("CORS_ORIGINS must not contain wildcard origins in production.")
             try:
@@ -130,8 +132,8 @@ class Settings(BaseSettings):
                 or parsed_origin.username is not None
                 or parsed_origin.password is not None
                 or parsed_origin.path
-                or parsed_origin.query
-                or parsed_origin.fragment
+                or "?" in origin
+                or "#" in origin
             ):
                 raise ValueError(
                     "CORS_ORIGINS must contain HTTPS origins without paths or credentials."
@@ -140,10 +142,17 @@ class Settings(BaseSettings):
             normalized_hostname = hostname.lower().rstrip(".")
             is_loopback_ip = False
             try:
-                is_loopback_ip = ipaddress.ip_address(hostname).is_loopback
+                parsed_ip = ipaddress.ip_address(hostname)
+                is_loopback_ip = parsed_ip.is_loopback
+                if parsed_ip.version == 6 and parsed_ip.ipv4_mapped is not None:
+                    is_loopback_ip = is_loopback_ip or parsed_ip.ipv4_mapped.is_loopback
             except ValueError:
                 pass
-            if normalized_hostname in LOOPBACK_HOSTS or is_loopback_ip:
+            if (
+                normalized_hostname in LOOPBACK_HOSTS
+                or normalized_hostname.endswith(".localhost")
+                or is_loopback_ip
+            ):
                 raise ValueError("CORS_ORIGINS must not contain loopback or localhost origins.")
 
         return self
