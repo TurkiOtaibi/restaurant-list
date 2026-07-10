@@ -1,7 +1,13 @@
+import ipaddress
 from functools import lru_cache
+from urllib.parse import urlsplit
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEFAULT_JWT_ACCESS_SECRET = "dev-only-access-secret-placeholder-32-bytes"
+DEFAULT_JWT_REFRESH_SECRET = "dev-only-refresh-secret-placeholder-32-bytes"
+LOOPBACK_HOSTS = {"localhost", "127.0.0.1", "::1"}
 
 
 def async_database_url(value: str) -> str:
@@ -30,8 +36,8 @@ class Settings(BaseSettings):
         default="postgresql+asyncpg://restaurant_user:restaurant_password@localhost:5432/restaurant_wishlist",
         alias="DATABASE_URL",
     )
-    jwt_access_secret: str = Field(default="change-me-access-secret", alias="JWT_ACCESS_SECRET")
-    jwt_refresh_secret: str = Field(default="change-me-refresh-secret", alias="JWT_REFRESH_SECRET")
+    jwt_access_secret: str = Field(default=DEFAULT_JWT_ACCESS_SECRET, alias="JWT_ACCESS_SECRET")
+    jwt_refresh_secret: str = Field(default=DEFAULT_JWT_REFRESH_SECRET, alias="JWT_REFRESH_SECRET")
     access_token_expire_minutes: int = Field(default=15, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
     refresh_token_expire_days: int = Field(default=30, alias="REFRESH_TOKEN_EXPIRE_DAYS")
     refresh_cookie_name: str = Field(
@@ -75,20 +81,70 @@ class Settings(BaseSettings):
         if self.app_env.lower() != "production":
             return self
 
-        default_access_secret = "change-me-access-secret"
-        default_refresh_secret = "change-me-refresh-secret"
-        if (
-            self.jwt_access_secret == default_access_secret
-            or self.jwt_refresh_secret == default_refresh_secret
-            or self.jwt_access_secret == self.jwt_refresh_secret
-        ):
-            raise ValueError("Production JWT secrets must be unique and explicitly configured.")
+        if len(self.jwt_access_secret.encode("utf-8")) < 32:
+            raise ValueError("JWT_ACCESS_SECRET must be at least 32 UTF-8 bytes in production.")
+        if len(self.jwt_refresh_secret.encode("utf-8")) < 32:
+            raise ValueError("JWT_REFRESH_SECRET must be at least 32 UTF-8 bytes in production.")
+        if self.jwt_access_secret == DEFAULT_JWT_ACCESS_SECRET:
+            raise ValueError(
+                "JWT_ACCESS_SECRET must not use the development default in production."
+            )
+        if self.jwt_refresh_secret == DEFAULT_JWT_REFRESH_SECRET:
+            raise ValueError(
+                "JWT_REFRESH_SECRET must not use the development default in production."
+            )
+        if self.jwt_access_secret == self.jwt_refresh_secret:
+            raise ValueError(
+                "JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must be different in production."
+            )
 
         if not self.refresh_cookie_secure:
             raise ValueError("Production refresh cookies must be Secure.")
 
         if self.refresh_cookie_samesite.lower() not in {"lax", "strict", "none"}:
             raise ValueError("REFRESH_COOKIE_SAMESITE must be lax, strict, or none.")
+
+        if not self.cors_origins:
+            raise ValueError(
+                "CORS_ORIGINS must contain at least one explicit origin in production."
+            )
+        if self.cors_allow_origin_regex is not None:
+            raise ValueError("CORS_ALLOW_ORIGIN_REGEX is not permitted in production.")
+
+        for origin in self.cors_origins:
+            if "*" in origin:
+                raise ValueError("CORS_ORIGINS must not contain wildcard origins in production.")
+            try:
+                parsed_origin = urlsplit(origin)
+                hostname = parsed_origin.hostname
+                _ = parsed_origin.port
+            except ValueError as exc:
+                raise ValueError(
+                    "CORS_ORIGINS must contain valid HTTPS origins in production."
+                ) from exc
+
+            if (
+                parsed_origin.scheme.lower() != "https"
+                or not parsed_origin.netloc
+                or hostname is None
+                or parsed_origin.username is not None
+                or parsed_origin.password is not None
+                or parsed_origin.path
+                or parsed_origin.query
+                or parsed_origin.fragment
+            ):
+                raise ValueError(
+                    "CORS_ORIGINS must contain HTTPS origins without paths or credentials."
+                )
+
+            normalized_hostname = hostname.lower().rstrip(".")
+            is_loopback_ip = False
+            try:
+                is_loopback_ip = ipaddress.ip_address(hostname).is_loopback
+            except ValueError:
+                pass
+            if normalized_hostname in LOOPBACK_HOSTS or is_loopback_ip:
+                raise ValueError("CORS_ORIGINS must not contain loopback or localhost origins.")
 
         return self
 

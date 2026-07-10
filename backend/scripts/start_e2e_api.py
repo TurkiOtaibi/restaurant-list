@@ -90,8 +90,8 @@ def _validate_postgresql_url(url: URL) -> str:
 def _configure_runtime_environment(database_url: str) -> None:
     os.environ["APP_ENV"] = "e2e"
     os.environ["DATABASE_URL"] = database_url
-    os.environ.setdefault("JWT_ACCESS_SECRET", "e2e-access-secret")
-    os.environ.setdefault("JWT_REFRESH_SECRET", "e2e-refresh-secret")
+    os.environ.setdefault("JWT_ACCESS_SECRET", "e2e-only-access-secret-placeholder-32-bytes")
+    os.environ.setdefault("JWT_REFRESH_SECRET", "e2e-only-refresh-secret-placeholder-32-bytes")
     os.environ.setdefault("REFRESH_COOKIE_SECURE", "false")
     os.environ.setdefault("AUTH_RATE_LIMIT_REQUESTS", "200")
     os.environ.setdefault("AUTH_RATE_LIMIT_WINDOW_SECONDS", "60")
