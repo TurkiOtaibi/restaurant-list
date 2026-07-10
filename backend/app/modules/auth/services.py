@@ -152,7 +152,7 @@ async def rotate_refresh_token(
     if not refresh_token:
         refresh_token_error()
 
-    stored_token, user = await stored_refresh_token(db, refresh_token)
+    stored_token, user = await stored_refresh_token(db, refresh_token, for_update=True)
     stored_token.revoked_at = utc_now()
     stored_token.updated_at = utc_now()
     new_refresh_token, token_record = new_refresh_token_record(user)
@@ -208,6 +208,8 @@ async def revoke_all_user_refresh_tokens(db: AsyncSession, *, user_id: str) -> N
 async def stored_refresh_token(
     db: AsyncSession,
     token: str,
+    *,
+    for_update: bool = False,
 ) -> tuple[RefreshToken, User]:
     token_payload = decode_token(token, token_type="refresh")
     user_id = token_payload.get("sub")
@@ -215,12 +217,13 @@ async def stored_refresh_token(
     if not isinstance(user_id, str) or not isinstance(token_id, str):
         refresh_token_error("INVALID_TOKEN", "Token subject or id is invalid.")
 
-    stored_token = await db.scalar(
-        select(RefreshToken).where(
-            RefreshToken.id == token_id,
-            RefreshToken.token_hash == hash_token(token),
-        )
+    token_query = select(RefreshToken).where(
+        RefreshToken.id == token_id,
+        RefreshToken.token_hash == hash_token(token),
     )
+    if for_update:
+        token_query = token_query.with_for_update()
+    stored_token = await db.scalar(token_query)
     if stored_token is None or stored_token.user_id != user_id:
         refresh_token_error()
 
