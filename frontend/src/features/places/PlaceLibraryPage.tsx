@@ -447,7 +447,7 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
           ) : null}
 
           {loadingMore ? (
-            <PlaceLibraryLoading label="جارٍ تحميل المزيد من الأماكن" />
+            <PlaceLibraryLoading count={2} label="جارٍ تحميل المزيد من الأماكن" />
           ) : null}
 
           {!reachedEnd && !pageError ? <div ref={sentinelRef} aria-hidden="true" /> : null}
@@ -461,12 +461,21 @@ export function PlaceLibraryPage({ initialType }: { initialType: PlaceType }) {
   );
 }
 
-function PlaceLibraryLoading({ label }: { label: string }) {
+function PlaceLibraryLoading({ label, count = 5 }: { label: string; count?: number }) {
   return (
     <section className="place-library-loading" aria-label={label} aria-live="polite">
-      <span />
-      <span />
-      <span />
+      {Array.from({ length: count }, (_, index) => (
+        <div aria-hidden="true" className="place-card-skeleton" key={index}>
+          <div className="place-card-skeleton__main">
+            <div className="place-card-skeleton__text">
+              <span className="place-card-skeleton__line place-card-skeleton__line--title" />
+              <span className="place-card-skeleton__line place-card-skeleton__line--meta" />
+            </div>
+            <span className="place-card-skeleton__score" />
+          </div>
+          <span className="place-card-skeleton__media" />
+        </div>
+      ))}
     </section>
   );
 }
