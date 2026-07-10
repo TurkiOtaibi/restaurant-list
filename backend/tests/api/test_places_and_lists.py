@@ -96,7 +96,10 @@ async def test_places_are_publicly_browsable_with_anonymous_relationship_fields(
     assert anonymous_place["currentUserRating"] is None
     assert anonymous_place["currentUserListCount"] == 0
     assert anonymous_place["currentUserIsCreator"] is False
+    assert "createdByUserId" not in anonymous_place
     assert detail.status_code == 200
+    assert "createdByUserId" not in detail.json()
+    assert "owner@example.com" not in str(detail.json())
     assert detail.json()["currentUserRating"] is None
     assert detail.json()["currentUserListIds"] == []
     assert detail.json()["currentUserListNames"] == []

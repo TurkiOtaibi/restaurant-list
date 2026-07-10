@@ -22,6 +22,8 @@ Closed in this remediation:
 - `GAP-011` profile public-list summary remains acceptable beta behavior and is documented as a GA optimization candidate.
 - `GAP-012` `/restaurants` and `/cafes` remain documented compatibility redirects.
 - `GAP-013` frontend health service name updated.
+- `GAP-014` anonymous public discovery ratified with EDR-014 and explicit abuse
+  controls.
 - `GAP-017` validation is tracked as a release gate, not a product gap.
 
 ## Resolved Gaps
@@ -47,7 +49,7 @@ Closed in this remediation:
 
 | Gap ID | Type | Priority | Area | Current Position | Recommended Future Action |
 |---|---|---:|---|---|---|
-| GAP-014 | Future enhancement | P3 | Public lists | Anonymous public-list browsing is not current behavior. Guests remain rejected. | Revisit only with privacy/security review and product approval. |
+| GAP-014 | Closed | P3 | Public discovery | Anonymous place and public-list read-only browsing is ratified by EDR-014 with bounded rate limits and public-safe payload assertions. | Amend EDR-014 before adding another anonymous surface or changing the read-only boundary. |
 | GAP-015 | Future enhancement | P3 | Admin | No admin console/API exists. | Add only after moderation/operations policy is approved. |
 | GAP-016 | Future enhancement | P3 | Place editing | Users can create places but cannot edit them. | Add a correction workflow only after shared-catalog ownership/moderation rules are defined. |
 

@@ -1,8 +1,10 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
+from app.core.rate_limit import enforce_rate_limit
 from app.core.schemas import CollectionResponse, DeleteResponse, collection_response
 from app.db.session import get_db
 from app.modules.auth.dependencies import get_current_user, get_optional_current_user
@@ -43,6 +45,31 @@ OptionalCurrentUser = Annotated[User | None, Depends(get_optional_current_user)]
 DatabaseSession = Annotated[AsyncSession, Depends(get_db)]
 
 
+def _anonymous_client_identity(request: Request) -> str:
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        return forwarded_for.split(",", 1)[0].strip() or "unknown"
+    return request.client.host if request.client else "unknown"
+
+
+async def _enforce_public_read_rate_limit(
+    request: Request,
+    current_user: User | None,
+    *,
+    scope: str,
+) -> None:
+    if current_user is not None:
+        return
+
+    settings = get_settings()
+    await enforce_rate_limit(
+        scope=scope,
+        subject=_anonymous_client_identity(request),
+        request_count=settings.public_read_rate_limit_requests,
+        window_seconds=settings.public_read_rate_limit_window_seconds,
+    )
+
+
 @router.get("", response_model=CollectionResponse[ListResponse])
 async def list_lists(
     current_user: CurrentUser,
@@ -62,10 +89,17 @@ async def list_lists(
 
 @router.get("/public", response_model=CollectionResponse[PublicListResponse])
 async def list_public_lists(
+    request: Request,
+    current_user: OptionalCurrentUser,
     db: DatabaseSession,
     limit: Annotated[int, Query(ge=1, le=100)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> CollectionResponse[PublicListResponse]:
+    await _enforce_public_read_rate_limit(
+        request,
+        current_user,
+        scope="public-read-lists-collection",
+    )
     result = await list_public_list_summaries(db, limit=limit, offset=offset)
     return collection_response(
         result.items,
@@ -79,9 +113,15 @@ async def list_public_lists(
 @router.get("/public/{list_id}", response_model=PublicListDetailResponse)
 async def get_public_list(
     list_id: str,
+    request: Request,
     current_user: OptionalCurrentUser,
     db: DatabaseSession,
 ) -> PublicListDetailResponse:
+    await _enforce_public_read_rate_limit(
+        request,
+        current_user,
+        scope="public-read-lists-detail",
+    )
     user_list = await get_public_user_list(db, list_id=list_id)
     return await public_list_detail_response(
         db,

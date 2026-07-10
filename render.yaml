@@ -36,6 +36,10 @@ services:
         value: "10"
       - key: AUTH_RATE_LIMIT_WINDOW_SECONDS
         value: "60"
+      - key: PUBLIC_READ_RATE_LIMIT_REQUESTS
+        value: "60"
+      - key: PUBLIC_READ_RATE_LIMIT_WINDOW_SECONDS
+        value: "60"
       - key: ENABLE_API_DOCS
         value: "false"
       - key: CORS_ORIGINS

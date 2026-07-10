@@ -34,6 +34,12 @@ test("places library is publicly browsable without a sign-in wall", async ({ pag
   await expect(page.getByText(/سجل الدخول لعرض الأماكن/)).toHaveCount(0);
 });
 
+test("public-list library is publicly browsable without a sign-in wall", async ({ page }) => {
+  await page.goto("/lists/public");
+  await expect(page.locator("#public-lists-title")).toBeVisible();
+  await expect(page.getByText(/تسجيل الدخول/)).toHaveCount(0);
+});
+
 test("profile archive prompts unauthenticated users to sign in", async ({ page }) => {
   await page.goto("/profile");
   await expect(page.getByText("سجّل الدخول لعرض صفحتك")).toBeVisible({ timeout: 15_000 });

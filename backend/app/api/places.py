@@ -1,9 +1,11 @@
-from typing import Annotated, Literal, cast
+from typing import Annotated, Any, Literal, cast
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.errors import internal_error, not_found
+from app.core.rate_limit import enforce_rate_limit
 from app.core.schemas import CollectionResponse, collection_response
 from app.db.session import get_db
 from app.modules.auth.dependencies import get_current_user, get_optional_current_user
@@ -36,6 +38,31 @@ PLACE_SUBTYPES_BY_TYPE: dict[PlaceType, set[str]] = {
 }
 
 
+def _anonymous_client_identity(request: Request) -> str:
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        return forwarded_for.split(",", 1)[0].strip() or "unknown"
+    return request.client.host if request.client else "unknown"
+
+
+async def _enforce_public_read_rate_limit(
+    request: Request,
+    current_user: User | None,
+    *,
+    scope: str,
+) -> None:
+    if current_user is not None:
+        return
+
+    settings = get_settings()
+    await enforce_rate_limit(
+        scope=scope,
+        subject=_anonymous_client_identity(request),
+        request_count=settings.public_read_rate_limit_requests,
+        window_seconds=settings.public_read_rate_limit_window_seconds,
+    )
+
+
 @router.get("", response_model=CollectionResponse[PlaceCollectionResponse])
 async def list_places(
     request: Request,
@@ -48,6 +75,11 @@ async def list_places(
     limit: Annotated[int, Query(ge=1, le=100)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> CollectionResponse[PlaceCollectionResponse]:
+    await _enforce_public_read_rate_limit(
+        request,
+        current_user,
+        scope="public-read-places-collection",
+    )
     validate_single_query_value(request, "type")
     validate_single_query_value(
         request,
@@ -74,15 +106,23 @@ async def list_places(
     )
 
 
-@router.get("/{place_id}", response_model=PlaceResponse)
+@router.get("/{place_id}", response_model=None)
 async def get_place(
     place_id: str,
+    request: Request,
     current_user: OptionalCurrentUser,
     db: DatabaseSession,
-) -> PlaceResponse:
+) -> PlaceResponse | dict[str, Any]:
+    await _enforce_public_read_rate_limit(
+        request,
+        current_user,
+        scope="public-read-places-detail",
+    )
     place = await get_place_summary(db, current_user.id if current_user else None, place_id)
     if place is None:
         not_found("Place")
+    if current_user is None:
+        return place.model_dump(by_alias=True, exclude={"created_by_user_id"})
     return place
 
 

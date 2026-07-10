@@ -47,6 +47,18 @@ class Settings(BaseSettings):
     refresh_cookie_samesite: str = Field(default="lax", alias="REFRESH_COOKIE_SAMESITE")
     auth_rate_limit_requests: int = Field(default=10, alias="AUTH_RATE_LIMIT_REQUESTS")
     auth_rate_limit_window_seconds: int = Field(default=60, alias="AUTH_RATE_LIMIT_WINDOW_SECONDS")
+    public_read_rate_limit_requests: int = Field(
+        default=60,
+        gt=0,
+        le=1000,
+        alias="PUBLIC_READ_RATE_LIMIT_REQUESTS",
+    )
+    public_read_rate_limit_window_seconds: int = Field(
+        default=60,
+        gt=0,
+        le=86400,
+        alias="PUBLIC_READ_RATE_LIMIT_WINDOW_SECONDS",
+    )
     enable_api_docs: bool = Field(default=False, alias="ENABLE_API_DOCS")
     cors_origins: list[str] = Field(
         default_factory=lambda: ["http://localhost:3000", "http://127.0.0.1:3000"],
