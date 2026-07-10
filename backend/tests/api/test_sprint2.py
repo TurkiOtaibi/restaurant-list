@@ -325,12 +325,25 @@ async def test_anonymous_public_reads_are_rate_limited_without_charging_authenti
         public_read_rate_limit_requests=1,
         public_read_rate_limit_window_seconds=60,
     )
+    clock = [10_000.0]
     monkeypatch.setattr(rate_limit, "get_settings", lambda: settings)
+    monkeypatch.setattr(rate_limit, "monotonic", lambda: clock[0])
     monkeypatch.setattr(places_api, "get_settings", lambda: settings)
     monkeypatch.setattr(lists_api, "get_settings", lambda: settings)
 
-    first_guest_read = await client.get(f"/api/v1/places/{first_place['id']}")
-    second_guest_read = await client.get(f"/api/v1/places/{second_place['id']}")
+    first_guest_read = await client.get(
+        f"/api/v1/places/{first_place['id']}",
+        headers={"X-Forwarded-For": "198.51.100.10"},
+    )
+    second_guest_read = await client.get(
+        f"/api/v1/places/{second_place['id']}",
+        headers={"X-Forwarded-For": "203.0.113.20"},
+    )
+    clock[0] += 61
+    recovered_guest_read = await client.get(
+        f"/api/v1/places/{second_place['id']}",
+        headers={"X-Forwarded-For": "192.0.2.30"},
+    )
     authenticated_read = await client.get(
         f"/api/v1/places/{second_place['id']}",
         headers=auth_header(token),
@@ -339,6 +352,7 @@ async def test_anonymous_public_reads_are_rate_limited_without_charging_authenti
     assert first_guest_read.status_code == 200
     assert second_guest_read.status_code == 429
     assert second_guest_read.json()["error"]["code"] == "RATE_LIMITED"
+    assert recovered_guest_read.status_code == 200
     assert authenticated_read.status_code == 200
 
 

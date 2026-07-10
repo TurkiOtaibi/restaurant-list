@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
-from app.core.rate_limit import enforce_rate_limit
+from app.core.rate_limit import anonymous_client_identity, enforce_rate_limit
 from app.core.schemas import CollectionResponse, DeleteResponse, collection_response
 from app.db.session import get_db
 from app.modules.auth.dependencies import get_current_user, get_optional_current_user
@@ -45,13 +45,6 @@ OptionalCurrentUser = Annotated[User | None, Depends(get_optional_current_user)]
 DatabaseSession = Annotated[AsyncSession, Depends(get_db)]
 
 
-def _anonymous_client_identity(request: Request) -> str:
-    forwarded_for = request.headers.get("x-forwarded-for")
-    if forwarded_for:
-        return forwarded_for.split(",", 1)[0].strip() or "unknown"
-    return request.client.host if request.client else "unknown"
-
-
 async def _enforce_public_read_rate_limit(
     request: Request,
     current_user: User | None,
@@ -64,7 +57,7 @@ async def _enforce_public_read_rate_limit(
     settings = get_settings()
     await enforce_rate_limit(
         scope=scope,
-        subject=_anonymous_client_identity(request),
+        subject=anonymous_client_identity(request),
         request_count=settings.public_read_rate_limit_requests,
         window_seconds=settings.public_read_rate_limit_window_seconds,
     )

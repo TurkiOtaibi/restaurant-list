@@ -105,6 +105,12 @@ async def test_places_are_publicly_browsable_with_anonymous_relationship_fields(
     assert detail.json()["currentUserListNames"] == []
     assert detail.json()["currentUserListCount"] == 0
     assert detail.json()["currentUserIsCreator"] is False
+    authenticated_detail = await client.get(
+        f"/api/v1/places/{place['id']}",
+        headers=auth_header(token),
+    )
+    assert authenticated_detail.status_code == 200
+    assert authenticated_detail.json()["createdByUserId"] == place["createdByUserId"]
 
 
 async def test_create_place_and_reject_duplicate_name(client: AsyncClient) -> None:

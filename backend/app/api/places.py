@@ -1,11 +1,11 @@
-from typing import Annotated, Any, Literal, cast
+from typing import Annotated, Literal, cast
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.errors import internal_error, not_found
-from app.core.rate_limit import enforce_rate_limit
+from app.core.rate_limit import anonymous_client_identity, enforce_rate_limit
 from app.core.schemas import CollectionResponse, collection_response
 from app.db.session import get_db
 from app.modules.auth.dependencies import get_current_user, get_optional_current_user
@@ -19,6 +19,7 @@ from app.modules.places.schemas import (
     PlaceResponse,
     PlaceSubtype,
     PlaceType,
+    PublicPlaceDetailResponse,
 )
 from app.modules.places.services import (
     create_place_for_user,
@@ -38,13 +39,6 @@ PLACE_SUBTYPES_BY_TYPE: dict[PlaceType, set[str]] = {
 }
 
 
-def _anonymous_client_identity(request: Request) -> str:
-    forwarded_for = request.headers.get("x-forwarded-for")
-    if forwarded_for:
-        return forwarded_for.split(",", 1)[0].strip() or "unknown"
-    return request.client.host if request.client else "unknown"
-
-
 async def _enforce_public_read_rate_limit(
     request: Request,
     current_user: User | None,
@@ -57,7 +51,7 @@ async def _enforce_public_read_rate_limit(
     settings = get_settings()
     await enforce_rate_limit(
         scope=scope,
-        subject=_anonymous_client_identity(request),
+        subject=anonymous_client_identity(request),
         request_count=settings.public_read_rate_limit_requests,
         window_seconds=settings.public_read_rate_limit_window_seconds,
     )
@@ -106,13 +100,13 @@ async def list_places(
     )
 
 
-@router.get("/{place_id}", response_model=None)
+@router.get("/{place_id}", response_model=PlaceResponse | PublicPlaceDetailResponse)
 async def get_place(
     place_id: str,
     request: Request,
     current_user: OptionalCurrentUser,
     db: DatabaseSession,
-) -> PlaceResponse | dict[str, Any]:
+) -> PlaceResponse | PublicPlaceDetailResponse:
     await _enforce_public_read_rate_limit(
         request,
         current_user,
@@ -122,7 +116,7 @@ async def get_place(
     if place is None:
         not_found("Place")
     if current_user is None:
-        return place.model_dump(by_alias=True, exclude={"created_by_user_id"})
+        return PublicPlaceDetailResponse.model_validate(place)
     return place
 
 

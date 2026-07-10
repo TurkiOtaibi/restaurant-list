@@ -51,6 +51,10 @@ def _client_subject(request: Request) -> str:
     return f"{client}:{request.url.path}"
 
 
+def anonymous_client_identity(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
+
+
 def _rate_limited() -> None:
     api_error(
         status.HTTP_429_TOO_MANY_REQUESTS,

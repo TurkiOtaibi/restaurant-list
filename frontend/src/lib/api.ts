@@ -41,7 +41,7 @@ export type Place = {
     | null;
   description: string | null;
   imageUrl: string | null;
-  createdByUserId: string;
+  createdByUserId?: string;
   createdAt: string;
   updatedAt: string;
   averageRating: number | null;
