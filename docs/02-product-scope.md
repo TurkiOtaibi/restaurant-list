@@ -15,7 +15,9 @@ The MVP includes a user-owned list and rating system for restaurants, cafes, and
 - Each list belongs to one user.
 - Each rating belongs to one user and one place.
 - Public list visibility depends on list ownership and visibility status.
-- Anonymous users cannot access any list.
+- Anonymous users may read the public place catalog and public lists only; list
+  ownership, private lists, and all personal or mutating actions remain
+  authenticated.
 
 ### Main Navigation
 
@@ -116,14 +118,15 @@ The profile displays:
 
 Public lists:
 
-- Visible only to authenticated users.
-- Read-only to non-owners.
+- Public collection and detail are readable without an account.
+- Anonymous responses expose public-safe fields only and are rate limited.
+- Read-only to non-owners; ownership and all changes remain authenticated.
 
 Private lists:
 
 - Visible only to the owner.
 
-Guest users cannot view public or private lists.
+Guest users cannot view private lists or owned-list data.
 
 ## Out of Scope
 

@@ -99,3 +99,8 @@ class PlaceCollectionResponse(BaseModel):
     current_user_is_creator: bool = Field(serialization_alias="currentUserIsCreator")
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
+class PublicPlaceDetailResponse(PlaceCollectionResponse):
+    current_user_list_ids: list[str] = Field(serialization_alias="currentUserListIds")
+    current_user_list_names: list[str] = Field(serialization_alias="currentUserListNames")

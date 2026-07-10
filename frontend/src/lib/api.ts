@@ -41,7 +41,7 @@ export type Place = {
     | null;
   description: string | null;
   imageUrl: string | null;
-  createdByUserId: string;
+  createdByUserId?: string;
   createdAt: string;
   updatedAt: string;
   averageRating: number | null;
@@ -148,7 +148,6 @@ type ApiRequestOptions = RequestInit & {
 
 type ApiDetail = {
   error?: { message?: string; code?: string };
-  detail?: { message?: string; code?: string } | Array<{ msg?: string }>;
 };
 
 export type LogoutResult = {
@@ -200,23 +199,23 @@ authChannel?.addEventListener("message", (event: MessageEvent) => {
 
 export class ApiError extends Error {
   status: number;
-  detail: unknown;
+  payload: unknown;
 
-  constructor(status: number, detail: unknown) {
-    super(extractErrorMessage(status, detail));
+  constructor(status: number, payload: unknown) {
+    super(extractErrorMessage(status, payload));
     this.name = "ApiError";
     this.status = status;
-    this.detail = detail;
+    this.payload = payload;
   }
 }
 
 export class SessionRecoveryError extends Error {
-  detail: unknown;
+  cause: unknown;
 
-  constructor(detail: unknown) {
+  constructor(cause: unknown) {
     super("Session recovery is temporarily unavailable.");
     this.name = "SessionRecoveryError";
-    this.detail = detail;
+    this.cause = cause;
   }
 }
 
@@ -412,19 +411,11 @@ async function parseResponseBody(response: Response): Promise<unknown> {
   return response.text();
 }
 
-function extractErrorMessage(status: number, detail: unknown): string {
-  const payload = detail as ApiDetail | undefined;
+function extractErrorMessage(status: number, payload: unknown): string {
+  const errorPayload = payload as ApiDetail | undefined;
 
-  if (payload?.error?.message) {
-    return payload.error.message;
-  }
-
-  if (Array.isArray(payload?.detail) && payload.detail[0]?.msg) {
-    return payload.detail[0].msg;
-  }
-
-  if (payload?.detail && typeof payload.detail === "object" && "message" in payload.detail) {
-    return payload.detail.message ?? `Request failed with status ${status}.`;
+  if (errorPayload?.error?.message) {
+    return errorPayload.error.message;
   }
 
   return `Request failed with status ${status}.`;

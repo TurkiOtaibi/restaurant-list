@@ -114,7 +114,7 @@ async def test_place_image_permissions_and_not_found(client: AsyncClient) -> Non
         headers=auth_header(other_token),
     )
     assert forbidden.status_code == 403
-    assert forbidden.json()["detail"]["code"] == "PLACE_IMAGE_FORBIDDEN"
+    assert forbidden.json()["error"]["code"] == "PLACE_IMAGE_FORBIDDEN"
 
     missing = await client.put(
         "/api/v1/places/missing-place/image",
@@ -122,7 +122,7 @@ async def test_place_image_permissions_and_not_found(client: AsyncClient) -> Non
         headers=auth_header(owner_token),
     )
     assert missing.status_code == 404
-    assert missing.json()["detail"]["code"] == "PLACE_NOT_FOUND"
+    assert missing.json()["error"]["code"] == "PLACE_NOT_FOUND"
 
 
 async def test_place_image_validation_errors(client: AsyncClient) -> None:
@@ -139,7 +139,7 @@ async def test_place_image_validation_errors(client: AsyncClient) -> None:
         headers=auth_header(token),
     )
     assert unsupported.status_code == 422
-    assert unsupported.json()["detail"]["code"] == "PLACE_IMAGE_UNSUPPORTED_FORMAT"
+    assert unsupported.json()["error"]["code"] == "PLACE_IMAGE_UNSUPPORTED_FORMAT"
 
     corrupt = await client.put(
         f"/api/v1/places/{place['id']}/image",
@@ -147,7 +147,7 @@ async def test_place_image_validation_errors(client: AsyncClient) -> None:
         headers=auth_header(token),
     )
     assert corrupt.status_code == 422
-    assert corrupt.json()["detail"]["code"] == "PLACE_IMAGE_INVALID"
+    assert corrupt.json()["error"]["code"] == "PLACE_IMAGE_INVALID"
 
     too_large = await client.put(
         f"/api/v1/places/{place['id']}/image",
@@ -155,7 +155,7 @@ async def test_place_image_validation_errors(client: AsyncClient) -> None:
         headers=auth_header(token),
     )
     assert too_large.status_code == 413
-    assert too_large.json()["detail"]["code"] == "PLACE_IMAGE_TOO_LARGE"
+    assert too_large.json()["error"]["code"] == "PLACE_IMAGE_TOO_LARGE"
 
     decompression_bomb = await client.put(
         f"/api/v1/places/{place['id']}/image",
@@ -167,7 +167,7 @@ async def test_place_image_validation_errors(client: AsyncClient) -> None:
         headers=auth_header(token),
     )
     assert decompression_bomb.status_code == 422
-    assert decompression_bomb.json()["detail"]["code"] == "PLACE_IMAGE_INVALID"
+    assert decompression_bomb.json()["error"]["code"] == "PLACE_IMAGE_INVALID"
 
 
 async def test_place_image_storage_unconfigured_returns_503(
@@ -188,7 +188,7 @@ async def test_place_image_storage_unconfigured_returns_503(
     )
 
     assert response.status_code == 503
-    assert response.json()["detail"]["code"] == "STORAGE_NOT_CONFIGURED"
+    assert response.json()["error"]["code"] == "STORAGE_NOT_CONFIGURED"
 
 
 async def test_place_image_url_flows_through_places_lists_and_profile(

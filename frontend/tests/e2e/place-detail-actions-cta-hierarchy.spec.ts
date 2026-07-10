@@ -176,7 +176,7 @@ async function mockPlaceDetailApi(
     if (path === "/auth/refresh") {
       return fulfillMockJson(
         route,
-        authenticated ? { accessToken: "mock-access-token" } : { detail: { code: "UNAUTHENTICATED" } },
+        authenticated ? { accessToken: "mock-access-token" } : { error: { code: "UNAUTHENTICATED" } },
         authenticated ? 200 : 401
       );
     }
@@ -218,7 +218,7 @@ async function mockPlaceDetailApi(
 
     return fulfillMockJson(
       route,
-      { detail: { code: "MOCK_NOT_FOUND", message: `${request.method()} ${path}` } },
+      { error: { code: "MOCK_NOT_FOUND", message: `${request.method()} ${path}` } },
       404
     );
   });

@@ -102,10 +102,10 @@ jobs:
           --health-retries 5
     env:
       # The real end-to-end flow boots the FastAPI app against this PostgreSQL service.
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/restaurant_test
+      E2E_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/restaurant_test
       APP_ENV: e2e
-      JWT_ACCESS_SECRET: e2e-access-secret
-      JWT_REFRESH_SECRET: e2e-refresh-secret
+      JWT_ACCESS_SECRET: e2e-only-access-secret-placeholder-32-bytes
+      JWT_REFRESH_SECRET: e2e-only-refresh-secret-placeholder-32-bytes
       REFRESH_COOKIE_SECURE: "false"
       CORS_ORIGINS: '["http://localhost:3000"]'
       CORS_ALLOW_ORIGIN_REGEX: 'http://localhost:3000'

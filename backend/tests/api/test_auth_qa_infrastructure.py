@@ -2,7 +2,10 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
+from redis.exceptions import ConnectionError
 
+import app.core.rate_limit as rate_limit
+from app.core.config import get_settings
 from tests.api.test_auth import auth_header, register_user
 from tests.support.auth_qa_infrastructure import (
     DeterministicTimeControlHarness,
@@ -65,7 +68,7 @@ async def test_auth_004_access_token_expires_after_configured_default_lifetime(
     expired = await client.get("/api/v1/places", headers=auth_header(access_token))
 
     assert expired.status_code == 401
-    assert expired.json()["detail"]["code"] == "INVALID_TOKEN"
+    assert expired.json()["error"]["code"] == "INVALID_TOKEN"
     assert "accessToken" not in expired.text
     assert "refresh" not in expired.text.lower()
 
@@ -137,3 +140,38 @@ async def test_auth_007_rate_limit_window_override_recovers_after_30_seconds(
         headers=headers,
     )
     assert recovered.status_code == 401
+
+
+class _FailingRedis:
+    async def eval(self, *_args: object) -> object:
+        raise ConnectionError("test outage payload")
+
+
+async def test_auth_007_configured_redis_outage_preserves_validation_before_limit(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = get_settings().model_copy(
+        update={
+            "auth_rate_limit_requests": 1,
+            "auth_rate_limit_window_seconds": 60,
+            "redis_url": "configured-for-test",
+        }
+    )
+    monkeypatch.setattr(rate_limit, "get_settings", lambda: settings)
+    monkeypatch.setattr(rate_limit, "_get_redis_client", lambda: _FailingRedis())
+
+    allowed = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "missing@example.com", "password": "wrong"},
+        headers={"x-forwarded-for": "redis-outage-auth-test"},
+    )
+    blocked = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "missing@example.com", "password": "wrong"},
+        headers={"x-forwarded-for": "redis-outage-auth-test"},
+    )
+
+    assert allowed.status_code == 401
+    assert blocked.status_code == 429
+    assert blocked.json()["error"]["code"] == "RATE_LIMITED"

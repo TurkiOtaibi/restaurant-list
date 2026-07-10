@@ -20,6 +20,9 @@ export default defineConfig({
     command: `npm run dev -- --hostname localhost --port ${playwrightPort}`,
     env: {
       E2E_API_BASE_URL: e2eApiBaseUrl,
+      ...(process.env.E2E_DATABASE_URL
+        ? { E2E_DATABASE_URL: process.env.E2E_DATABASE_URL }
+        : {}),
       E2E_API_PORT: e2eApiPort,
       E2E_FRONTEND_PORT: playwrightPort,
       NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL ?? e2eApiBaseUrl

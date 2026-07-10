@@ -39,8 +39,10 @@ default path.
 ## Rate limiting
 
 Authentication endpoints are rate limited (default 10 requests / 60s per client +
-path). When `REDIS_URL` is set the counter is backed by Redis so it is shared
-across instances; otherwise an in-process fallback is used (local dev and tests).
+path). Anonymous discovery reads are also rate limited (default 60 requests /
+60s per client and stable endpoint scope). When `REDIS_URL` is set the counter is
+backed by Redis so it is shared across instances; otherwise an in-process
+fallback is used (local dev and tests).
 `render.yaml` provisions a Redis service and wires `REDIS_URL`.
 
 > The free Redis plan is shared across instances but does not guarantee
@@ -51,13 +53,12 @@ across instances; otherwise an in-process fallback is used (local dev and tests)
 
 Intentional constraints during the current controlled beta:
 
-- **Public lists are login-only.** Anonymous users cannot browse them.
-
-Required before public beta (tracked, not yet implemented):
-
-- **Anonymous read-only browsing of public lists** (and public list detail) for
-  logged-out visitors. This is deferred deliberately and must be designed with
-  its own rate limiting and abuse controls.
+- **Public discovery is anonymous and read-only.** Guests may browse the place
+  catalog and public-list collection/detail routes. The approved EDR-014 policy
+  applies explicit per-client limits, stable endpoint scopes, neutral guest
+  context, and public-safe fields only.
+- Personal context, private lists, profiles, ratings, notes, and all mutations
+  remain login-only.
 
 ## Secrets
 

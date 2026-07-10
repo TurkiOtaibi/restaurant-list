@@ -1,11 +1,17 @@
+from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
 from httpx import AsyncClient, Response
+from pydantic import ValidationError
 from sqlalchemy import delete
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.api import lists as lists_api
+from app.api import places as places_api
+from app.core import rate_limit
+from app.core.config import Settings
 from app.modules.places.models import Place
 from tests.api.test_auth import auth_header, register_user
 from tests.api.test_places_and_lists import _create_list, _create_place, collection_data
@@ -216,7 +222,7 @@ async def test_notes_privacy_and_community_rating_aggregates(client: AsyncClient
     assert "other private note" in str(other_profile.json())
 
 
-async def test_public_private_list_visibility_and_guest_denial(client: AsyncClient) -> None:
+async def test_public_private_list_visibility_and_guest_discovery(client: AsyncClient) -> None:
     owner_token = await _token_with_display_name(client, "owner@example.com", "تركي")
     other_token = await _token(client, "other@example.com")
     owner_list = await _create_list(client, owner_token, name="Owner list")
@@ -284,6 +290,81 @@ async def test_public_private_list_visibility_and_guest_denial(client: AsyncClie
     assert private_again_data["visibility"] == "private"
     assert private_again_data["placeCount"] == 0
     assert private_again_detail.status_code == 404
+
+
+async def test_guest_personal_actions_remain_authenticated(client: AsyncClient) -> None:
+    token = await _token(client, "guest-boundary@example.com")
+    place = await _create_place(client, token, name="Protected Action Cafe")
+
+    guest_create_list = await client.post(
+        "/api/v1/lists",
+        json={"name": "Guest list", "visibility": "private"},
+    )
+    guest_rating = await client.post(
+        "/api/v1/ratings",
+        json={"placeId": place["id"], "rating": 8},
+    )
+    guest_profile = await client.get("/api/v1/profile")
+
+    for response in (guest_create_list, guest_rating, guest_profile):
+        assert response.status_code == 401
+        assert response.json()["error"]["code"] == "UNAUTHENTICATED"
+
+
+async def test_anonymous_public_reads_are_rate_limited_without_charging_authenticated_reads(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    token = await _token(client, "public-rate-limit@example.com")
+    first_place = await _create_place(client, token, name="First Public Rate Place")
+    second_place = await _create_place(client, token, name="Second Public Rate Place")
+    settings = SimpleNamespace(
+        redis_url=None,
+        auth_rate_limit_requests=10,
+        auth_rate_limit_window_seconds=60,
+        public_read_rate_limit_requests=1,
+        public_read_rate_limit_window_seconds=60,
+    )
+    clock = [10_000.0]
+    monkeypatch.setattr(rate_limit, "get_settings", lambda: settings)
+    monkeypatch.setattr(rate_limit, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(places_api, "get_settings", lambda: settings)
+    monkeypatch.setattr(lists_api, "get_settings", lambda: settings)
+
+    first_guest_read = await client.get(
+        f"/api/v1/places/{first_place['id']}",
+        headers={"X-Forwarded-For": "198.51.100.10"},
+    )
+    second_guest_read = await client.get(
+        f"/api/v1/places/{second_place['id']}",
+        headers={"X-Forwarded-For": "203.0.113.20"},
+    )
+    clock[0] += 61
+    recovered_guest_read = await client.get(
+        f"/api/v1/places/{second_place['id']}",
+        headers={"X-Forwarded-For": "192.0.2.30"},
+    )
+    authenticated_read = await client.get(
+        f"/api/v1/places/{second_place['id']}",
+        headers=auth_header(token),
+    )
+
+    assert first_guest_read.status_code == 200
+    assert second_guest_read.status_code == 429
+    assert second_guest_read.json()["error"]["code"] == "RATE_LIMITED"
+    assert recovered_guest_read.status_code == 200
+    assert authenticated_read.status_code == 200
+
+
+def test_public_read_rate_settings_are_bounded_positive() -> None:
+    with pytest.raises(ValidationError):
+        Settings(PUBLIC_READ_RATE_LIMIT_REQUESTS=0)
+    with pytest.raises(ValidationError):
+        Settings(PUBLIC_READ_RATE_LIMIT_REQUESTS=1001)
+    with pytest.raises(ValidationError):
+        Settings(PUBLIC_READ_RATE_LIMIT_WINDOW_SECONDS=0)
+    with pytest.raises(ValidationError):
+        Settings(PUBLIC_READ_RATE_LIMIT_WINDOW_SECONDS=86401)
 
 
 async def test_profile_statistics_are_calculated_from_user_data(client: AsyncClient) -> None:

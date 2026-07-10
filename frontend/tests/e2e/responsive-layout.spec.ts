@@ -375,7 +375,7 @@ async function mockApi(page: Page) {
       });
     }
 
-    return fulfill({ detail: { code: "MOCK_NOT_FOUND", message: `${method} ${path}` } }, 404);
+    return fulfill({ error: { code: "MOCK_NOT_FOUND", message: `${method} ${path}` } }, 404);
   });
 }
 

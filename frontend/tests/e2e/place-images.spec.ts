@@ -76,7 +76,7 @@ async function mockProfileApi(page: Page) {
     }
 
     return route.fulfill({
-      body: JSON.stringify({ detail: { code: "MOCK_NOT_FOUND", message: path } }),
+      body: JSON.stringify({ error: { code: "MOCK_NOT_FOUND", message: path } }),
       contentType: "application/json",
       status: 404
     });
@@ -139,7 +139,7 @@ async function mockPlaceDetailApi(
     }
 
     return route.fulfill({
-      body: JSON.stringify({ detail: { code: "MOCK_NOT_FOUND", message: `${request.method()} ${path}` } }),
+      body: JSON.stringify({ error: { code: "MOCK_NOT_FOUND", message: `${request.method()} ${path}` } }),
       contentType: "application/json",
       status: 404
     });

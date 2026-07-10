@@ -96,12 +96,21 @@ async def test_places_are_publicly_browsable_with_anonymous_relationship_fields(
     assert anonymous_place["currentUserRating"] is None
     assert anonymous_place["currentUserListCount"] == 0
     assert anonymous_place["currentUserIsCreator"] is False
+    assert "createdByUserId" not in anonymous_place
     assert detail.status_code == 200
+    assert "createdByUserId" not in detail.json()
+    assert "owner@example.com" not in str(detail.json())
     assert detail.json()["currentUserRating"] is None
     assert detail.json()["currentUserListIds"] == []
     assert detail.json()["currentUserListNames"] == []
     assert detail.json()["currentUserListCount"] == 0
     assert detail.json()["currentUserIsCreator"] is False
+    authenticated_detail = await client.get(
+        f"/api/v1/places/{place['id']}",
+        headers=auth_header(token),
+    )
+    assert authenticated_detail.status_code == 200
+    assert authenticated_detail.json()["createdByUserId"] == place["createdByUserId"]
 
 
 async def test_create_place_and_reject_duplicate_name(client: AsyncClient) -> None:
@@ -120,7 +129,7 @@ async def test_create_place_and_reject_duplicate_name(client: AsyncClient) -> No
     )
 
     assert duplicate.status_code == 409
-    assert duplicate.json()["detail"]["code"] == "DUPLICATE_PLACE_NAME"
+    assert duplicate.json()["error"]["code"] == "DUPLICATE_PLACE_NAME"
 
 
 async def test_concurrent_normalized_duplicate_place_creation(client: AsyncClient) -> None:
@@ -142,7 +151,7 @@ async def test_concurrent_normalized_duplicate_place_creation(client: AsyncClien
     statuses = sorted([first.status_code, second.status_code])
     assert statuses == [201, 409]
     rejected = first if first.status_code == 409 else second
-    assert rejected.json()["detail"]["code"] == "DUPLICATE_PLACE_NAME"
+    assert rejected.json()["error"]["code"] == "DUPLICATE_PLACE_NAME"
 
 
 async def test_places_search_by_name_only(client: AsyncClient) -> None:
@@ -388,11 +397,11 @@ async def test_place_taxonomy_validation_and_filtering(client: AsyncClient) -> N
     }
     assert {place["id"] for place in collection_data(ice_cream_filter)} == {ice_cream["id"]}
     assert subtype_without_type.status_code == 422
-    assert subtype_without_type.json()["detail"]["code"] == "PLACE_TYPE_REQUIRED_FOR_SUBTYPE_FILTER"
+    assert subtype_without_type.json()["error"]["code"] == "PLACE_TYPE_REQUIRED_FOR_SUBTYPE_FILTER"
     assert incompatible_subtype.status_code == 422
-    assert incompatible_subtype.json()["detail"]["code"] == "INVALID_PLACE_SUBTYPE_FILTER"
+    assert incompatible_subtype.json()["error"]["code"] == "INVALID_PLACE_SUBTYPE_FILTER"
     assert ice_cream_with_subtype.status_code == 422
-    assert ice_cream_with_subtype.json()["detail"]["code"] == "INVALID_PLACE_SUBTYPE_FILTER"
+    assert ice_cream_with_subtype.json()["error"]["code"] == "INVALID_PLACE_SUBTYPE_FILTER"
 
 
 async def test_places_default_sorting_uses_rating_count_name_and_unrated_last(
