@@ -5,7 +5,7 @@ from time import monotonic
 from typing import Any
 
 from fastapi import Request, status
-from redis.exceptions import RedisError
+from redis.exceptions import AuthenticationError, AuthorizationError, ConnectionError, TimeoutError
 
 from app.core.config import get_settings
 from app.core.errors import api_error
@@ -129,7 +129,9 @@ async def enforce_rate_limit(
                 request_count=request_count,
                 window_seconds=window_seconds,
             )
-        except RedisError:
+        except (AuthenticationError, AuthorizationError):
+            raise
+        except (ConnectionError, TimeoutError):
             logger.warning(
                 "Redis rate limiter unavailable; using process-local fallback (scope=%s)",
                 normalized_scope,

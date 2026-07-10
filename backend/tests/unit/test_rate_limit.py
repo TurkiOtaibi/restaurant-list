@@ -3,7 +3,14 @@ from typing import Any
 
 import pytest
 from fastapi import HTTPException
-from redis.exceptions import ConnectionError
+from redis.exceptions import (
+    AuthenticationError,
+    AuthorizationError,
+    ConnectionError,
+    DataError,
+    ResponseError,
+    TimeoutError,
+)
 from starlette.requests import Request
 
 import app.core.rate_limit as rate_limit
@@ -42,8 +49,11 @@ class FakeRedis:
 
 
 class FailingRedis:
+    def __init__(self, error_type: type[Exception] = ConnectionError) -> None:
+        self.error_type = error_type
+
     async def eval(self, *_args: Any) -> Any:
-        raise ConnectionError("redis outage payload must not be logged")
+        raise self.error_type("redis outage payload must not be logged")
 
 
 class BuggyRedis:
@@ -104,14 +114,20 @@ def test_redis_client_uses_short_timeouts(monkeypatch: pytest.MonkeyPatch) -> No
 
 
 @pytest.mark.asyncio
-async def test_redis_outage_falls_back_and_remains_restrictive(
+@pytest.mark.parametrize("error_type", [ConnectionError, TimeoutError])
+async def test_redis_operational_failure_falls_back_and_remains_restrictive(
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
+    error_type: type[Exception],
 ) -> None:
     now = 10_000.0
     settings = _settings(request_count=2, window_seconds=30)
     monkeypatch.setattr(rate_limit, "get_settings", lambda: settings)
-    monkeypatch.setattr(rate_limit, "_get_redis_client", lambda: FailingRedis())
+    monkeypatch.setattr(
+        rate_limit,
+        "_get_redis_client",
+        lambda: FailingRedis(error_type),
+    )
     monkeypatch.setattr(rate_limit, "monotonic", lambda: now)
 
     for _ in range(2):
@@ -163,6 +179,38 @@ async def test_redis_outage_fallback_recovers_after_window(monkeypatch: pytest.M
         request_count=1,
         window_seconds=60,
     )
+
+
+@pytest.mark.parametrize(
+    "error_type",
+    [AuthenticationError, AuthorizationError, DataError, ResponseError],
+)
+@pytest.mark.asyncio
+async def test_non_operational_redis_failures_propagate_without_local_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    error_type: type[Exception],
+) -> None:
+    subject = "auth-non-operational-canary:/api/v1/auth/login"
+    key = rate_limit._storage_key("auth", subject)
+    monkeypatch.setattr(rate_limit, "get_settings", lambda: _settings())
+    monkeypatch.setattr(
+        rate_limit,
+        "_get_redis_client",
+        lambda: FailingRedis(error_type),
+    )
+
+    with pytest.raises(error_type, match="redis outage payload"):
+        await rate_limit.enforce_rate_limit(
+            scope="auth",
+            subject=subject,
+            request_count=2,
+            window_seconds=60,
+        )
+
+    assert key not in rate_limit._requests
+    assert "redis outage payload" not in caplog.text
+    assert subject not in caplog.text
 
 
 @pytest.mark.asyncio
