@@ -4,9 +4,14 @@ import type { CSSProperties } from "react";
 import { useId } from "react";
 
 import { formatOutOfTen } from "@/lib/numerals";
-import { composeDescriptionIds } from "@/lib/ui";
+import { composeDescriptionIds, cx } from "@/lib/ui";
 
 import { NumberText } from "./NumberText";
+
+const RATING_MIN = 1;
+const RATING_MAX = 10;
+const RATING_STEP = 0.5;
+const RATING_UNSET_LABEL = "لم تحدد تقييمًا";
 
 type RatingControlProps = {
   consequenceMessage?: string;
@@ -19,6 +24,11 @@ type RatingControlProps = {
   required?: boolean;
   value: number | null;
 };
+
+function clampRating(value: number): number {
+  const stepped = Math.round(value / RATING_STEP) * RATING_STEP;
+  return Math.min(RATING_MAX, Math.max(RATING_MIN, stepped));
+}
 
 export function RatingControl({
   consequenceMessage,
@@ -37,8 +47,21 @@ export function RatingControl({
   const consequenceId = consequenceMessage ? `${controlId}-consequence` : undefined;
   const validationId = error ? errorId ?? `${controlId}-error` : undefined;
   const describedBy = composeDescriptionIds(consequenceId, validationId);
-  const currentValue = value ?? 1;
-  const progress = `${((currentValue - 1) / 9) * 100}%`;
+  const currentValue = value ?? RATING_MIN;
+  const progress = `${((currentValue - RATING_MIN) / (RATING_MAX - RATING_MIN)) * 100}%`;
+  const canDecrease = value !== null && value > RATING_MIN;
+  const canIncrease = value === null || value < RATING_MAX;
+
+  const decrease = () => {
+    if (value === null) {
+      return;
+    }
+    onChange(clampRating(value - RATING_STEP));
+  };
+
+  const increase = () => {
+    onChange(value === null ? RATING_MIN : clampRating(value + RATING_STEP));
+  };
 
   return (
     <fieldset
@@ -48,56 +71,67 @@ export function RatingControl({
       id={controlId}
     >
       <legend>{label}</legend>
-      <div className="ds-rating-control__value" aria-live="polite">
-        <NumberText>{value ? formatOutOfTen(value) : "-/10"}</NumberText>
+      <div
+        aria-live="polite"
+        className={cx(
+          "ds-rating-control__value",
+          value === null && "ds-rating-control__value--unset"
+        )}
+      >
+        {value !== null ? <NumberText>{formatOutOfTen(value)}</NumberText> : RATING_UNSET_LABEL}
       </div>
-      <label
-        className="ds-rating-control__stars"
-        htmlFor={inputId}
+      <label className="ds-rating-control__hint" htmlFor={inputId}>
+        اسحب المؤشر أو استخدم زري الزيادة والنقصان لتحديد تقييمك.
+      </label>
+      <div
+        className="ds-rating-control__adjust"
         style={{ "--rating-progress": progress } as CSSProperties}
       >
-        <span className="ds-rating-control__slider-label">
-          اسحب أو استخدم الأسهم لتحديد التقييم
-        </span>
-        <input
-          aria-label={label}
-          aria-valuetext={`Rating, ${currentValue.toFixed(1)} out of 10`}
-          id={inputId}
-          max={10}
-          min={1}
-          name={name}
-          onChange={(event) => onChange(Number(event.target.value))}
-          required={required}
-          step={0.5}
-          type="range"
-          value={currentValue}
-        />
-        <span className="ds-rating-control__scale" aria-hidden="true">
-          <span>
-            <NumberText>{formatOutOfTen(1)}</NumberText>
+        <button
+          aria-label="أنقص التقييم"
+          className="ds-rating-control__step"
+          disabled={!canDecrease}
+          onClick={decrease}
+          type="button"
+        >
+          −
+        </button>
+        <span className="ds-rating-control__slider">
+          <input
+            aria-label={label}
+            aria-valuenow={currentValue}
+            aria-valuetext={
+              value === null ? RATING_UNSET_LABEL : `Rating, ${value.toFixed(1)} out of 10`
+            }
+            id={inputId}
+            max={RATING_MAX}
+            min={RATING_MIN}
+            name={name}
+            onChange={(event) => onChange(Number(event.target.value))}
+            required={required}
+            step={RATING_STEP}
+            type="range"
+            value={currentValue}
+          />
+          <span className="ds-rating-control__scale" aria-hidden="true">
+            <span>
+              <NumberText>{formatOutOfTen(RATING_MIN)}</NumberText>
+            </span>
+            <span>
+              <NumberText>{formatOutOfTen(RATING_MAX)}</NumberText>
+            </span>
           </span>
-          <span>
-            <NumberText>{formatOutOfTen(10)}</NumberText>
-          </span>
         </span>
-        <span className="ds-rating-control__star-row" aria-hidden="true">
-          {Array.from({ length: 10 }, (_, index) => {
-            const starValue = index + 1;
-            const state =
-              value !== null && value >= starValue
-                ? "full"
-                : value !== null && value >= starValue - 0.5
-                  ? "half"
-                  : "empty";
-
-            return (
-              <span className={`ds-rating-control__star is-${state}`} key={starValue}>
-                ★
-              </span>
-            );
-          })}
-        </span>
-      </label>
+        <button
+          aria-label="زد التقييم"
+          className="ds-rating-control__step"
+          disabled={!canIncrease}
+          onClick={increase}
+          type="button"
+        >
+          +
+        </button>
+      </div>
       {consequenceMessage ? (
         <p className="muted" id={consequenceId}>
           {consequenceMessage}

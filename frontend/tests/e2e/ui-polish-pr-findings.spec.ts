@@ -95,6 +95,15 @@ test.describe("PR review UI polish findings", () => {
       "aria-valuetext",
       "Rating, 9.5 out of 10"
     );
+    // Wave 7: single input mechanism — no ten-star row, and precise +/- controls present.
+    await expect(page.locator(".rate-place-dialog .ds-rating-control__star-row")).toHaveCount(0);
+    await expect(
+      page.locator(".rate-place-dialog button[aria-label='زد التقييم']")
+    ).toBeVisible();
+    await expect(
+      page.locator(".rate-place-dialog button[aria-label='أنقص التقييم']")
+    ).toBeVisible();
+    await expect(page.locator(".rate-place-dialog")).not.toContainText("-/10");
   });
 
   test("does not show a fake action affordance on list cards without actions", async ({
